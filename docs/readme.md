@@ -10,42 +10,47 @@ In more complex cases, the scripts may handle input for compound Dataverse metad
 A fairly basic example:
 
     {
-        "field-name": "creator",
-        "term-uri-field": "creator",
-        "js-url": "/resources/js/people.js",
-        "protocol": "orcid",
-        "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
-        "prefix": "https://orcid.org/",
-        "managed-fields": {},
-        "languages":"",
-        "vocabs": {
-            "orcid": {
-                "uriSpace": "https://orcid.org/"
-            }
-        },
-        "allow-free-text": "true",
-        "retrieval-filtering": {
-            "@context": {
-                "personName": "https://schema.org/name",
-                "scheme": "https://schema.org/identifier"
-            },
-            "personName": {
-                "pattern": "{0}, {1}",
-                "params": ["/name/family-name/value", "/name/given-names/value"]
-            },
-            "@id": {
-                "pattern": "{0}",
-                "params": ["@id"]
-            },
-            "scheme": {
-                "pattern": "ORCID"
-            },
-            "@type": "https://schema.org/Person"
+      "field-name": "creator",
+      "term-uri-field": "creator",
+      "js-url": "/resources/js/people.js",
+      "protocol": "orcid",
+      "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
+      "prefix": "https://orcid.org/",
+      "managed-fields": {},
+      "languages": "",
+      "vocabs": {
+        "orcid": {
+          "uriSpace": "https://orcid.org/"
         }
-    },
+      },
+      "allow-free-text": "true",
+      "retrieval-filtering": {
+        "@context": {
+          "personName": "https://schema.org/name",
+          "scheme": "https://schema.org/identifier"
+        },
+        "personName": {
+          "pattern": "{0}, {1}",
+          "params": [
+            "/name/family-name/value",
+            "/name/given-names/value"
+          ]
+        },
+        "@id": {
+          "pattern": "{0}",
+          "params": [
+            "@id"
+          ]
+        },
+        "scheme": {
+          "pattern": "ORCID"
+        },
+        "@type": "https://schema.org/Person"
+      }
+    }
 
-* fieldname - the datasetField name of a field defined in a metadata block/tsv file
-* term-uri-field - in a single/non-compound field case, this is the same as fieldname
+* field-name - the datasetField name of a field defined in a metadata block/tsv file
+* term-uri-field - in a single/non-compound field case, this is the same as field-name
 * js-url - the absolute or relative URL of the javascript compatible with the protocol selected. Dataverse will load/reload scripts as needed when fields that require them are shown
 * protocol - the API/protocol supported by the selected javascript. Dataverse will mark elements in the page with data-cvoc-protocol attributes with this value, which can be used by the scripts to find the elements they should manage
 
@@ -74,52 +79,59 @@ corresponds to:
     
 Here's the equivalent configuration for a skosmos service where the field has been configured to allow choices from either of two vocabularies:
 
-     {
-        "field-name": "skosterm",
-        "term-uri-field": "skosterm",
-        "cvoc-url": "https://skosmos.dev.finto.fi/",
-        "js-url": "/resources/js/skosmos.js",
-        "protocol": "skosmos",
-        "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
-        "allow-free-text": "false",
-        "languages":"en, uk, es, zh, ar, tr, lo, sk, th, pt, hu, pl, de, cs, it, fr, hi, ja, ro, fa",
-        "vocabs":{
-            "unesco": {
-                "vocabularyUri": "http://skos.um.es/unescothes/CS000",
-                "uriSpace": "http://skos.um.es/unescothes/"
-            },
-            "agrovoc" : {
-            	   "vocabularyUri": "http://aims.fao.org/vest-registry/kos/agrovoc",
-                   "uriSpace": "http://aims.fao.org/aos/agrovoc/"
-               }
-            }
+    {
+      "field-name": "skosterm",
+      "term-uri-field": "skosterm",
+      "cvoc-url": "https://skosmos.dev.finto.fi/",
+      "js-url": "/resources/js/skosmos.js",
+      "protocol": "skosmos",
+      "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+      "allow-free-text": "false",
+      "languages": "en, uk, es, zh, ar, tr, lo, sk, th, pt, hu, pl, de, cs, it, fr, hi, ja, ro, fa",
+      "vocabs": {
+        "unesco": {
+          "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+          "uriSpace": "http://skos.um.es/unescothes/"
         },
-        "managed-fields": {},
-        "retrieval-filtering": {
-            "@context": {
-                "termName": "https://schema.org/name",
-                "vocabularyName": "https://dataverse.org/schema/vocabularyName",
-                "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
-                "lang": "@language",
-                "value": "@value"
-            },
-            "@id": {
-                "pattern": "{0}",
-                "params": ["@id"]
-            },
-            "termName": {
-                "pattern": "{0}",
-                "params": ["/graph/uri=@id/prefLabel"]
-            },
-            "vocabularyName": {
-                "pattern": "{0}",
-                "params": ["/graph/type=skos:ConceptScheme/prefLabel"]
-            },
-            "vocabularyUri": {
-                "pattern": "{0}",
-                "params": ["/graph/type=skos:ConceptScheme/uri"]
-            }
+        "agrovoc": {
+          "vocabularyUri": "http://aims.fao.org/vest-registry/kos/agrovoc",
+          "uriSpace": "http://aims.fao.org/aos/agrovoc/"
         }
+      },
+      "managed-fields": {},
+      "retrieval-filtering": {
+        "@context": {
+          "termName": "https://schema.org/name",
+          "vocabularyName": "https://dataverse.org/schema/vocabularyName",
+          "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
+          "lang": "@language",
+          "value": "@value"
+        },
+        "@id": {
+          "pattern": "{0}",
+          "params": [
+            "@id"
+          ]
+        },
+        "termName": {
+          "pattern": "{0}",
+          "params": [
+            "/graph/uri=@id/prefLabel"
+          ]
+        },
+        "vocabularyName": {
+          "pattern": "{0}",
+          "params": [
+            "/graph/type=skos:ConceptScheme/prefLabel"
+          ]
+        },
+        "vocabularyUri": {
+          "pattern": "{0}",
+          "params": [
+            "/graph/type=skos:ConceptScheme/uri"
+          ]
+        }
+      }
     }
     
 The are some changes from the ORCID case:
@@ -133,57 +145,66 @@ Present in the retrieval-filtering element in both examples is an @context. This
 
 What is cached by Dataverse is service/protocol specific but is not specific to which metadata field is using this service. It is therefore something that is created once, aloing with the Javascript and, at some point, may be in a separate configuration property/file. 
 
-The final example below, shows a skosmos service being associated witha compound Dataverse field. This field is modeled after the keyword field, with the addition of a child field to store the term URI itself (which Dataverse (somewhat oddly) doesn't have an input for in the citation block keyword field).
+The final example, below, shows a skosmos service being associated with a compound Dataverse field. This field is modeled after the keyword field, with the addition of a child field to store the term URI itself (which Dataverse (somewhat oddly) doesn't have an input for in the citation block keyword field).
+
 
     {
-        "field-name": "cvocDemo",
-        "term-uri-field": "cvocDemoTermURI",
-        "cvoc-url": "https://skosmos.dev.finto.fi/",
-        "js-url": "/resources/js/skosmos.js",
-        "protocol": "skosmos",
-        "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
-        "term-parent-uri": "",
-        "allow-free-text": "false",
-        "vocabs": {
-            "unesco": {
-                "vocabularyUri": "http://skos.um.es/unescothes/CS000",
-                "uriSpace": "http://skos.um.es/unescothes/"
-            },
-        },
-        "managed-fields": {
-            "vocabularyName": "cvocDemoVocabulary",
-            "termName": "cvocDemoTerm",
-            "vocabularyUri": "cvocDemoVocabularyURI"
-        },
-        "retrieval-filtering": {
-            "@context": {
-                "termName": "https://schema.org/name",
-                "vocabularyName": "https://dataverse.org/schema/vocabularyName",
-                "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
-                "lang": "@language",
-                "value": "@value"
-            },
-            "@id": {
-                "pattern": "{0}",
-                "params": ["@id"]
-            },
-            "termName": {
-                "pattern": "{0}",
-                "params": ["/graph/uri=@id/prefLabel"]
-            },
-            "vocabularyName": {
-                "pattern": "{0}",
-                "params": ["/graph/type=skos:ConceptScheme/prefLabel"]
-            },
-            "vocabularyUri": {
-                "pattern": "{0}",
-                "params": ["/graph/type=skos:ConceptScheme/uri"]
-            }
+      "field-name": "cvocDemo",
+      "term-uri-field": "cvocDemoTermURI",
+      "cvoc-url": "https://skosmos.dev.finto.fi/",
+      "js-url": "/resources/js/skosmos.js",
+      "protocol": "skosmos",
+      "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+      "term-parent-uri": "",
+      "allow-free-text": "false",
+      "vocabs": {
+        "unesco": {
+          "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+          "uriSpace": "http://skos.um.es/unescothes/"
         }
+      },
+      "managed-fields": {
+        "vocabularyName": "cvocDemoVocabulary",
+        "termName": "cvocDemoTerm",
+        "vocabularyUri": "cvocDemoVocabularyURI"
+      },
+      "retrieval-filtering": {
+        "@context": {
+          "termName": "https://schema.org/name",
+          "vocabularyName": "https://dataverse.org/schema/vocabularyName",
+          "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
+          "lang": "@language",
+          "value": "@value"
+        },
+        "@id": {
+          "pattern": "{0}",
+          "params": [
+            "@id"
+          ]
+        },
+        "termName": {
+          "pattern": "{0}",
+          "params": [
+            "/graph/uri=@id/prefLabel"
+          ]
+        },
+        "vocabularyName": {
+          "pattern": "{0}",
+          "params": [
+            "/graph/type=skos:ConceptScheme/prefLabel"
+          ]
+        },
+        "vocabularyUri": {
+          "pattern": "{0}",
+          "params": [
+            "/graph/type=skos:ConceptScheme/uri"
+          ]
+        }
+      }
     }
 
 This example adds the field
-* term-parent-uri - skosmos allows limiting queries to a subset of a vocabulary, This parameter allows that (I don't have any description of its format handy though)
+* term-parent-uri - skosmos-specific - allows limiting queries to a subset of a vocabulary
 
 To handle multiple fields, this example changes:
 * field-name - the name of the parent field
@@ -194,9 +215,9 @@ When the skosmos Javascript runs on this type of field, it hides all child field
 
 #How to make a new Javascript for your Service/Vocabulary
 
-The skosmos.js and people.js scripts in this branch are good examples to start from. people.js is appropriate for single fields (it could be extendded to handle multiple fields but has not) and for services that provide a single vocabulary choice. skosmos.js is an example that handles both multiple vocabularies and managed fields.
+The skosmos.js and people.js scripts are good examples to start from. people.js is appropriate for single fields (it could be extended to handle multiple fields but has not) and for services that provide a single vocabulary choice. skosmos.js is an example that handles both multiple vocabularies and managed fields.
 
-Both of these scripts assume that, when the user starts typing, the letters they have types can be sent to your service via its api to get a list of terms that 'match'. What matches is up to your service(e.g. skosmos matches on both the preferred and alternate labels for a term, while ORCID will match on partial names, emails, ORCIDs, and/or information about a person such as institutions where they studied or worked). When the list is returned, the script has to format the response into a set of options for selection, usually putting the term name/uri together in nicely formatted HTML. These customizations can be done within the ajax call portion of the script. What happens when the user selects a choice, clears their choice, etc. should be standard and you probably won't have to make changes to the example script to make it work. Similarly, for metadata display, the scripts again expect to call your API (possibly the same as the retrieval-uri Dataverse will use internally) to get metadata about just that term so you can again provide nicely formatted HTML to replace the plain text display of the termURI/PID that Dataverse generates.
+Both of these scripts assume that, when the user starts typing, the letters they have typed can be sent to your service via its api to get a list of terms that 'match'. What matches is up to your service(e.g. skosmos matches on both the preferred and alternate labels for a term, while ORCID will match on partial names, emails, ORCIDs, and/or information about a person such as institutions where they studied or worked). When the list is returned, the script has to format the response into a set of options for selection, usually putting the term name/uri together in nicely formatted HTML. These customizations can be done within the ajax call portion of the script. What happens when the user selects a choice, clears their choice, etc. should be standard and you probably won't have to make changes to the example script to make it work. Similarly, for metadata display, the scripts again expect to call your API (possibly the same as the retrieval-uri Dataverse will use internally) to get metadata about just that term so you can again provide nicely formatted HTML to replace the plain text display of the termURI/PID that Dataverse generates.
 
 Along with creating a script, you'll need to create an appropriate object to add to the :CVocConf property to let Dataverse know about your service and to assign your service to specific fields.THe most complex part of that is probably defining the retrieval-filtering object - if your service doesn't have an endpoint that produces json that can be used directly. For most vocabularies, the four elements termURI/name and vocabularyURI/name are probably all you could/should provide. For other PIDs, you'll need to decide what Dataverse should know for use in indexing and metadata export. For ORCID, the choices were guided by the existing author/contact fields that record name, identifier type, and value. (Some of these fields include an "Affiliation" child field. For an initial implementation, it wasn't clear that trying to find an affiliation from ORCID made sense (since you may have several active affiliations)).
 
@@ -206,4 +227,4 @@ The intent with the implementation here is to provide a working mechanism that c
 
 However, working with external controlled vocabularies is complex and raises many questions. There are cases such as using vocabularies from multiple services on one metadata field that are potentially valuable but not yet implemented. Handling migration of existing entries (aside from just treating them as plain text), e.g. by matching text to URIs is not supported with the existing code. There are also broader issues regarding how Dataverse should handle change over time (if vocabularies change the meaning of terms over time), how much information about the terms should be added to metadata exports and made avaialable in search, etc. where there may be better options relative to what the code currently does. There are also questions about how long services may live, whether they will move, etc. that add complexity. Etc.
 
-The current design is thus intended to be a useful/usable starting point, and one that has reasonable backward compatibility/fall-back capabilities (I.e. if a service goes away or you decide to no longer use it, the termURI entries, or those in compound fields, remain valid as they were and you can go back to manually entering the same information as is done today.) It is also intended to be a design where innovation/R&D can be done incrementally - scipts can be updated without changing Dataverse internals, proxy services can be plugged in as a way to populate the internal term cache or replace it, additional metadata export formats can access the information being added to the json and OAI_ORE exports now, etc.
+The current design is thus intended to be a useful/usable starting point, and one that has reasonable backward compatibility/fall-back capabilities (I.e. if a service goes away or you decide to no longer use it, the termURI entries, or those in compound fields, remain valid as they were and you can go back to manually entering the same information as is done today.) It is also intended to be a design where innovation/R&D can be done incrementally - scripts can be updated without changing Dataverse internals, proxy services can be plugged in as a way to populate the internal term cache or replace it, additional metadata export formats can access the information being added to the json and OAI_ORE exports now, etc.
