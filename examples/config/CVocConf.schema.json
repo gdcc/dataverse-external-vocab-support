@@ -1,0 +1,597 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://github.io/gdcc/dataverse-external-vocab-support.cvocconf.schema.json",
+    "type": "array",
+    "title": "The schema for the :CVocConf setting in Dataverse",
+    "description": "The root schema comprises the entire JSON document.",
+    "default": 
+    [
+        
+    ],
+
+    "examples": 
+    [
+        [
+            {
+                "field-name": "cvocDemo",
+                "term-uri-field": "cvocDemoTermURI",
+                "cvoc-url": "https://skosmos.dev.finto.fi/",
+                "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
+                "protocol": "skosmos",
+                "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+                "term-parent-uri": "",
+                "allow-free-text": false,
+                "languages": "en, fr, es, ru",
+                "vocabs": 
+                {
+                    "unesco": 
+                    {
+                        "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+                        "uriSpace": "http://skos.um.es/unescothes/"
+                    }
+                },
+
+                "managed-fields": 
+                {
+                    "vocabularyName": "cvocDemoVocabulary",
+                    "termName": "cvocDemoTerm",
+                    "vocabularyUri": "cvocDemoVocabularyURI"
+                },
+
+                "retrieval-filtering": 
+                {
+                    "@context": 
+                    {
+                        "termName": "https://schema.org/name",
+                        "vocabularyName": "https://dataverse.org/schema/vocabularyName",
+                        "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
+                        "lang": "@language",
+                        "value": "@value"
+                    },
+
+                    "@id": 
+                    {
+                        "pattern": "{0}",
+                        "params": 
+                        [
+                            "@id"
+                        ]
+                    },
+
+                    "termName": 
+                    {
+                        "pattern": "{0}",
+                        "params": 
+                        [
+                            "/graph/uri=@id/prefLabel"
+                        ]
+                    },
+
+                    "vocabularyName": 
+                    {
+                        "pattern": "{0}",
+                        "params": 
+                        [
+                            "/graph/type=skos:ConceptScheme/prefLabel"
+                        ]
+                    },
+
+                    "vocabularyUri": 
+                    {
+                        "pattern": "{0}",
+                        "params": 
+                        [
+                            "/graph/type=skos:ConceptScheme/uri"
+                        ]
+                    }
+                }
+            },
+
+            {
+                "field-name": "creator",
+                "term-uri-field": "creator",
+                "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/people.js",
+                "protocol": "orcid",
+                "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
+                "allow-free-text": true,
+                "prefix": "https://orcid.org/",
+                "managed-fields": 
+                {
+                    
+                },
+
+                "languages": "",
+                "vocabs": 
+                {
+                    "orcid": 
+                    {
+                        "uriSpace": "https://orcid.org/"
+                    }
+                },
+
+                "retrieval-filtering": 
+                {
+                    "@context": 
+                    {
+                        "personName": "https://schema.org/name",
+                        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
+                    },
+
+                    "personName": 
+                    {
+                        "pattern": "{0}, {1}",
+                        "params": 
+                        [
+                            "/name/family-name/value",
+                            "/name/given-names/value"
+                        ]
+                    },
+
+                    "@id": 
+                    {
+                        "pattern": "{0}",
+                        "params": 
+                        [
+                            "@id"
+                        ]
+                    },
+
+                    "scheme": 
+                    {
+                        "pattern": "ORCID"
+                    },
+
+                    "@type": 
+                    {
+                        "pattern": "https://schema.org/Person"
+                    }
+                }
+            }
+        ]
+    ],
+
+    "additionalItems": false,
+    "items": 
+    {
+        "$id": "#/fieldconfig",
+        "type": "object",
+        "title": "Field to Service Mapping",
+        "description": "Defines the mapping of a given dataset field type, defined in a Dataverse metadatablock to a given remove vocabulary service",
+        "required": 
+        [
+            "field-name",
+            "term-uri-field",
+            "js-url",
+            "protocol",
+            "retrieval-uri",
+            "allow-free-text",
+            "languages",
+            "vocabs",
+            "managed-fields",
+            "retrieval-filtering"
+        ],
+
+        "properties": 
+        {
+            "field-name": 
+            {
+                "$id": "#/fieldconfig/properties/field-name",
+                "type": "string",
+                "title": "The field-name",
+                "description": "The name of the dataset field as defined in the Dataverse metadatablock. For a compound field, this should be the name for the parent field",
+                "examples": 
+                [
+                    "cvocDemo"
+                ]
+            },
+
+            "term-uri-field": 
+            {
+                "$id": "#/fieldconfig/properties/term-uri-field",
+                "type": "string",
+                "title": "The term-uri-field name",
+                "description": "FOr a primitive field, the same name as the field-name. For a compound field, this is the name of the child field where the term URI should be stored",
+                "examples": 
+                [
+                    "cvocDemoTermURI"
+                ]
+            },
+
+            "cvoc-url": 
+            {
+                "$id": "#/fieldconfig/properties/cvoc-url",
+                "type": "string",
+                "title": "The URL of the service",
+                "description": "For service protocols such as skosmos where there are multiple services available, this parameter specifies the URL of the specific service to connect to",
+                "examples": 
+                [
+                    "https://skosmos.dev.finto.fi/"
+                ]
+            },
+
+            "js-url": 
+            {
+                "$id": "#/fieldconfig/properties/js-url",
+                "type": "string",
+                "title": "The Script URL",
+                "description": "The URL for the JavaScript that should be included in the page to support the connection of this field to the specified service",
+                "examples": 
+                [
+                    "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js"
+                ]
+            },
+
+            "prefix": 
+            {
+                "$id": "#/fieldconfig/properties/prefix",
+                "type": "string",
+                "title": "The URL prefix",
+                "description": "For services that represent a term/controlled value differently for internal use and for web access, such as ORCID, this parameter defines the prefix that should be added to the internal representation from the service to create the external form of the term identifier/URI",
+                "default": "",
+                "examples": 
+                [
+                    "https://orcid.org/"
+                ]
+            },
+
+            "protocol": 
+            {
+                "$id": "#/fieldconfig/properties/protocol",
+                "type": "string",
+                "title": "The service protocol",
+                "description": "For a given protocol, the expectation is that one script (at the URL defined by the 'js-url' parameter) will handle input and display changes required for all fields assigned to the protocol.",
+                "default": "",
+                "examples": 
+                [
+                    "skosmos",
+                    "orcid"
+                ]
+            },
+
+            "retrieval-uri": 
+            {
+                "$id": "#/fieldconfig/properties/retrieval-uri",
+                "type": "string",
+                "title": "The retrieval-uri",
+                "description": "Dataverse will use the retrieveal-uri internally to retrieve and cached information about a specific term URI when it is first used. Dataverse will call the URL, substituting the term URI for parameter {0}. If there is no error, the response will be filterd according to the retrieval-filtering schema to populate an internal database table and to populate metadata export formats.",
+                "default": "",
+                "examples": 
+                [
+                    "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+                    "https://pub.orcid.org/v3.0/{0}/person"
+                ]
+            },
+
+            "term-parent-uri": 
+            {
+                "$id": "#/fieldconfig/properties/term-parent-uri",
+                "type": "string",
+                "title": "The term-parent-uri",
+                "description": "For hierarchical vocabularies, the term parent-uri parameter can be used to constrain vocabulary selections to a subset within the vocabulary. the skosmos script is currently the only one supporting this parameter. It is appended to the main vocabulary query to limit choices that are returned as autocomplete responses.",
+                "default": "",
+                "examples": 
+                [
+                    ""
+                ]
+            },
+
+            "allow-free-text": 
+            {
+                "$id": "#/fieldconfig/properties/allow-free-text",
+                "type": "boolean",
+                "title": "Allow Free Text",
+                "description": "If true, scripts should allow free/plain text entries as well as selections from thje vocabulary(ies) specified. This would allow, for example, user-defined plain text keywords to be used in addition to allowing selection from the specified vocabulary(ies)",
+                "default": false
+            },
+
+            "languages": 
+            {
+                "$id": "#/fieldconfig/properties/languages",
+                "type": "string",
+                "title": "Allowed languages",
+                "description": "The list of languages supported by the vocabulary service. If the Dataverse UI is configured to use one of the lanugages in the list, that language will be shown in the display. If not, the first entry will be what is used.",
+                "default": "",
+                "examples": 
+                [
+                    "en, fr, es, ru"
+                ]
+            },
+
+            "vocabs": 
+            {
+                "$id": "#/fieldconfig/properties/vocabs",
+                "type": "object",
+                "title": "List of allowed vocabularies",
+                "description": "Some services provide information about terms in multiple vocabularies. This parameter lists the vocabularies allowed for the selected field.",
+                "default": 
+                {
+                    
+                },
+
+                "examples": 
+                [
+                    {
+                        "unesco": 
+                        {
+                            "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+                            "uriSpace": "http://skos.um.es/unescothes/"
+                        }
+                    }
+                ],
+
+                "patternProperties": 
+                {
+                    ".*": 
+                    {
+                        "$id": "#/fieldconfig/properties/vocabs/vocabulary",
+                        "type": "object",
+                        "title": "The vocabulary definition",
+                        "description": "Vocabularies are defined by two properties.",
+                        "default": 
+                        {
+                            
+                        },
+
+                        "examples": 
+                        [
+                            {
+                                "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+                                "uriSpace": "http://skos.um.es/unescothes/"
+                            }
+                        ],
+
+                        "required": 
+                        [
+                            "uriSpace"
+                        ],
+
+                        "properties": 
+                        {
+                            "vocabularyUri": 
+                            {
+                                "$id": "#/fieldconfig/properties/vocabs/vocabulary/vocabularyUri",
+                                "type": "string",
+                                "title": "The vocabularyUri",
+                                "description": "The URI defined to represent the vocabulary itself. Some vocabulary services don't provide an easy way to determine this value and Dataverse may need it to fill in a vocabularyURI managed field.",
+                                "default": "",
+                                "examples": 
+                                [
+                                    "http://skos.um.es/unescothes/CS000"
+                                ]
+                            },
+
+                            "uriSpace": 
+                            {
+                                "$id": "#/fieldconfig/properties/vocabs/properties/unesco/properties/uriSpace",
+                                "type": "string",
+                                "title": "The base uriSpace for a vocabulary",
+                                "description": "Dataverse will validate that all term URIs for the vocabulary start with this base URI.",
+                                "default": "",
+                                "examples": 
+                                [
+                                    "http://skos.um.es/unescothes/"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+
+            "managed-fields": 
+            {
+                "$id": "#/fieldconfig/properties/managed-fields",
+                "type": "object",
+                "title": "List of managed-fields",
+                "description": "An explanation about the purpose of this instance.",
+                "default": 
+                {
+                    
+                },
+
+                "examples": 
+                [
+                    {
+                        "vocabularyName": "cvocDemoVocabulary",
+                        "termName": "cvocDemoTerm",
+                        "vocabularyUri": "cvocDemoVocabularyURI"
+                    }
+                ],
+
+                "patternProperties": 
+                {
+                    ".*": 
+                    {
+                        "$id": "#/fieldconfig/properties/managed-fields/fieldname",
+                        "type": "string",
+                        "title": "The managed field name",
+                        "description": "Each entry in managed-fields maps a value understood by the specific service/script to a child field within the parent field names by the field-name parameter. The service/script will provide a value for this field when a term is selected. Common values include a person's name (e.g. for ORCID identifiers) and the term name and vocabulary URI/name (for skosmos)",
+                        "default": "",
+                        "examples": 
+                        [
+                            "cvocDemoVocabulary"
+                        ]
+                    }
+                }
+            },
+
+            "retrieval-filtering": 
+            {
+                "$id": "#/fieldconfig/properties/retrieval-filtering",
+                "type": "object",
+                "title": "Internal Retrieval Filtering Configuration",
+                "description": "Dataverse caches information retrieved from a server (defined by the retrieval-url parameter) to store information about a term uri. The configuration information defined here is used to filter the raw server response to store only relevant information in a well-defined format. If filtering fails, Dataverse will not sore information about the given term uri.",
+                "default": 
+                {
+                    
+                },
+
+                "examples": 
+                [
+                    {
+                        "@context": 
+                        {
+                            "termName": "https://schema.org/name",
+                            "vocabularyName": "https://dataverse.org/schema/vocabularyName",
+                            "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
+                            "lang": "@language",
+                            "value": "@value"
+                        },
+
+                        "@id": 
+                        {
+                            "pattern": "{0}",
+                            "params": 
+                            [
+                                "@id"
+                            ]
+                        },
+
+                        "termName": 
+                        {
+                            "pattern": "{0}",
+                            "params": 
+                            [
+                                "/graph/uri=@id/prefLabel"
+                            ]
+                        },
+
+                        "vocabularyName": 
+                        {
+                            "pattern": "{0}",
+                            "params": 
+                            [
+                                "/graph/type=skos:ConceptScheme/prefLabel"
+                            ]
+                        },
+
+                        "vocabularyUri": 
+                        {
+                            "pattern": "{0}",
+                            "params": 
+                            [
+                                "/graph/type=skos:ConceptScheme/uri"
+                            ]
+                        }
+                    }
+                ],
+
+                "required": 
+                [
+                    "@context",
+                    "@id"
+                ],
+
+                "properties": 
+                {
+                    "@context": 
+                    {
+                        "$id": "#/fieldconfig/properties/retrieval-filtering/context",
+                        "type": "object",
+                        "title": "@context",
+                        "description": "A json-ld context element that will be added to the filtered response. Dataverse expects to be able to interpret the filtered value as json-ld (e.g. to include in the OAI-ORE metadata export). Adding an @context can simplify filtering but is not required if the filtered response is already json-ld.",
+                        "default": 
+                        {
+                            
+                        },
+
+                        "examples": 
+                        [
+                            {
+                                "termName": "https://schema.org/name",
+                                "vocabularyName": "https://dataverse.org/schema/vocabularyName",
+                                "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
+                                "lang": "@language",
+                                "value": "@value"
+                            }
+                        ],
+
+                        "patternProperties": 
+                        {
+                            ".*": 
+                            {
+                                "$id": "#/fieldconfig/properties/retrieval-filtering/context/entry",
+                                "type": "string",
+                                "title": "A context entry",
+                                "description": "Context entries should conform to the json-ld specification. They map a given string label (the property name)to a formal URI or json-ld keyword value. Example property names include termName, vocabularyName, vocabularyUri",
+                                "default": "",
+                                "examples": 
+                                [
+                                    "https://schema.org/name"
+                                ]
+                            }
+                        }
+                    },
+
+                    "patternProperties": 
+                    {
+                        ".*": 
+                        {
+                            "$id": "#/fieldconfig/properties/retrieval-filtering/element",
+                            "type": "object",
+                            "title": "Element definition",
+                            "description": "Elements in the filtered response are defined in terms of a pattern and parameters that are substituted into the pattern (see examples). One of the elements of the filtered response must be an @id whose value is the term URI itself.",
+                            "default": 
+                            {
+                                "pattern": "{0}",
+                                "params": 
+                                [
+                                    "@id"
+                                ]
+                            },
+
+                            "required": 
+                            [
+                                "pattern"
+                            ],
+
+                            "properties": 
+                            {
+                                "pattern": 
+                                {
+                                    "$id": "#/fieldconfig/properties/retrieval-filtering/element/pattern",
+                                    "type": "string",
+                                    "title": "Element Pattern",
+                                    "description": "A combination of text and numbered substitution fragments denoted by {} that are used to generate the element value.",
+                                    "default": "",
+                                    "examples": 
+                                    [
+                                        "{0}"
+                                    ]
+                                },
+
+                                "params": 
+                                {
+                                    "$id": "#/fieldconfig/properties/retrieval-filtering/properties/%40id/properties/params",
+                                    "type": "array",
+                                    "title": "Element parameters",
+                                    "description": "Parameters can be keywords such as @id for the term uri or path indicators. Path indicators are used to find elements within the raw reponse that should be copied into the filtered response for this element. Path indicators may include an '=<value>' for any path segment that is used to find a specific element within an array.  ",
+                                    "default": 
+                                    [
+                                        
+                                    ],
+
+                                    "examples": 
+                                    [
+                                        [
+                                            "@id"
+                                        ],
+
+                                        [
+                                            "/graph/type=skos:ConceptScheme/prefLabel"
+                                        ],
+
+                                        [
+                                            "/graph/uri=@id/prefLabel"
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        "additionalProperties": false
+    }
+}
