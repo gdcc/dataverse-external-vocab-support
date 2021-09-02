@@ -12,7 +12,7 @@ A fairly basic example:
     {
       "field-name": "creator",
       "term-uri-field": "creator",
-      "js-url": "/resources/js/people.js",
+      "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/people.js",
       "protocol": "orcid",
       "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
       "prefix": "https://orcid.org/",
@@ -23,7 +23,7 @@ A fairly basic example:
           "uriSpace": "https://orcid.org/"
         }
       },
-      "allow-free-text": "true",
+      "allow-free-text": true,
       "retrieval-filtering": {
         "@context": {
           "personName": "https://schema.org/name",
@@ -83,10 +83,10 @@ Here's the equivalent configuration for a skosmos service where the field has be
       "field-name": "skosterm",
       "term-uri-field": "skosterm",
       "cvoc-url": "https://skosmos.dev.finto.fi/",
-      "js-url": "/resources/js/skosmos.js",
+      "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
       "protocol": "skosmos",
       "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
-      "allow-free-text": "false",
+      "allow-free-text": false,
       "languages": "en, uk, es, zh, ar, tr, lo, sk, th, pt, hu, pl, de, cs, it, fr, hi, ja, ro, fa",
       "vocabs": {
         "unesco": {
@@ -152,11 +152,11 @@ The final example, below, shows a skosmos service being associated with a compou
       "field-name": "cvocDemo",
       "term-uri-field": "cvocDemoTermURI",
       "cvoc-url": "https://skosmos.dev.finto.fi/",
-      "js-url": "/resources/js/skosmos.js",
+      "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
       "protocol": "skosmos",
       "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
       "term-parent-uri": "",
-      "allow-free-text": "false",
+      "allow-free-text": false,
       "vocabs": {
         "unesco": {
           "vocabularyUri": "http://skos.um.es/unescothes/CS000",
