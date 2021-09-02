@@ -529,7 +529,7 @@
                             "$id": "#/fieldconfig/properties/retrieval-filtering/element",
                             "type": "object",
                             "title": "Element definition",
-                            "description": "Elements in the filtered response are defined in terms of a pattern and parameters that are substituted into the pattern (see examples). One of the elements of the filtered response must be an @id whose value is the term URI itself.",
+                            "description": "Elements in the filtered response are defined in terms of a pattern and parameters that are substituted into the pattern (see examples). One of the elements of the filtered response must be an @id whose value is the term URI itself. Element values are assumed to be primitive values (e.g. for a term or vocab uri) or an array of objects containing @lang, @value elements representing the value in multiple languages (.e.g. for a term name).",
                             "default": 
                             {
                                 "pattern": "{0}",
