@@ -113,6 +113,7 @@ function updateSkosmosInputs() {
             let parentField = $(skosmosInput).attr('data-cvoc-parent');
             let termParentUri = $(skosmosInput).attr('data-cvoc-filter');
             let allowFreeText = $(skosmosInput).attr('data-cvoc-allowfreetext');
+            let placeholder = skosmosInput.hasAttribute("data-cvoc-placeholder") ? $(skosmosInput).attr('data-cvoc-placeholder') : "Select a term";
             let selectId = "skosmosAddSelect_" + num;
             //Pick the first entry as the default to start with when there is more than one vocab
             let vocab = Object.keys(vocabs)[0];
@@ -237,7 +238,7 @@ function updateSkosmosInputs() {
                         return 'Search by preferred or alternate label…';
                     }
                 },
-                placeholder: "Add a Term",
+                placeholder: placeholder,
                 //Some vocabs are very slow and/or fail with a 500 error when searching for only 2 letters
                 minimumInputLength: 3,
                 allowClear: true,

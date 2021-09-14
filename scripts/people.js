@@ -108,7 +108,7 @@ function updatePeopleInputs() {
                         return 'Search by name, email, or ORCID…';
                     }
                 },
-                placeholder: "Add a Person",
+                placeholder: personInput.hasAttribute("data-cvoc-placeholder") ? $(personInput).attr('data-cvoc-placeholder') : "Select a Person",
                 minimumInputLength: 3,
                 allowClear: true,
                 ajax: {
