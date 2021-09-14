@@ -80,7 +80,7 @@ function updatePeopleInputs() {
             $(personInput).after(
                 '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
             $("#" + selectId).select2({
-                theme: "bootstrap",
+                theme: "classic",
                 tags: $(personInput).attr('data-cvoc-allowfreetext'),
                 delay: 500,
                 templateResult: function(item) {

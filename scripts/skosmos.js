@@ -148,7 +148,7 @@ function updateSkosmosInputs() {
             }
             //Setup select2 - this allows users to find a vocab by typing a few letters in it to filter the list
             $("#" + vocabId).select2({
-                theme: "bootstrap",
+                theme: "classic",
                 tags: false,
                 delay: 500,
                 templateResult: function(item) {
@@ -202,7 +202,7 @@ function updateSkosmosInputs() {
             }
             //St up this select2
             $("#" + selectId).select2({
-                theme: "bootstrap",
+                theme: "classic",
                 //tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
                 tags: allowFreeText,
                 delay: 500,

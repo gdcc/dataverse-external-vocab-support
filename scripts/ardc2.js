@@ -84,7 +84,7 @@ function updateARDCInputs(data) {
                 $("#" + vocabId).append($('<option>').attr('value', key).html($('<a>').attr('href', vocabs[key]).attr('target', '_blank').attr('rel', 'noopener').text(key)));
             }
             $("#" + vocabId).select2({
-                theme: "bootstrap",
+                theme: "classic",
                 tags: false,
                 delay: 500,
                 templateResult: function(item) {
@@ -134,7 +134,7 @@ function updateARDCInputs(data) {
                     '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
             }
             $("#" + selectId).select2({
-                theme: "bootstrap",
+                theme: "classic",
                 tags: false,
                 delay: 200,
                 templateResult: function(item) {
