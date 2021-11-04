@@ -1,19 +1,22 @@
 [{
-        "field-name": "cvocDemo",
-        "term-uri-field": "cvocDemoTermURI",
+        "field-name": "compoundDemo",
+        "term-uri-field": "compoundDemoTermURI",
         "cvoc-url": "https://skosmos.dev.finto.fi/",
-        "js-url": "/resources/js/skosmos.js",
+        "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
         "protocol": "skosmos",
         "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
         "term-parent-uri": "",
         "languages":"en, fr, es, ru",
         "vocabs": {
-            "unesco": "http://skos.um.es/unescothes/CS000"
+            "unesco": {
+                "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+                "uriSpace": "http://skos.um.es/unescothes/"
+            }
         },
         "managed-fields": {
-            "vocabularyName": "cvocDemoVocabulary",
-            "termName": "cvocDemoTerm",
-            "vocabularyUri": "cvocDemoVocabularyURI"
+            "vocabularyName": "compoundDemoVocabulary",
+            "termName": "compoundDemoTerm",
+            "vocabularyUri": "compoundDemoVocabularyURI"
         },
         "retrieval-filtering": {
             "@context": {
@@ -44,16 +47,22 @@
     {
         "field-name": "creator",
         "term-uri-field": "creator",
-        "js-url": "/resources/js/people.js",
+        "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/people.js",
         "protocol": "orcid",
         "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
+        "allow-free-text": true,
         "prefix": "https://orcid.org/",
         "managed-fields": {},
         "languages":"",
+        "vocabs": {
+            "orcid": {
+                "uriSpace": "https://orcid.org/"
+            }
+        },
         "retrieval-filtering": {
             "@context": {
                 "personName": "https://schema.org/name",
-                "scheme": "https://schema.org/identifier"
+                "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
             },
             "personName": {
                 "pattern": "{0}, {1}",
@@ -66,18 +75,25 @@
             "scheme": {
                 "pattern": "ORCID"
             },
-            "@type": "https://schema.org/Person"
+            "@type": {
+                "pattern": "https://schema.org/Person"
+            }
         }
     },
     {
         "field-name": "skosterm",
         "term-uri-field": "skosterm",
         "cvoc-url": "https://skosmos.dev.finto.fi/",
-        "js-url": "/resources/js/skosmos.js",
+        "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
         "protocol": "skosmos",
         "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
-        "vocabs":{"unesco": "http://skos.um.es/unescothes/CS000"},
-        "languages":"en, fr, es, ru",
+        "languages":"en, uk, fr, ru",
+        "vocabs":{
+            "unesco": {
+                "vocabularyUri": "http://skos.um.es/unescothes/CS000",
+                "uriSpace": "http://skos.um.es/unescothes/"
+            }
+        },
         "managed-fields": {},
         "retrieval-filtering": {
             "@context": {

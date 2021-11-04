@@ -1,6 +1,6 @@
 [{
-        "field-name": "cvocDemo",
-        "term-uri-field": "cvocDemoTermURI",
+        "field-name": "compoundDemo",
+        "term-uri-field": "compoundDemoTermURI",
         "cvoc-url": "https://skosmos.dev.finto.fi/",
         "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
         "protocol": "skosmos",
@@ -15,9 +15,9 @@
             }
         },
         "managed-fields": {
-            "vocabularyName": "cvocDemoVocabulary",
-            "termName": "cvocDemoTerm",
-            "vocabularyUri": "cvocDemoVocabularyURI"
+            "vocabularyName": "compoundDemoVocabulary",
+            "termName": "compoundDemoTerm",
+            "vocabularyUri": "compoundDemoVocabularyURI"
         },
         "retrieval-filtering": {
             "@context": {
