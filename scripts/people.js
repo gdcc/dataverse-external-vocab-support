@@ -141,7 +141,7 @@ function updatePeopleInputs() {
                         return {
                             results: data['expanded-result']
                                 //Sort to bring recently used ORCIDS to the top of the list
-                                .sort((a, b) => (localStorage.getItem(b['orcid-id'])) ? 1 : -1)
+                                .sort((a, b) => (localStorage.getItem(b['orcid-id'])) ? 1 : 0)
                                 .map(
                                     function(x) {
                                         return {
