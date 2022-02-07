@@ -1,0 +1,14 @@
+[
+  {
+    "field-name": "authorName",
+    "term-uri-field": "authorName",
+    "js-url": "/covoc/js/covoc.js",
+    "protocol": "covoc-author",
+    "retrieval-uri": "",
+    "allow-free-text": true,
+    "languages": "",
+    "vocabs": "",
+    "managed-fields": {},
+    "retrieval-filtering": {}
+  }
+]
