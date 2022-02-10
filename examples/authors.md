@@ -22,7 +22,7 @@ The JSON configuration file has most fields empty, but as they are all required,
 
 The `js-url` field in the configuration file points to the location where the JavaScript file is located. Since we already use an Apache frontend server to enable the Shibboleth logins, we decided to reverse-proxy the JavaScript file there as well. The other fields are emtpy and have no influence on our code.
 
-The JavaScrip file contains three parts:
+The JavaScript file contains three parts:
 
 - first of all code that is triggered each time the page is loaded and each time an author compound field set is added or deleted. That piece of code is responsible for creating the HTML code for a modal dialog box with search box and table with results. It also puts a search button next to each authorName input field that will display the dialog box.
 
