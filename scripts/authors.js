@@ -18,13 +18,13 @@
  */
 
 // Selector for all the author compound fields
-var authorSelector = "div[role='group'][aria-labelledby='metadata_author'] div.edit-compound-field";
+var authorSelector = "div#metadata_author ~ div.dataset-field-values div.edit-compound-field";
 
 /* The browser will run this code the first time the editor is opened and each time a multiple field instance is 
  * added or removed. This code is reposible for creating the HTML for the dialog box, adding a search button to 
  * the author name fields and creating the triggers for initializing the dialog box and the search action itself.
  */
-$(document).ready(function() {
+(function() {
   let authorModal = document.getElementById('author-modal');
   if (!authorModal) {
     // Create modal dialog
@@ -93,7 +93,7 @@ $(document).ready(function() {
       authorNameField.appendChild(wrapper);
     }
   })
-});
+})();
 
 var page_size = 10; // Number of results that will be displayed on a single page
 

@@ -133,7 +133,7 @@ function affiliationsQuery(str) {
 }
 
 // Selector for all the author compound fields
-var authorSelector = "div[role='group'][aria-labelledby='metadata_author'] div.edit-compound-field";
+var authorSelector = "div#metadata_author ~ div.dataset-field-values div.edit-compound-field";
 
 // Adds a search button to all the affiliation input fields
 function putAffiliationSearchIcon() {
