@@ -1,0 +1,14 @@
+[
+  {
+    "field-name": "authorAffiliation",
+    "term-uri-field": "authorAffiliation",
+    "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/affiliation.js",
+    "protocol": "covoc-author",
+    "retrieval-uri": "",
+    "allow-free-text": true,
+    "languages": "",
+    "vocabs": "",
+    "managed-fields": {},
+    "retrieval-filtering": {}
+  }
+]
