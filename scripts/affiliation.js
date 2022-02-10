@@ -26,13 +26,13 @@ var elementIdAttribute = 'data-affiliation-element-id';
  * added or removed. This code is reposible for creating the HTML for the dialog box, adding a search button to 
  * the affiliation name fields and creating the triggers for initializing the dialog box and the search action itself.
  */
-(function() {
+$(document).ready(function() {
   // Create Dialog box, if necessary
   createAffiliationModal();
 
   // Put a search button after each affiliation name field
   putAffiliationSearchIcon();
-})();
+});
 
 function createAffiliationModal() {
   let affiliationModal = document.getElementById(affiliationModalId);
