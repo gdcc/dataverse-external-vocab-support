@@ -29,7 +29,7 @@ $(document).ready(function() {
   if (!authorModal) {
     // Create modal dialog
     document.body.innerHTML +=
-      '<div id="author-modal" class="modal fade in" tabindex="-1" aria-labelledby="author-modal-title" role="dialog">' + 
+      '<div id="author-modal" class="modal fade in" tabindex="-1" aria-labelledby="author-modal-title" role="dialog" style="margin-top: 5rem;">' + 
         '<div class="modal-dialog" role="document">' + 
           '<div class="modal-content">' + 
             '<div class="modal-header">' + 
@@ -80,6 +80,7 @@ $(document).ready(function() {
       // We create a bootstrap input group ...
       let wrapper = document.createElement('div');
       wrapper.className = 'input-group';
+      wrapper.style.display = 'flex';
       // ... with search button ...
       wrapper.innerHTML = 
         '<button class="btn btn-default btn-sm bootstrap-button-tooltip compound-field-btn" type="button" title="Search for author" ' +
