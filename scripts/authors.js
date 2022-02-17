@@ -28,7 +28,9 @@ $(document).ready(function() {
   let authorModal = document.getElementById('author-modal');
   if (!authorModal) {
     // Create modal dialog
-    document.body.innerHTML +=
+    let dialog = document.createElement('div');
+    document.body.appendChild(dialog);
+    dialog.outerHTML =
       '<div id="author-modal" class="modal fade in" tabindex="-1" aria-labelledby="author-modal-title" role="dialog" style="margin-top: 5rem;">' + 
         '<div class="modal-dialog" role="document">' + 
           '<div class="modal-content">' + 

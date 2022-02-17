@@ -38,7 +38,9 @@ function createAffiliationModal() {
   let affiliationModal = document.getElementById(affiliationModalId);
   if (!affiliationModal) {
     // Create modal dialog
-    document.body.innerHTML +=
+    let dialog = document.createElement('div');
+    document.body.appendChild(dialog);
+    dialog.outerHTML =
       '<div id="' + affiliationModalId + '" class="modal fade in" tabindex="-1" aria-labelledby="' + affiliationModalId + '-title" role="dialog" style="margin-top: 5rem">' + 
         '<div class="modal-dialog" role="document">' + 
           '<div class="modal-content">' + 
