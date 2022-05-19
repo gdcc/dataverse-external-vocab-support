@@ -7,7 +7,7 @@
     "retrieval-uri": "",
     "allow-free-text": true,
     "languages": "",
-    "vocabs": "",
+    "vocabs": {},
     "managed-fields": {},
     "retrieval-filtering": {}
   }
