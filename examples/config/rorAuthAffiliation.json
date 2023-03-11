@@ -1,0 +1,36 @@
+[
+    {
+        "field-name": "authorAffiliation",
+        "term-uri-field": "authorAffiliation",
+        "js-url": "/cvoc/js/ror.js",
+        "protocol": "ror",
+        "retrieval-uri": "https://api.ror.org/organizations/{0}",
+        "allow-free-text": true,
+        "prefix": "https://ror.org/",
+        "managed-fields": {},
+        "languages":"",
+        "vocabs": {
+            "funders": {
+                "uriSpace": "https://ror.org/"
+            }
+        },
+        "retrieval-filtering": {
+            "@context": {
+                "termName": "https://schema.org/name",
+                "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+                "lang": "@language",
+                "content": "@value"
+            },
+            "scheme": {
+                "pattern": "http://www.grid.ac/ontology/"
+            },
+            "termName": {
+                "pattern": "{0}",
+                "params": ["/name"]
+            },
+            "@type": {
+                "pattern": "https://schema.org/Organization"
+            }
+        }
+    }
+]

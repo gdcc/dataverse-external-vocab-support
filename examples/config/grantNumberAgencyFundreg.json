@@ -3,7 +3,7 @@
         "field-name": "grantNumberAgency",
         "term-uri-field": "grantNumberAgency",
         "js-url": "/cvoc/js/funders.js",
-        "protocol": "orcid2",
+        "protocol": "fundreg",
         "retrieval-uri": "https://data.crossref.org/fundingdata/funder/{0}",
         "allow-free-text": true,
         "prefix": "http://dx.doi.org/10.13039/",
