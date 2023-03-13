@@ -4,13 +4,14 @@ var fundregInputSelector = "input[data-cvoc-protocol='fundreg']";
 var fundregRetrievalUrl = "https://api.crossref.org/funders";
 var fundregPrefix = "fundreg";
 //Max chars that displays well for a child field
-var fundregMaxLength = 26;
+var fundregMaxLength = 31;
 
 $(document).ready(function() {
     var head = document.getElementsByTagName('head')[0];
     var js = document.createElement("script");
     js.type = "text/javascript";
-    js.src = "./cvocutils.js";
+    js.src = "/cvoc/js/cvocutils.js";
+    js.async=false;
     head.appendChild(js);
     js.addEventListener('load', () => {
         expandFunders();
@@ -29,16 +30,15 @@ function expandFunders() {
             $(funderElement).addClass('expanded');
             var id = funderElement.textContent;
             if (!id.startsWith("http://dx.doi.org/10.13039/")) {
-                 $(funderElement).html(getFunderDisplayHtml(id, ['No Crossref Entry']));
+                $(funderElement).html(getFunderDisplayHtml(id, ['No Crossref Entry'], false));
             } else {
                 //Remove the URL prefix - "http://dx.doi.org/10.13039/".length = 27
                 id = id.substring(27);
                 //Check for cached entry
                 let value = getValue(fundregPrefix, id);
                 if(value.name !=null) {
-                    $(funderElement).html(getFunderDisplayHtml(value.name, value.altNames));
+                    $(funderElement).html(getFunderDisplayHtml(value.name, value.altNames, false));
                 } else {
-                
 
                     // Try it as an CrossRef Funders entry (could validate that it has the right form or can just let the GET fail)
                     $.ajax({
@@ -56,8 +56,8 @@ function expandFunders() {
                             // If found, construct the HTML for display
                             var name = funder.message.name;
                             var altNames= funder.message['alt-names'];
-    
-                            funderElement.innerHTML = getFunderDisplayHtml(name, altNames);
+
+                            $(funderElement).html(getFunderDisplayHtml(name, altNames, false));
                             //Store values in localStorage to avoid repeating calls to CrossRef
                             storeValue(fundregPrefix, id, name + "#" + altNames);
                         },
@@ -75,13 +75,12 @@ function expandFunders() {
     });
 }
 
-function getFunderDisplayHtml(name, altNames) {
-    if(typeof(altNames) == 'undefined') {
-        altNames=[];
+function getFunderDisplayHtml(name, altNames, truncate=true) {
+    if (typeof(altNames) == 'undefined') {
+        altNames = [];
     }
-    if (name.length >= fundregMaxLength) {
+    if (truncate && (name.length >= fundregMaxLength)) {
         // show the first characters of a long name
-        // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
         name=name.substring(0,fundregMaxLength) + "…";
     }

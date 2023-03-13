@@ -5,13 +5,14 @@ var rorRetrievalUrl = "https://api.ror.org/organizations";
 var rorIdStem = "https://ror.org/";
 var rorPrefix = "ror";
 //Max chars that displays well for a child field
-var rorMaxLength = 26;
+var rorMaxLength = 31;
 
 $(document).ready(function() {
     var head = document.getElementsByTagName('head')[0];
     var js = document.createElement("script");
     js.type = "text/javascript";
-    js.src = "./cvocutils.js";
+    js.src = "/cvoc/js/cvocutils.js";
+    js.async = false;
     head.appendChild(js);
     js.addEventListener('load', () => {
         expandRors();
@@ -30,14 +31,14 @@ function expandRors() {
             $(rorElement).addClass('expanded');
             var id = rorElement.textContent;
             if (!id.startsWith(rorIdStem)) {
-                getRorDisplayHtml(name, ['No ROR Entry']);
+                $(rorElement).html(getRorDisplayHtml(name, ['No ROR Entry'], false, true));
             } else {
                 //Remove the URL prefix - "https://ror.org/".length = 16
                 id = id.substring(rorIdStem.length);
                 //Check for cached entry
                 let value = getValue(rorPrefix, id);
                 if(value.name !=null) {
-                    rorElement.innerHTML = getRorDisplayHtml(value.name, value.altNames);
+                    $(rorElement).html(getRorDisplayHtml(value.name, value.altNames, false, true));
                 } else {
                     // Try it as an ROR entry (could validate that it has the right form or can just let the GET fail)
                     $.ajax({
@@ -52,8 +53,8 @@ function expandRors() {
                             // If found, construct the HTML for display
                             var name = ror.name;
                             var altNames= ror.acronyms;
-    
-                            rorElement.innerHTML = getRorDisplayHtml(name, altNames);
+
+                            $(rorElement).html(getRorDisplayHtml(name, altNames, false, true));
                             //Store values in localStorage to avoid repeating calls to CrossRef
                             storeValue(rorPrefix, id, name + "#" + altNames);
                         },
@@ -71,15 +72,18 @@ function expandRors() {
     });
 }
 
-function getRorDisplayHtml(name, altNames) {
+function getRorDisplayHtml(name, altNames, truncate=true, addParens=false) {
     if(typeof(altNames) == 'undefined') {
         altNames=[];
     }
-    if (name.length >= rorMaxLength) {
+    if (truncate && (name.length >= rorMaxLength)) {
         // show the first characters of a long name
         // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
         name=name.substring(0,rorMaxLength) + "…";
+    }
+    if(addParens) {
+        name = " (" + name +")";
     }
     return $('<span></span>').append(name).attr("title", altNames);
 }
@@ -119,11 +123,17 @@ function updateRorInputs() {
                 templateSelection: function(item) {
                     // For a selection, format as in display mode
                     //Find/remove the id number
-                    var name=item.text;
-                    var pos = item.text.search(/, \d{9}/);
+                    var name = item.text;
+                    var pos = item.text.search(/, [a-z0-9]{9}/);
                     if (pos >= 0) {
                         name = name.substr(0, pos);
                         var idnum = item.text.substr(pos+2);
+                        var altNames=[];
+                        pos=idnum.indexOf(', ');
+                        if(pos>0) {
+                            altNames = idnum.substr(pos+2).split(',');
+                            idnum=idnum.substr(0,pos);
+                        }
                         return getRorDisplayHtml(name, altNames);
                     }
                     return getRorDisplayHtml(name, ['No ROR Entry']);
@@ -171,10 +181,8 @@ function updateRorInputs() {
                                 .map(
                                     function(x) {
                                         return {
-                                            text: x.name +", " + x.id,
-                                            id: x.id,
-                                            altNames: x.acronyms,
-                                            urls: x.links
+                                            text: x.name +", " + x.id.replace(rorIdStem,'') + ', ' + x.acronyms,
+                                            id: x.id
                                         }
                                     })
                         };
@@ -196,9 +204,8 @@ function updateRorInputs() {
                     success: function(ror, status) {
                         var name = ror.name;
                         //Display the name and id number in the selection menu
-                        var text = name + ", " + ror.id;
+                        var text = name + ", " + ror.id.replace(rorIdStem,'') +', ' + ror.acronyms;
                         var newOption = new Option(text, id, true, true);
-                        newOption.altNames = ror.acronyms;
                         $('#' + selectId).append(newOption).trigger('change');
                     },
                     failure: function(jqXHR, textStatus, errorThrown) {
