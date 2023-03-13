@@ -35,7 +35,7 @@ function storeValue(prefix, id, value) {
             if (localStorage.length > 1000) {
                 localStorage.removeItem(localStorage.key(0));
             }
-            localStorage.setItem(prefix + id, name + "#" + funder.message['alt-names']);
+            localStorage.setItem(prefix + id, value);
         }
     } catch (e) {
         console.log("Problem using localStorage: " + e);
@@ -47,10 +47,9 @@ function getValue(prefix, id) {
         let altNames='';
         let name = localStorage.getItem(prefix + id);
         if(name !== null) {
-            name=name.substring(prefix.length);
             let pos = name.indexOf('#');
             if(pos > 0) {
-                altNames=name.substring(pos+1);
+                altNames=name.substring(pos+1).split(',');
                 name=name.substring(0, pos);
             }
         }

@@ -1,11 +1,11 @@
 console.log("ror.js..");
-const rorSelector = "span[data-cvoc-protocol='ror']";
-const rorInputSelector = "input[data-cvoc-protocol='ror']";
-const rorRetrievalUrl = "https://api.ror.org/organizations";
-const rorIdStem = "https://ror.org/";
-const rorPrefix = "ror";
+var rorSelector = "span[data-cvoc-protocol='ror']";
+var rorInputSelector = "input[data-cvoc-protocol='ror']";
+var rorRetrievalUrl = "https://api.ror.org/organizations";
+var rorIdStem = "https://ror.org/";
+var rorPrefix = "ror";
 //Max chars that displays well for a child field
-const rorMaxLength = 26;
+var rorMaxLength = 26;
 
 $(document).ready(function() {
     var head = document.getElementsByTagName('head')[0];
@@ -13,9 +13,10 @@ $(document).ready(function() {
     js.type = "text/javascript";
     js.src = "./cvocutils.js";
     head.appendChild(js);
-    
-    expandRors();
-    updateRorInputs();
+    js.addEventListener('load', () => {
+        expandRors();
+        updateRorInputs();
+    })
 });
 
 function expandRors() {
@@ -41,7 +42,7 @@ function expandRors() {
                     // Try it as an ROR entry (could validate that it has the right form or can just let the GET fail)
                     $.ajax({
                         type: "GET",
-                        url: retrievalUrl + "/" + id,
+                        url: rorRetrievalUrl + "/" + id,
                         dataType: 'json',
                         headers: {
                             'Accept': 'application/json',
@@ -54,7 +55,7 @@ function expandRors() {
     
                             rorElement.innerHTML = getRorDisplayHtml(name, altNames);
                             //Store values in localStorage to avoid repeating calls to CrossRef
-                            setValue(rorPrefix, id, name + "#" + altNames);
+                            storeValue(rorPrefix, id, name + "#" + altNames);
                         },
                         failure: function(jqXHR, textStatus, errorThrown) {
                             // Generic logging - don't need to do anything if 404 (leave
@@ -71,13 +72,16 @@ function expandRors() {
 }
 
 function getRorDisplayHtml(name, altNames) {
-    if (name.length >= fundregMaxLength) {
+    if(typeof(altNames) == 'undefined') {
+        altNames=[];
+    }
+    if (name.length >= rorMaxLength) {
         // show the first characters of a long name
         // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
-        name=name.substring(0,fundregMaxLength) + "…";
+        name=name.substring(0,rorMaxLength) + "…";
     }
-    return "<span title='" + altNames + "'>" + name + "</span>";
+    return $('<span></span>').append(name).attr("title", altNames);
 }
 
 function updateRorInputs() {
@@ -115,11 +119,10 @@ function updateRorInputs() {
                 templateSelection: function(item) {
                     // For a selection, format as in display mode
                     //Find/remove the id number
+                    var name=item.text;
                     var pos = item.text.search(/, \d{9}/);
-                        console.log("pos: " + pos);
                     if (pos >= 0) {
-                        console.log("pos greater than zero: " + pos);
-                        var name = item.text.substr(0, pos);
+                        name = name.substr(0, pos);
                         var idnum = item.text.substr(pos+2);
                         return getRorDisplayHtml(name, altNames);
                     }

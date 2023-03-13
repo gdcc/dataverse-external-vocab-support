@@ -1,10 +1,10 @@
-console.log("funders.js..");
-const fundregSelector = "span[data-cvoc-protocol='fundreg']";
-const fundregInputSelector = "input[data-cvoc-protocol='fundreg']";
-const fundregRetrievalUrl = "https://api.crossref.org/funders";
-const fundregPrefix = "fundreg";
+console.log("fundreg.js..");
+var fundregSelector = "span[data-cvoc-protocol='fundreg']";
+var fundregInputSelector = "input[data-cvoc-protocol='fundreg']";
+var fundregRetrievalUrl = "https://api.crossref.org/funders";
+var fundregPrefix = "fundreg";
 //Max chars that displays well for a child field
-const fundregMaxLength = 26;
+var fundregMaxLength = 26;
 
 $(document).ready(function() {
     var head = document.getElementsByTagName('head')[0];
@@ -12,9 +12,10 @@ $(document).ready(function() {
     js.type = "text/javascript";
     js.src = "./cvocutils.js";
     head.appendChild(js);
-    
-    expandFunders();
-    updateFunderInputs();
+    js.addEventListener('load', () => {
+        expandFunders();
+        updateFunderInputs();
+    })
 });
 
 function expandFunders() {
@@ -28,21 +29,21 @@ function expandFunders() {
             $(funderElement).addClass('expanded');
             var id = funderElement.textContent;
             if (!id.startsWith("http://dx.doi.org/10.13039/")) {
-                funderElement.innerHTML = getFunderDisplayHtml(id, ['No Crossref Entry']);
+                 $(funderElement).html(getFunderDisplayHtml(id, ['No Crossref Entry']));
             } else {
                 //Remove the URL prefix - "http://dx.doi.org/10.13039/".length = 27
                 id = id.substring(27);
                 //Check for cached entry
                 let value = getValue(fundregPrefix, id);
                 if(value.name !=null) {
-                    funderElement.innerHTML = getFunderDisplayHtml(value.name, value.altNames);
+                    $(funderElement).html(getFunderDisplayHtml(value.name, value.altNames));
                 } else {
                 
 
                     // Try it as an CrossRef Funders entry (could validate that it has the right form or can just let the GET fail)
                     $.ajax({
                         type: "GET",
-                        url: retrievalUrl + "/" + id,
+                        url: fundregRetrievalUrl + "/" + id,
                         dataType: 'json',
                         //Adding this, and using https is supposed to let us call a faster pool of machines
                         //(They will contact us if they see problems - see https://api.crossref.org/swagger-ui/index.html.)
@@ -58,7 +59,7 @@ function expandFunders() {
     
                             funderElement.innerHTML = getFunderDisplayHtml(name, altNames);
                             //Store values in localStorage to avoid repeating calls to CrossRef
-                            setValue(fundregPrefix, id, name + "#" + altNames);
+                            storeValue(fundregPrefix, id, name + "#" + altNames);
                         },
                         failure: function(jqXHR, textStatus, errorThrown) {
                             // Generic logging - don't need to do anything if 404 (leave
@@ -75,13 +76,16 @@ function expandFunders() {
 }
 
 function getFunderDisplayHtml(name, altNames) {
+    if(typeof(altNames) == 'undefined') {
+        altNames=[];
+    }
     if (name.length >= fundregMaxLength) {
         // show the first characters of a long name
         // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
         name=name.substring(0,fundregMaxLength) + "…";
     }
-    return "<span title='" + altNames + "'>" + name + "</span>";
+    return $('<span></span>').append(name).attr("title", altNames);
 }
 
 function updateFunderInputs() {
@@ -119,13 +123,12 @@ function updateFunderInputs() {
                 templateSelection: function(item) {
                     // For a selection, format as in display mode
                     //Find/remove the id number
+                    var name = item.text;
                     var pos = item.text.search(/, \d{9}/);
-                        console.log("pos: " + pos);
                     if (pos >= 0) {
-                        console.log("pos greater than zero: " + pos);
-                        var name = item.text.substr(0, pos);
+                        name = name.substr(0, pos);
                         var idnum = item.text.substr(pos+2);
-                        return getFunderDisplayHtml(name, altNames);
+                        return getFunderDisplayHtml(name, item.altNames);
                     }
                     return getFunderDisplayHtml(name, ['No Crossref Entry']);
                 },
@@ -149,7 +152,7 @@ function updateFunderInputs() {
                         }
                         var query = {
                             query: term,
-                            rows: 1000
+                            rows: 1000,
                             //See above - this put the request on a faster pool of machines
                             mailto: 'dataverse-gdcc@googlegroups.com',
                         }
@@ -189,30 +192,44 @@ function updateFunderInputs() {
             var id = $(funderInput).val();
             if (id.startsWith("http://dx.doi.org/10.13039/")) {
                 id = id.substring(27);
-                $.ajax({
-                    type: "GET",
-                    url: fundregRetrievalUrl + "/" + id,
-                    //See above - puts the request on a faster pool of machines
-                    data: 'mailto=dataverse-gdcc@googlegroups.com',
-                    dataType: 'json',
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    success: function(funder, status) {
-                        var name = funder.message.name;
-                        console.log("name: " + name);
-                        //Display the name and id number in the selection menu
-                        var text = name + ", " + id;
-                        var newOption = new Option(text, id, true, true);
-                        newOption.altNames = funder.message['alt-names'];
-                        $('#' + selectId).append(newOption).trigger('change');
-                    },
-                    failure: function(jqXHR, textStatus, errorThrown) {
-                        if (jqXHR.status != 404) {
-                            console.error("The following error occurred: " + textStatus, errorThrown);
+                //Check for cached entry
+                let value = getValue(fundregPrefix, id);
+                if(value.name !=null) {
+                    //Display the name and id number in the selection menu
+                    var text = value.name + ", " + id;
+                    var newOption = new Option(text, id, true, true);
+                    newOption.altNames = value.altNames;
+                    $('#' + selectId).append(newOption).trigger('change');
+                } else {
+                    $.ajax({
+                        type: "GET",
+                        url: fundregRetrievalUrl + "/" + id,
+                        //See above - puts the request on a faster pool of machines
+                        data: 'mailto=dataverse-gdcc@googlegroups.com',
+                        dataType: 'json',
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        success: function(funder, status) {
+                            var name = funder.message.name;
+                            console.log("name: " + name);
+                            //Display the name and id number in the selection menu
+                            var text = name + ", " + id;
+                            var newOption = new Option(text, id, true, true);
+                            newOption.altNames = funder.message['alt-names'];
+                            $('#' + selectId).append(newOption).trigger('change');
+                        },
+                        failure: function(jqXHR, textStatus, errorThrown) {
+                            if (jqXHR.status != 404) {
+                                console.error("The following error occurred: " + textStatus, errorThrown);
+                            }
+                            var text = id;
+                            var newOption = new Option(text, id, true, true);
+                            newOption.altNames = ["Name can't be retrieved"];
+                            $('#' + selectId).append(newOption).trigger('change');
                         }
-                    }
-                });
+                    });
+                }
             } else {
                 // If the initial value is not in CrossRef, just display it as is
                 var newOption = new Option(id, id, true, true);
