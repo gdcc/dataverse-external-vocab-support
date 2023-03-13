@@ -177,7 +177,7 @@ function updateRorInputs() {
                                 // Prioritize those with this acronym
                                 .sort((a, b) => (b.acronyms.includes(params.term)) ? 1 : -1)
                                 // Prioritize previously used entries
-                                .sort((a, b) => (getValue(rorPrefix, b['id']).name != null) ? 1 : -1)
+                                .sort((a, b) => (getValue(rorPrefix, b['id'].replace(rorIdStem,'')).name != null) ? 1 : -1)
                                 .map(
                                     function(x) {
                                         return {
