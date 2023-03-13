@@ -175,9 +175,9 @@ function updateRorInputs() {
                                 // Prioritize active orgs
                                 .sort((a, b) => (b.status === 'active') ? 1 : -1)
                                 // Prioritize those with this acronym
-                                .sort((a, b) => (b.acronyms.includes(params.query)) ? 1 : -1)
+                                .sort((a, b) => (b.acronyms.includes(params.term)) ? 1 : -1)
                                 // Prioritize previously used entries
-                                .sort((a, b) => (getValue(rorPrefix, b['id'])) ? 1 : -1)
+                                .sort((a, b) => (getValue(rorPrefix, b['id']).name != null) ? 1 : -1)
                                 .map(
                                     function(x) {
                                         return {

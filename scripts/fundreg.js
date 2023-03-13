@@ -173,7 +173,7 @@ function updateFunderInputs() {
                                 // Prioritize those with this alt-name
                                 .sort((a, b) => (b['alt-names'].includes(data.message.query['search-terms'])) ? 1 : -1)
                                 // Prioritize previously used entries
-                                .sort((a, b) => (getValue(fundregPrefix, b['id'])) ? 1 : -1)
+                                .sort((a, b) => (getValue(fundregPrefix, b['id']).name!=null) ? 1 : -1)
                                 .map(
                                     function(x) {
                                         return {
