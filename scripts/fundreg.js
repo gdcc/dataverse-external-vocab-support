@@ -4,7 +4,7 @@ var fundregInputSelector = "input[data-cvoc-protocol='fundreg']";
 var fundregRetrievalUrl = "https://api.crossref.org/funders";
 var fundregPrefix = "fundreg";
 //Max chars that displays well for a child field
-var fundregMaxLength = 31;
+var fundregMaxLength = 30;
 
 $(document).ready(function() {
     var head = document.getElementsByTagName('head')[0];
