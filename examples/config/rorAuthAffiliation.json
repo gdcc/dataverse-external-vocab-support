@@ -2,7 +2,7 @@
     {
         "field-name": "authorAffiliation",
         "term-uri-field": "authorAffiliation",
-        "js-url": "/cvoc/js/ror.js",
+        "js-url": ["/cvoc/js/ror.js","/cvoc/js/cvocutils.js"],
         "protocol": "ror",
         "retrieval-uri": "https://api.ror.org/organizations/{0}",
         "allow-free-text": true,

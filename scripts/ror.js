@@ -8,16 +8,8 @@ var rorPrefix = "ror";
 var rorMaxLength = 31;
 
 $(document).ready(function() {
-    var head = document.getElementsByTagName('head')[0];
-    var js = document.createElement("script");
-    js.type = "text/javascript";
-    js.src = "/cvoc/js/cvocutils.js";
-    js.async = false;
-    head.appendChild(js);
-    js.addEventListener('load', () => {
-        expandRors();
-        updateRorInputs();
-    })
+    expandRors();
+    updateRorInputs();
 });
 
 function expandRors() {

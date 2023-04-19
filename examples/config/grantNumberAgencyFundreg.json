@@ -2,7 +2,7 @@
     {
         "field-name": "grantNumberAgency",
         "term-uri-field": "grantNumberAgency",
-        "js-url": "/cvoc/js/fundreg.js",
+        "js-url":  ["/cvoc/js/fundreg.js","/cvoc/js/cvocutils.js"],
         "protocol": "fundreg",
         "retrieval-uri": "https://data.crossref.org/fundingdata/funder/{0}",
         "allow-free-text": true,

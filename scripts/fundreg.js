@@ -7,16 +7,8 @@ var fundregPrefix = "fundreg";
 var fundregMaxLength = 30;
 
 $(document).ready(function() {
-    var head = document.getElementsByTagName('head')[0];
-    var js = document.createElement("script");
-    js.type = "text/javascript";
-    js.src = "/cvoc/js/cvocutils.js";
-    js.async=false;
-    head.appendChild(js);
-    js.addEventListener('load', () => {
-        expandFunders();
-        updateFunderInputs();
-    })
+    expandFunders();
+    updateFunderInputs();
 });
 
 function expandFunders() {
