@@ -212,12 +212,22 @@
             "js-url": 
             {
                 "$id": "#/fieldconfig/properties/js-url",
-                "type": "string",
-                "title": "The Script URL",
-                "description": "The URL for the JavaScript that should be included in the page to support the connection of this field to the specified service",
+                "oneOf":[
+                  {
+                    "type": "string",
+                    "title": "The Script URL",
+                    "description": "The URL for the JavaScript that should be included in the page to support the connection of this field to the specified service"
+                  },
+                  {
+                    "type": "array",
+                    "title": "Script URLs",
+                    "description": "The URLs for all the JavaScripts that should be included in the page to support the connection of this field to the specified service"
+                  }
+                ],
                 "examples": 
                 [
-                    "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js"
+                    "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
+                    ["https://gdcc.github.io/dataverse-external-vocab-support/scripts/fundreg.js","https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"]
                 ]
             },
 
