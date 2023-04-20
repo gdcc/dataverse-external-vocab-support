@@ -23,7 +23,7 @@ function expandRors() {
             $(rorElement).addClass('expanded');
             var id = rorElement.textContent;
             if (!id.startsWith(rorIdStem)) {
-                $(rorElement).html(getRorDisplayHtml(name, ['No ROR Entry'], false, true));
+                $(rorElement).html(getRorDisplayHtml(id, ['No ROR Entry'], false, true));
             } else {
                 //Remove the URL prefix - "https://ror.org/".length = 16
                 id = id.substring(rorIdStem.length);
