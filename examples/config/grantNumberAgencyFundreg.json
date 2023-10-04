@@ -1,0 +1,36 @@
+[
+    {
+        "field-name": "grantNumberAgency",
+        "term-uri-field": "grantNumberAgency",
+        "js-url":  ["/cvoc/js/fundreg.js","/cvoc/js/cvocutils.js"],
+        "protocol": "fundreg",
+        "retrieval-uri": "https://data.crossref.org/fundingdata/funder/{0}",
+        "allow-free-text": true,
+        "prefix": "http://dx.doi.org/10.13039/",
+        "managed-fields": {},
+        "languages":"",
+        "vocabs": {
+            "funders": {
+                "uriSpace": "http://dx.doi.org/10.13039/"
+            }
+        },
+        "retrieval-filtering": {
+            "@context": {
+                "termName": "https://schema.org/name",
+                "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+                "lang": "@language",
+                "content": "@value"
+            },
+            "scheme": {
+                "pattern": "http://data.crossref.org/fundingdata/vocabulary"
+            },
+            "termName": {
+                "pattern": "{0}",
+                "params": ["/altLabel/Label=*/literalForm"]
+            },
+            "@type": {
+                "pattern": "https://schema.org/Organization"
+            }
+        }
+    }
+]
