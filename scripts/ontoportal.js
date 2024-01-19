@@ -3,6 +3,7 @@
  */
 var skosmosDisplaySelector = "span[data-cvoc-protocol='ontoportal']";
 var skosmosInputSelector = "input[data-cvoc-protocol='ontoportal']";
+var showChildsInputs = false; //true to debug
 
 $(document).ready(function() {
     expandSkosmos();
@@ -32,11 +33,11 @@ function expandSkosmos() {
             // Try to retrieve info about the term
             //Assume anything starting with http is a valid term - could use stricter tests
             if (id.startsWith("http")) {
+                var ontology = "ONTOBIOTOPE";//TODO FIX ME
                 $.ajax({
                     type: "GET",
                     //Construct the specific request URL required
-                    //url: cvocUrl + "rest/v1/data?uri=" + encodeURIComponent(id),
-                    url: id.replace(cvocUiUrl, cvocUrl),
+                    url: cvocUrl + "ontologies/"+ontology+"/classes/"+encodeURIComponent(id),
                     dataType: 'json',
                     headers: cvocHeaders,
                     success: function(term, status) {
@@ -45,12 +46,12 @@ function expandSkosmos() {
                         var uriArray = term.graph;
                         //console.log("term", term);
                         //For ontoportal
-                        termName = term.prefLabel;
+                        termName = term.prefLabel + ", " + id;
                         var html;
                         if($(displayElement).parent().is("a")) {
                             html = termName;
                         } else {
-                            html = "<a href='" + id + "'  target='_blank' rel='noopener' >" + termName + "</a>";
+                            html = "<a href='" + term.links.self.replace(cvocUrl, cvocUiUrl) + "'  target='_blank' rel='noopener' >" + termName + "</a>";
                         }
                         displayElement.innerHTML = html;
                     },
@@ -106,7 +107,7 @@ function updateSkosmosInputs() {
             //Then hide all children of this element's parent.
             //For a single field, this just hides the input itself (and any siblings if there are any).
             //For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
-            $(anchorSib).parent().children().hide();
+            $(anchorSib).parent().children().toggle(showChildsInputs);
 
             //Vocab Selector
             //Currently the code creates a selection form even if there is one vocabulary, and then hides it in that case. (ToDo: only create it if needed)
@@ -232,7 +233,7 @@ function updateSkosmosInputs() {
                             vocabsArr.push(key);
                         }
                         //return cvocUrl + 'rest/v1/search?unique=true&vocab=' + $('#' + selectId).attr('data-cvoc-cur-vocab') + '&parent=' + termParentUri + langParam;
-                        return cvocUrl + '/search?include_properties=true&include_views=true&display_context=false&ontologies=' + vocabsArr.join(',');
+                        return cvocUrl + '/search?include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=' + vocabsArr.join(',');
                     },
                     dataType: "json",
                     headers: cvocHeaders,
@@ -254,7 +255,7 @@ function updateSkosmosInputs() {
                                             //text: x.prefLabel + ((x.hasOwnProperty('altLabel') && x.altLabel.length > 0) ? " (" + x.altLabel + "), " : ", ") + x.uri,
                                             text: x.prefLabel + ", " + x.links.self.replace(cvocUrl, cvocUiUrl),
                                             name: x.prefLabel,
-                                            id: x.links.self,
+                                            id: x["@id"],
                                             voc: x.links.ontology,
                                             // Since clicking in the selection re-opens the
                                             // choice list, one has to use a right click/open in
@@ -270,15 +271,16 @@ function updateSkosmosInputs() {
             // If the input has a value already, format it the same way as if it
             // were a new selection. Since we only have the term URI, we query the service to find the label in the right language
             var id = $(skosmosInput).val();
-            if (id.startsWith("http")) {
+            var ontology = $(anchorSib).parent().children().find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value');
+            if (id.startsWith("http") && ontology) {
                 $.ajax({
                     type: "GET",
-                    url: id.replace(cvocUiUrl, cvocUrl),
+                    url: cvocUrl + "ontologies/"+ontology+"/classes/"+encodeURIComponent(id),
                     dataType: 'json',
                     headers: cvocHeaders,
                     success: function(term, status) {
                         termName = term.prefLabel;
-                        var text = termName + ", " + id;
+                        var text = termName + ", " + term.links.self.replace(cvocUrl, cvocUiUrl);
                         var newOption = new Option(text, id, true, true);
                         newOption.title = 'Open in new tab to view Term page';
                         $('#' + selectId).append(newOption).trigger('change');
@@ -325,7 +327,7 @@ function updateSkosmosInputs() {
                                 dataType: 'json',
                                 headers: cvocHeaders,
                                 success: function(onthology, status) {
-                                    $(parent).find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value', onthology.name);
+                                    $(parent).find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value', onthology.acronym);
                                 },
                                 failure: function(jqXHR, textStatus, errorThrown) {
                                     $(parent).find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value', data.voc.substring(data.voc.lastIndexOf('/') + 1));

@@ -6,7 +6,7 @@
     "js-url": "https://data-test.jouy.inra.fr/assets/cvoc/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
-    "retrieval-uri": "{0}",
+    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{0}/classes/{1}",
     "term-parent-uri": "",
     "allow-free-text": true,
     "languages":"en, fr",
