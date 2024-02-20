@@ -197,6 +197,21 @@
                 ]
             },
 
+            "headers":
+            {
+                "$id": "#/fieldconfig/properties/headers",
+                "type": "object",
+                "title": "HTTP request headers",
+                "description": "HTTP request headers send to the service. This can be useful for specifying the response format, or if the service requires a mandatory HTTP header.",
+                "examples":
+                [
+                    {
+                        "Accept": "application/json",
+                        "Authorization": "Basic YWxhZGRpbjpvcGVuc2VzYW1l"
+                    }
+                ]
+            },
+
             "cvoc-url": 
             {
                 "$id": "#/fieldconfig/properties/cvoc-url",

@@ -213,6 +213,20 @@ To handle multiple fields, this example changes:
 
 When the skosmos Javascript runs on this type of field, it hides all child fields and displays and allows input for the term uri as it normally would. However, when a slection is made, the script populates the values for all 4 fields. This simplfies using a controlled vocabulary service with an existing field (although a termURI field is needed and would have to be added to use skosmos with the citation.keyword field.) One limitation of this approach is that the child fields for the term and vocabular name only store the value for the current language (versus the full set of translations). 
 
+#Add HTTP headers to external vocabulary service request
+
+Some vocabulary services need specific HTTP headers. For example, Ontoportal need API KEY send by "Authorization" HTTP header. In this case, headers can be parameter with "headers" field, which must be added into JSON configuration file, like below :
+
+    {
+      "headers" : {
+        "Accept": "application/json",
+        "Authorization": "Basic YWxhZGRpbjpvcGVuc2VzYW1l"
+      }
+    }
+
+This headers can be recovered in Javascript with "data-cvoc-headers" attribute, and use to send them to external services.
+Make sure to send only the HTTP headers required and allowed according to the external vocabulary service CORS rules.
+
 #How to make a new Javascript for your Service/Vocabulary
 
 The skosmos.js and people.js scripts are good examples to start from. people.js is appropriate for single fields (it could be extended to handle multiple fields but has not) and for services that provide a single vocabulary choice. skosmos.js is an example that handles both multiple vocabularies and managed fields.
