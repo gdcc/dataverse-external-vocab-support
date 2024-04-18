@@ -2,26 +2,25 @@
     "field-name": "keyword",
     "term-uri-field": "keywordTermURL",
     "cvoc-url": "https://data.agroportal.lirmm.fr/",
-    "cvoc-ui-url": "https://agroportal.lirmm.fr/",
-    "js-url": "https://data-test.jouy.inra.fr/assets/cvoc/ontoportal.js",
+    "js-url": "https://raw.githubusercontent.com/Recherche-Data-Gouv/dataverse-external-vocab-support/poc_ontoportal/scripts/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
-    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{0}/classes/{1}",
+    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}?language=en,fr",
     "term-parent-uri": "",
     "allow-free-text": true,
     "languages":"en, fr",
     "vocabs": {
         "AGROVOC": {
             "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/AGROVOC",
-            "uriSpace": "https://data.agroportal.lirmm.fr/"
+            "uriSpace": "http"
         },
         "ONTOBIOTOPE": {
             "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ONTOBIOTOPE",
-            "uriSpace": "https://data.agroportal.lirmm.fr/"
+            "uriSpace": "http"
         },
         "CROPUSAGE": {
             "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/CROPUSAGE",
-            "uriSpace": "https://data.agroportal.lirmm.fr/"
+            "uriSpace": "http"
         }
     },
     "managed-fields": {
@@ -43,7 +42,8 @@
         },
         "termName": {
             "pattern": "{0}",
-            "params": ["/prefLabel"]
+            "params": ["/prefLabel"],
+            "indexIn": "keywordValue"
         },
         "vocabularyName": {
             "pattern": "{0}",
@@ -53,10 +53,10 @@
             "pattern": "{0}",
             "params": ["/links/ontology"]
         },
-        "synonymTerms": {
+        "synonyms": {
             "pattern": "{0}",
             "params": ["/synonym"],
-            "indexed": true
+            "indexIn": "keywordValue"
         }
     }
 }]

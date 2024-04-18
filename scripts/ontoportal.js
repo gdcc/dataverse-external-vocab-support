@@ -19,10 +19,11 @@ function expandSkosmos() {
         if (!$(displayElement).hasClass('expanded')) {
             // Mark it as processed
             $(displayElement).addClass('expanded');
+            let parent = $(displayElement).parent();
             //Retrieve parameters from the element's attributes
             //The service URL to contact using this protocol
             var cvocUrl = $(displayElement).attr('data-cvoc-service-url');
-            var cvocUiUrl = $(displayElement).attr('data-cvoc-ui-url');
+            //var cvocUiUrl = "https://agroportal.lirmm.fr/"; //n'est plus nécessaire
             var cvocHeaders = JSON.parse($(displayElement).attr('data-cvoc-headers'));
             cvocHeaders['Accept'] = 'application/json';
             //The language requested
@@ -33,7 +34,18 @@ function expandSkosmos() {
             // Try to retrieve info about the term
             //Assume anything starting with http is a valid term - could use stricter tests
             if (id.startsWith("http")) {
-                var ontology = "ONTOBIOTOPE";//TODO FIX ME
+                var ontology = parent.find('[data-cvoc-metadata-name="keywordVocabulary"]').text();
+                let termName = parent.find('[data-cvoc-metadata-name="keywordValue"]').text();
+                let url = cvocUrl.replace("data.", "") + "ontologies/"+ontology+"/classes/"+encodeURIComponent(id);
+                var html;
+                if (parent.is("a")) {
+                    html = termName;
+                } else {
+                    html = "<a href='" + url + "'  target='_blank' rel='noopener' >" + termName + "</a>";
+                }
+                // FIXME : innerHTML très dangereux (XSS), voir pour insérer directement un élément a ou le texte
+                displayElement.innerHTML = html;
+                /* plus nécessaire car nous avons toutes les informations à notre disposition --> ENORMEMENT moins de requête vers agroportal ainsi
                 $.ajax({
                     type: "GET",
                     //Construct the specific request URL required
@@ -62,6 +74,7 @@ function expandSkosmos() {
                         //If anything goes wrong, just leave the display as it was
                     }
                 });
+                */
             } else {
                 // Don't change the display if it wasn't a controlled term
             }
@@ -80,7 +93,7 @@ function updateSkosmosInputs() {
             let num = Math.floor(Math.random() * 100000000000);
             //Retrieve useful values from the attributes
             let cvocUrl = $(skosmosInput).attr('data-cvoc-service-url');
-            let cvocUiUrl = $(skosmosInput).attr('data-cvoc-ui-url');
+            let cvocUiUrl = "https://agroportal.lirmm.fr/"; //$(skosmosInput).attr('data-cvoc-ui-url');
             let cvocHeaders = JSON.parse($(skosmosInput).attr('data-cvoc-headers'));
             cvocHeaders['Accept'] = 'application/json';
             let lang = skosmosInput.hasAttribute("lang") ? $(skosmosInput).attr('lang') : "";
@@ -217,7 +230,7 @@ function updateSkosmosInputs() {
                 language: {
                     searching: function(params) {
                         // Change this to be appropriate for your application
-                        return 'Search by preferred or alternate label…';
+                        return 'Search by preferred or alternate label...';
                     }
                 },
                 placeholder: placeholder,
