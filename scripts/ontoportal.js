@@ -1,12 +1,14 @@
 /* http://www.apache.org/licenses/LICENSE-2.0
  * Controlled vocabulary for keywords metadata with Agroportal ontologies
- * version 0.1
+ * version 0.2
  */
 
 jQuery(document).ready(function ($) {
     const displaySelector = "span[data-cvoc-protocol='ontoportal']";
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
     const showChildsInputs = false; // true to debug
+    // TODO : i18n
+    const selectTitle = "Open in new tab to view Term page";
 
     expand();
     updateInputs();
@@ -58,40 +60,46 @@ jQuery(document).ready(function ($) {
         // For each input element
         $(inputSelector).each(function() {
             var input = this;
-            //If we haven't modified this input yet
+            // If we haven't modified this input yet
             if (!input.hasAttribute("data-ontoportal")) {
                 // Create a random identifier (large enough to minimize the possibility of conflicts for a few fields
-                //Use let to have 'closure' - so that when num is used below it always refers to the same value set here (and not the last value num is set to if/when there are multiple fields being managed)
+                // Use let to have 'closure' - so that when num is used below it always refers to the same value set here (and not the last value num is set to if/when there are multiple fields being managed)
                 let num = Math.floor(Math.random() * 100000000000);
-                //Retrieve useful values from the attributes
-                let cvocUrl = $(input).attr('data-cvoc-service-url');
-                let cvocUiUrl = "https://agroportal.lirmm.fr/"; //$(input).attr('data-cvoc-ui-url');
-                let cvocHeaders = JSON.parse($(input).attr('data-cvoc-headers'));
-                cvocHeaders['Accept'] = 'application/json';
-                let lang = input.hasAttribute("lang") ? $(input).attr('lang') : "";
-                let langParam = input.hasAttribute("lang") ? "&lang=" + $(input).attr('lang') : "";
-                let vocabs = JSON.parse($(input).attr('data-cvoc-vocabs'));
-                let managedFields = JSON.parse($(input).attr('data-cvoc-managedfields'));
-                let parentField = $(input).attr('data-cvoc-parent');
-                let termParentUri = $(input).attr('data-cvoc-filter');
-                let allowFreeText = $(input).attr('data-cvoc-allowfreetext');
-                let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr('data-cvoc-placeholder') : "Select a term";
-                let selectId = "skosmosAddSelect_" + num;
-                //Pick the first entry as the default to start with when there is more than one vocab
-                //let vocab = Object.keys(vocabs)[0];
+                // Retrieve useful values from the attributes
+                let cvocUrl = $(input).attr("data-cvoc-service-url");
+                let cvocHeaders = JSON.parse($(input).attr("data-cvoc-headers"));
+                cvocHeaders["Accept"] = "application/json";
+                let vocabs = JSON.parse($(input).attr("data-cvoc-vocabs"));
+                let managedFields = JSON.parse($(input).attr("data-cvoc-managedfields"));
+                let vocabNameSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyName"]}"]`
+                let vocabUriSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyUri"]}"]`
+                let termSelector = `input[data-cvoc-managed-field="${managedFields["termName"]}"]`
+                let parentField = $(input).attr("data-cvoc-parent");
+                let parentFieldDataSelector = `[data-cvoc-parentfield="${parentField}"]`;
+                let allowFreeText = $(input).attr("data-cvoc-allowfreetext");
+                // TODO : i18n
+                let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : "Select a term";
+                // TODO : use in future ?
+                let lang = input.hasAttribute("lang") ? $(input).attr("lang") : "";
+                let langParam = input.hasAttribute("lang") ? "&lang=" + $(input).attr("lang") : "";
+                let termParentUri = $(input).attr("data-cvoc-filter");
+                // <select> identifier
+                let selectId = "ontoportalAddSelect_" + num;
+                // Pick the first entry as the default to start with when there is more than one vocab
+                // let vocab = Object.keys(vocabs)[0];
     
-                //Mark this field as processed
-                $(input).attr('data-skosmos', num);
-                //Decide what needs to be hidden. In the single field case, we hide the input itself. For compound fields, we hide everything leading to this input from the specified parent field
+                // Mark this field as processed
+                $(input).attr("data-ontoportal", num);
+                // Decide what needs to be hidden. In the single field case, we hide the input itself. For compound fields, we hide everything leading to this input from the specified parent field
                 let anchorSib = input;
-                //If there is a parent field
-                if ($("[data-cvoc-parentfield='" + parentField + "']").length > 0) {
-                    //Find it's child that contains the input for the term uri
-                    anchorSib = $(input).parentsUntil("[data-cvoc-parentfield='" + parentField + "']").last();
+                // If there is a parent field
+                if ($(parentFieldDataSelector).length > 0) {
+                    // Find it's child that contains the input for the term uri
+                    anchorSib = $(input).parentsUntil(parentFieldDataSelector).last();
                 }
-                //Then hide all children of this element's parent.
-                //For a single field, this just hides the input itself (and any siblings if there are any).
-                //For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
+                // Then hide all children of this element's parent.
+                // For a single field, this just hides the input itself (and any siblings if there are any).
+                // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
                 $(anchorSib).parent().children().toggle(showChildsInputs);
     
                 //Vocab Selector
@@ -165,13 +173,11 @@ jQuery(document).ready(function ($) {
                 }*/
     
     
-                $(anchorSib).after(
-                    '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
-    
-                //St up this select2
+                $(anchorSib).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">`);
+                // Set up this select2
                 $("#" + selectId).select2({
                     theme: "classic",
-                    //tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
+                    // tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
                     tags: allowFreeText,
                     delay: 500,
                     templateResult: function(item) {
@@ -179,178 +185,183 @@ jQuery(document).ready(function ($) {
                         if (item.loading) {
                             return item.text;
                         }
-                        var term = '';
-                        if (typeof(query) !== 'undefined') {
+                        let term = "";
+                        if (typeof(query) !== "undefined") {
                             term = query.term;
                         }
                         // markMatch bolds the search term if/where it appears in the result
-                        var $result = markMatch(item.text, term);
+                        let $result = markMatch(item.text, term);
                         return $result;
                     },
                     templateSelection: function(item) {
                         // For a selection, add HTML to make the term uri a link
+                        /*
                         if (item.text != item.id) {
-                            //Plain text (i.e. with tags:true) would have item.text == item.id
-                            var pos = item.text.search(/http[s]?:\/\//);
+                            // Plain text (i.e. with tags:true) would have item.text == item.id
+                            let pos = item.text.search(/http[s]?:\/\//);
                             if (pos >= 0) {
-                                var termuri = item.text.substr(pos);
-                                return $('<span></span>').append(item.text.replace(termuri, "<a href='" + termuri + "'  target='_blank' rel='noopener'>" + termuri + "</a>"));
+                                let termUri = item.text.substr(pos);
+                                return $("<span></span>").append(item.text.replace(termUri, `<a href="${termUri}" target="_blank" rel="noopener">${termUri}</a>`));
                             }
                         }
                         return item.text;
+                        */
+                        if (item.text == item.id) {
+                            // Plain text (i.e. with tags:true) would have item.text == item.id
+                            return item.text;
+                        } else {
+                            let pos = item.text.search(/http[s]?:\/\//);
+                            if (pos >= 0) {
+                                let termUri = item.text.substr(pos);
+                                return $("<span></span>").append(item.text.replace(termUri, `<a href="${termUri}" target="_blank" rel="noopener">${termUri}</a>`));
+                            } else {
+                                return $("<span></span>").append(item.text);
+                            }
+
+                        }
                     },
                     language: {
                         searching: function(params) {
                             // Change this to be appropriate for your application
-                            return 'Search by preferred or alternate label...';
+                            // TODO : i18n
+                            return "Search by preferred or alternate label...";
                         }
                     },
                     placeholder: placeholder,
-                    //Some vocabs are very slow and/or fail with a 500 error when searching for only 2 letters
+                    // Some vocabs are very slow and/or fail with a 500 error when searching for only 2 letters
                     minimumInputLength: 3,
                     allowClear: true,
                     ajax: {
-                        //Call the specified skosmos service to get matching terms
-                        //Add the current vocab, any subvocabulary(termParentUri) filter, and desired language
+                        // Call the specified ontoportal service to get matching terms
+                        // Add the current vocab, any sub-vocabulary(termParentUri) filter, and desired language
                         url: function() {
                             let vocabsArr = [];
-                            for (var key in vocabs) {
+                            for (let key in vocabs) {
                                 vocabsArr.push(key);
                             }
                             //return cvocUrl + 'rest/v1/search?unique=true&vocab=' + $('#' + selectId).attr('data-cvoc-cur-vocab') + '&parent=' + termParentUri + langParam;
-                            return cvocUrl + '/search?include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=' + vocabsArr.join(',');
+                            return `${cvocUrl}/search?include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(',')}`;
                         },
                         dataType: "json",
                         headers: cvocHeaders,
                         data: function(params) {
                             // Used in templateResult
                             term = params.term;
-                            //Add the query - skosmos needs a trailing * to match words starting with the supplied letters
-                            //return "&query=" + params.term + "*";
+                            // Add the query
                             return "&q=" + params.term;
                         },
                         processResults: function(data, page) {
-                            console.log("data", data);
+                            // console.log("data", data);
                             return {
-                                results: data.collection
-                                    .map(
-                                        function(x) {
-                                            return {
-                                                //For each returned item, show the term, it's alternative label (which may be what matches the query) and the termUri
-                                                //text: x.prefLabel + ((x.hasOwnProperty('altLabel') && x.altLabel.length > 0) ? " (" + x.altLabel + "), " : ", ") + x.uri,
-                                                text: x.prefLabel + ", " + x.links.self.replace(cvocUrl, cvocUiUrl),
-                                                name: x.prefLabel,
-                                                id: x["@id"],
-                                                voc: x.links.ontology,
-                                                // Since clicking in the selection re-opens the
-                                                // choice list, one has to use a right click/open in
-                                                // new tab/window to view the ORCID page
-                                                // Using title to provide that hint as a popup
-                                                title: 'Open in new tab to view Term page'
-                                            }
-                                        })
+                                results: data.collection.map(
+                                    function(x) {
+                                        return {
+                                            // For each returned item, show the term, it's alternative label (which may be what matches the query) and the termUri
+                                            // text: x.prefLabel + ((x.hasOwnProperty('altLabel') && x.altLabel.length > 0) ? " (" + x.altLabel + "), " : ", ") + x.uri,
+                                            text: `${x.prefLabel}, ${x.links.self.replace("data.", "")}`,
+                                            name: x.prefLabel,
+                                            id: x["@id"],
+                                            voc: x.links.ontology,
+                                            // Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the ORCID page
+                                            // Using title to provide that hint as a popup
+                                            title: selectTitle
+                                        }
+                                    }
+                                )
                             };
                         }
                     }
                 });
                 // If the input has a value already, format it the same way as if it
                 // were a new selection. Since we only have the term URI, we query the service to find the label in the right language
-                var id = $(input).val();
-                var ontology = $(anchorSib).parent().children().find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value');
+                let id = $(input).val();
+                let ontology = $(anchorSib).parent().children().find(vocabNameSelector).attr("value");
                 if (id.startsWith("http") && ontology) {
                     $.ajax({
                         type: "GET",
-                        url: cvocUrl + "ontologies/"+ontology+"/classes/"+encodeURIComponent(id),
+                        url: `${cvocUrl}ontologies/${ontology}/classes/${encodeURIComponent(id)}`,
                         dataType: 'json',
                         headers: cvocHeaders,
                         success: function(term, status) {
                             termName = term.prefLabel;
-                            var text = termName + ", " + term.links.self.replace(cvocUrl, cvocUiUrl);
-                            var newOption = new Option(text, id, true, true);
-                            newOption.title = 'Open in new tab to view Term page';
-                            $('#' + selectId).append(newOption).trigger('change');
-                            // ToDo: can't get altLabel from this api call
-                            // Also can't determine the vocab from this call
+                            let text = `${termName}, ${term.links.self.replace("data.", "")}`;
+                            let newOption = new Option(text, id, true, true);
+                            newOption.title = selectTitle;
+                            $(`#${selectId}`).append(newOption).trigger("change");
+                            // TODO: can't get altLabel from this api call, also can't determine the vocab from this call
                         },
                         failure: function(jqXHR, textStatus, errorThrown) {
-                                console.error("The following error occurred: " + textStatus, errorThrown);
-                            //Something is wrong, but we should show that a value is currently set
-                            var newOption = new Option(id, id, true, true);
-                            $('#' + selectId).append(newOption).trigger('change');
+                            console.error("The following error occurred: " + textStatus, errorThrown);
+                            // Something is wrong, but we should show that a value is currently set
+                            let newOption = new Option(id, id, true, true);
+                            $(`#${selectId}`).append(newOption).trigger("change");
                         }
                     });
                 } else {
-                    // If the initial value is not a managed term (legacy, or if tags are
-                    // enabled), just display it as is
-                    var newOption = new Option(id, id, true, true);
-                    $('#' + selectId).append(newOption).trigger('change');
+                    // If the initial value is not a managed term (legacy, or if tags are enabled), just display it as is
+                    let newOption = new Option(id, id, true, true);
+                    $(`#${selectId}`).append(newOption).trigger('change');
                 }
                 // Could start with the selection menu open
-                // $("#" + selectId).select2('open');
+                // $(`#${selectId}`).select2('open');
                 // When a selection is made, set the value of the hidden input field
-                $('#' + selectId).on('select2:select', function(e) {
-                    var data = e.params.data;
-                    // For terms, the id and text are different, but we just store the
-                    // data.id in either case (controlled uri or plain text)
-                    // if(data.id != data.text) {
-                    $("input[data-skosmos='" + num + "']").val(data.id.replace(cvocUrl, cvocUiUrl));
-                    //If we have more than one vocab, hide the vocab selector since we have a termURI selected
+                $(`#${selectId}`).on('select2:select', function(e) {
+                    let data = e.params.data;
+                    // data.id = term URI
+                    // data.voc = vocabulary URL (not URI) -> need to remove "data." at the beginning
+                    $(`input[data-ontoportal="${num}"]`).val(data.id);
+                    // If we have more than one vocab, hide the vocab selector since we have a termURI selected
                     /*if (Object.keys(vocabs).length > 1) {
                         $(anchorSib).parent().find('.cvoc-vocab').hide();
                         $(anchorSib).parent().find('.cvoc-term > label').hide();
                         //and let the term field take up the whole width
                         $('.cvoc-term').removeClass('col-sm-9');
                     }*/
-                    //In the multi-field case, we should also fill in the other hidden managed fields
-                    if ($("[data-cvoc-parentfield='" + parentField + "']").length > 0) {
-                        var parent = $("input[data-skosmos='" + num + "']").closest("[data-cvoc-parentfield='" + parentField + "']");
-                        for (var key in managedFields) {
-                            if (key == 'vocabularyName') {
+                    // In the multi-field case, we should also fill in the other hidden managed fields
+                    if ($(parentFieldDataSelector).length > 0) {
+                        let parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
+                        for (let key in managedFields) {
+                            if (key == "vocabularyName") {
                                 $.ajax({
                                     type: "GET",
                                     url: data.voc,
-                                    dataType: 'json',
+                                    dataType: "json",
                                     headers: cvocHeaders,
-                                    success: function(onthology, status) {
-                                        $(parent).find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value', onthology.acronym);
+                                    success: function(ontology, status) {
+                                        $(parent).find(vocabNameSelector).attr("value", ontology.acronym);
                                     },
                                     failure: function(jqXHR, textStatus, errorThrown) {
-                                        $(parent).find("input[data-cvoc-managed-field='" + managedFields['vocabularyName'] + "']").attr('value', data.voc.substring(data.voc.lastIndexOf('/') + 1));
+                                        $(parent).find(vocabNameSelector).attr("value", data.voc.substring(data.voc.lastIndexOf("/") + 1));
                                     }
                                 });
-                            } else if (key == 'vocabularyUri') {
-                                $(parent).find("input[data-cvoc-managed-field='" + managedFields['vocabularyUri'] + "']").attr('value', data.voc.replace(cvocUrl, cvocUiUrl));
-                            } else if (key == 'termName') {
-                                $(parent).find("input[data-cvoc-managed-field='" + managedFields['termName'] + "']").attr('value', data.name);
+                            } else if (key == "vocabularyUri") {
+                                $(parent).find(vocabUriSelector).attr("value", data.voc.replace("data.", ""));
+                            } else if (key == "termName") {
+                                $(parent).find(termSelector).attr("value", data.name);
                             }
                         }
                     }
                 });
                 // When a selection is cleared, clear the hidden input
-                $('#' + selectId).on('select2:clear', function(e) {
-                    $("input[data-skosmos='" + num + "']").attr('value', '');
-                    $('#' + selectId).text('');
-                    //And show the vocab selector again if we have more than one vocab
+                $(`#${selectId}`).on("select2:clear", function(e) {
+                    $(`input[data-ontoportal="${num}"]`).attr("value", "");
+                    $(`#${selectId}`).text("");
+                    // And show the vocab selector again if we have more than one vocab
                     /*if (Object.keys(vocabs).length > 1) {
                         $(anchorSib).parent().find('.cvoc-vocab').show();
                         $(anchorSib).parent().find('.cvoc-term > label').show();
                         //And schrink the term field to 75% width
                         $('.cvoc-term').addClass('col-sm-9');
                     }*/
-                    //And clear any hidden managed fields as well
-                    if ($("[data-cvoc-parentfield='" + parentField + "']").length > 0) {
-                        var parent = $("input[data-skosmos='" + num + "']").closest("[data-cvoc-parentfield='" + parentField + "']");
-                        for (var key in managedFields) {
-                            if (key == 'vocabularyName') {
-                                $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', '');
-                            } else if (key == 'vocabularyUri') {
-                                $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', '');
-                            } else if (key == 'termName') {
-                                $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', '');
+                    // And clear any hidden managed fields as well
+                    if ($(parentFieldDataSelector).length > 0) {
+                        var parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
+                        for (let key in managedFields) {
+                            if (key in ["vocabularyName", "vocabularyUri", "termName"]) {
+                                $(parent).find(`input[data-cvoc-managed-field="${managedFields[key]}"]`).attr("value", "");
                             }
                         }
                     }
-    
                 });
             }
         });
@@ -361,7 +372,7 @@ jQuery(document).ready(function ($) {
     function markMatch(text, term) {
         // Find where the match is
         var match = text.toUpperCase().indexOf(term.toUpperCase());
-        var $result = $('<span></span>');
+        var $result = $("<span></span>");
         // If there is no match, move on
         if (match < 0) {
             return $result.text(text);
