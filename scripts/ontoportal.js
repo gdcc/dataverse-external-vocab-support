@@ -186,7 +186,7 @@ jQuery(document).ready(function ($) {
 
                 $(anchorSib).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">`);
                 // Set up this select2
-                $("#" + selectId).select2({
+                $(`#${selectId}`).select2({
                     theme: "classic",
                     // tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
                     tags: allowFreeText,
@@ -227,7 +227,6 @@ jQuery(document).ready(function ($) {
                             } else {
                                 return $("<span></span>").append(item.text);
                             }
-
                         }
                     },
                     language: {
@@ -284,9 +283,9 @@ jQuery(document).ready(function ($) {
                     }
                 });
                 // If the input has a value already, format it the same way as if it were a new selection.
-                // TODO: do not perform this ajax call, all values are presents
-                let id = $(anchorSib).val();
-                let ontology = $(anchorSib).parent().children().find(vocabNameSelector).attr("value");
+                let id = $(input).val();
+                let ontology = $(anchorSib).parent().children().find(vocabNameSelector).val();
+                /* do not perform this ajax call, all values are presents
                 if (id.startsWith("http") && ontology) {
                     $.ajax({
                         type: "GET",
@@ -311,8 +310,12 @@ jQuery(document).ready(function ($) {
                 } else {
                     // If the initial value is not a managed term (legacy, or if tags are enabled), just display it as is
                     let newOption = new Option(id, id, true, true);
-                    $(`#${selectId}`).append(newOption).trigger('change');
+                    $(`#${selectId}`).append(newOption).trigger("change");
                 }
+                */
+                let termName = $(anchorSib).parent().children().find(termSelector).val();
+                let newOption = new Option(`${termName}, ${cvocUrl.replace("data.", "")}ontologies/${ontology}/classes/${encodeURIComponent(id)}`, id, true, true);
+                $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
                 // When a selection is made, set the value of the hidden input field
