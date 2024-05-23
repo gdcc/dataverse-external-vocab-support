@@ -11,7 +11,19 @@ jQuery(document).ready(function ($) {
     const selectTitle = "Open in new tab to view Term page";
 
     expand();
-    updateInputs();
+    // In metadata edition, verify if Ontoportal is up to print select HTML tag
+    if ($(inputSelector).length) {
+        let cvocUrl = $(inputSelector).first().data("cvoc-service-url").trim();
+        if (cvocUrl && cvocUrl.search(/http[s]?:\/\//) == 0) {
+            $.ajax({
+                url: cvocUrl,
+                method: "HEAD",
+                timeout: 500,
+            }).done(function() {
+                updateInputs();
+            });
+        }
+    }
 
     function expand() {
         // Check each selected element
@@ -66,23 +78,23 @@ jQuery(document).ready(function ($) {
                 // Use let to have 'closure' - so that when num is used below it always refers to the same value set here (and not the last value num is set to if/when there are multiple fields being managed)
                 let num = Math.floor(Math.random() * 100000000000);
                 // Retrieve useful values from the attributes
-                let cvocUrl = $(input).attr("data-cvoc-service-url");
-                let cvocHeaders = JSON.parse($(input).attr("data-cvoc-headers"));
+                let cvocUrl = $(input).data("cvoc-service-url");
+                let cvocHeaders = $(input).data("cvoc-headers");
                 cvocHeaders["Accept"] = "application/json";
-                let vocabs = JSON.parse($(input).attr("data-cvoc-vocabs"));
-                let managedFields = JSON.parse($(input).attr("data-cvoc-managedfields"));
+                let vocabs = $(input).data("cvoc-vocabs");
+                let managedFields = $(input).data("cvoc-managedfields");
+                let allowFreeText = $(input).data("cvoc-allowfreetext");
+                let parentField = $(input).data("cvoc-parent");
+                let parentFieldDataSelector = `[data-cvoc-parentfield="${parentField}"]`;
                 let vocabNameSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyName"]}"]`
                 let vocabUriSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyUri"]}"]`
                 let termSelector = `input[data-cvoc-managed-field="${managedFields["termName"]}"]`
-                let parentField = $(input).attr("data-cvoc-parent");
-                let parentFieldDataSelector = `[data-cvoc-parentfield="${parentField}"]`;
-                let allowFreeText = $(input).attr("data-cvoc-allowfreetext");
                 // TODO : i18n
                 let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : "Select a term";
                 // TODO : use in future ?
                 let lang = input.hasAttribute("lang") ? $(input).attr("lang") : "";
                 let langParam = input.hasAttribute("lang") ? "&lang=" + $(input).attr("lang") : "";
-                let termParentUri = $(input).attr("data-cvoc-filter");
+                let termParentUri = $(input).data("cvoc-filter");
                 // <select> identifier
                 let selectId = "ontoportalAddSelect_" + num;
                 // Pick the first entry as the default to start with when there is more than one vocab
@@ -171,15 +183,13 @@ jQuery(document).ready(function ($) {
                     $(anchorSib).after(
                         '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
                 }*/
-    
-    
+
                 $(anchorSib).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">`);
                 // Set up this select2
                 $("#" + selectId).select2({
                     theme: "classic",
                     // tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
                     tags: allowFreeText,
-                    delay: 500,
                     templateResult: function(item) {
                         // No need to template the searching text
                         if (item.loading) {
@@ -239,17 +249,15 @@ jQuery(document).ready(function ($) {
                             for (let key in vocabs) {
                                 vocabsArr.push(key);
                             }
-                            //return cvocUrl + 'rest/v1/search?unique=true&vocab=' + $('#' + selectId).attr('data-cvoc-cur-vocab') + '&parent=' + termParentUri + langParam;
                             return `${cvocUrl}/search?include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(',')}`;
                         },
                         dataType: "json",
                         headers: cvocHeaders,
                         data: function(params) {
-                            // Used in templateResult
-                            term = params.term;
                             // Add the query
-                            return "&q=" + params.term;
+                            return `q=${params.term}`;
                         },
+                        delay: 500,
                         processResults: function(data, page) {
                             // console.log("data", data);
                             return {
@@ -269,20 +277,23 @@ jQuery(document).ready(function ($) {
                                     }
                                 )
                             };
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.error(`${textStatus}: ${errorThrown}`);
                         }
                     }
                 });
-                // If the input has a value already, format it the same way as if it
-                // were a new selection. Since we only have the term URI, we query the service to find the label in the right language
-                let id = $(input).val();
+                // If the input has a value already, format it the same way as if it were a new selection.
+                // TODO: do not perform this ajax call, all values are presents
+                let id = $(anchorSib).val();
                 let ontology = $(anchorSib).parent().children().find(vocabNameSelector).attr("value");
                 if (id.startsWith("http") && ontology) {
                     $.ajax({
                         type: "GET",
                         url: `${cvocUrl}ontologies/${ontology}/classes/${encodeURIComponent(id)}`,
-                        dataType: 'json',
+                        dataType: "json",
                         headers: cvocHeaders,
-                        success: function(term, status) {
+                        success: function(term, textStatus, jqXHR) {
                             termName = term.prefLabel;
                             let text = `${termName}, ${term.links.self.replace("data.", "")}`;
                             let newOption = new Option(text, id, true, true);
@@ -290,8 +301,8 @@ jQuery(document).ready(function ($) {
                             $(`#${selectId}`).append(newOption).trigger("change");
                             // TODO: can't get altLabel from this api call, also can't determine the vocab from this call
                         },
-                        failure: function(jqXHR, textStatus, errorThrown) {
-                            console.error("The following error occurred: " + textStatus, errorThrown);
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            console.error(`${textStatus}: ${errorThrown}`);
                             // Something is wrong, but we should show that a value is currently set
                             let newOption = new Option(id, id, true, true);
                             $(`#${selectId}`).append(newOption).trigger("change");
@@ -305,7 +316,7 @@ jQuery(document).ready(function ($) {
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
                 // When a selection is made, set the value of the hidden input field
-                $(`#${selectId}`).on('select2:select', function(e) {
+                $(`#${selectId}`).on("select2:select", function(e) {
                     let data = e.params.data;
                     // data.id = term URI
                     // data.voc = vocabulary URL (not URI) -> need to remove "data." at the beginning
@@ -327,10 +338,11 @@ jQuery(document).ready(function ($) {
                                     url: data.voc,
                                     dataType: "json",
                                     headers: cvocHeaders,
-                                    success: function(ontology, status) {
+                                    success: function(ontology, textStatus, jqXHR) {
                                         $(parent).find(vocabNameSelector).attr("value", ontology.acronym);
                                     },
-                                    failure: function(jqXHR, textStatus, errorThrown) {
+                                    error: function(jqXHR, textStatus, errorThrown) {
+                                        console.error(`${textStatus}: ${errorThrown}`);
                                         $(parent).find(vocabNameSelector).attr("value", data.voc.substring(data.voc.lastIndexOf("/") + 1));
                                     }
                                 });
