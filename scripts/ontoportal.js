@@ -44,7 +44,7 @@ jQuery(document).ready(function ($) {
                 if (id.startsWith("http")) {
                     let ontology = parent.find(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`).text();
                     let termName = parent.find(`[data-cvoc-metadata-name="${managedFields.termName}"]`).text();
-                    let url = cvocUrl.replace("data.", "") + "ontologies/"+ontology+"/classes/"+encodeURIComponent(id);
+                    let url = cvocUrl.replace("data.", "") + "ontologies/"+ontology+"?p=classes&conceptid="+encodeURIComponent(id);
                     if (parent.is("a")) {
                         // Display only the term if it is already into a link
                         $(displayElement).text(termName);
@@ -314,7 +314,7 @@ jQuery(document).ready(function ($) {
                 }
                 */
                 let termName = $(anchorSib).parent().children().find(termSelector).val();
-                let newOption = new Option(`${termName}, ${cvocUrl.replace("data.", "")}ontologies/${ontology}/classes/${encodeURIComponent(id)}`, id, true, true);
+                let newOption = new Option(`${termName}, ${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
                 $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
