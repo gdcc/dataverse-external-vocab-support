@@ -6,7 +6,6 @@
 jQuery(document).ready(function ($) {
     const displaySelector = "span[data-cvoc-protocol='ontoportal']";
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
-    const showChildsInputs = false; // true to debug
     // TODO : i18n
     const selectTitle = "Open in new tab to view Term page";
 
@@ -112,8 +111,13 @@ jQuery(document).ready(function ($) {
                 // Then hide all children of this element's parent.
                 // For a single field, this just hides the input itself (and any siblings if there are any).
                 // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
-                $(anchorSib).parent().children().toggle(showChildsInputs);
-    
+                
+                let children = $(anchorSib).parent().children();
+                $.each(children, function (i) {
+                    $(children[i]).find('input').attr("readonly", "readonly");
+                });
+                let vocabVal = $(anchorSib).parent().children().find(termSelector);
+                $(vocabVal).hide();
                 //Vocab Selector
                 //Currently the code creates a selection form even if there is one vocabulary, and then hides it in that case. (ToDo: only create it if needed)
                 //We create a unique id to be able to find this particular input again
@@ -184,7 +188,7 @@ jQuery(document).ready(function ($) {
                         '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
                 }*/
 
-                $(anchorSib).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">`);
+                $(vocabVal).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">`);
                 // Set up this select2
                 $(`#${selectId}`).select2({
                     theme: "classic",
@@ -223,7 +227,8 @@ jQuery(document).ready(function ($) {
                             let pos = item.text.search(/http[s]?:\/\//);
                             if (pos >= 0) {
                                 let termUri = item.text.substr(pos);
-                                return $("<span></span>").append(item.text.replace(termUri, `<a href="${termUri}" target="_blank" rel="noopener">${termUri}</a>`));
+                                let term = item.text.substr(0,pos);
+                                return $("<span></span>").append(`<a href="${termUri}" target="_blank" rel="noopener">${term}</a>`);
                             } else {
                                 return $("<span></span>").append(item.text);
                             }
@@ -314,7 +319,7 @@ jQuery(document).ready(function ($) {
                 }
                 */
                 let termName = $(anchorSib).parent().children().find(termSelector).val();
-                let newOption = new Option(`${termName}, ${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
+                let newOption = new Option(`${termName}${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
                 $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
@@ -350,7 +355,20 @@ jQuery(document).ready(function ($) {
                                     }
                                 });
                             } else if (key == "vocabularyUri") {
-                                $(parent).find(vocabUriSelector).attr("value", data.voc.replace("data.", ""));
+                                $.ajax({
+                                    type: "GET",
+                                    url: `${data.voc}/latest_submission?display=URI`,
+                                    dataType: "json",
+                                    headers: cvocHeaders,
+                                    success: function(ontology, textStatus, jqXHR) {
+                                        $(parent).find(vocabUriSelector).attr("value", ontology.URI);
+                                    },
+                                    error: function(jqXHR, textStatus, errorThrown) {
+                                        console.error(`${textStatus}: ${errorThrown}`);
+                                        $(parent).find(vocabUriSelector).attr("value", data.voc.replace("data.", ""));
+                                    }
+                                });
+                                
                             } else if (key == "termName") {
                                 $(parent).find(termSelector).attr("value", data.name);
                             }
