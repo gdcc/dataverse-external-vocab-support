@@ -4,11 +4,34 @@
  */
 
 jQuery(document).ready(function ($) {
+
+    const translations = {
+        en: {
+            selectTitle: "Open in new tab to view Term page",
+            selectTerm: "Select a term",
+            searchBy: "Search by preferred or alternate label...",
+        },
+        fr: {
+            selectTitle: "Ouvre la page du mot-clé dans un nouvel onglet",
+            selectTerm: "Tapez le mot-clé",
+            searchBy: "Recherchez par mot-clé exact ou synonyme",
+        },
+    };
+
+    function getLocalizedText(key) {
+        const language = document.getElementsByTagName("html")[0].getAttribute("lang") === "en" ? "en" : "fr"; //Guaranteed French language by default
+
+        if (translations[language] && translations[language][key]) {
+            return translations[language][key];
+        } else {
+            // Retourner la clé elle-même si la traduction n'est pas trouvée
+            return key;
+        }
+    }
+
     const displaySelector = "span[data-cvoc-protocol='ontoportal']";
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
-    // TODO : i18n
-    const selectTitle = "Open in new tab to view Term page";
-
+    
     expand();
     // In metadata edition, verify if Ontoportal is up to print select HTML tag
     if ($(inputSelector).length) {
@@ -18,15 +41,63 @@ jQuery(document).ready(function ($) {
                 url: cvocUrl,
                 method: "HEAD",
                 timeout: 500,
-            }).done(function() {
+            }).done(function () {
                 updateInputs();
             });
         }
     }
 
+    async function loadAcronyms(cvocUrl, cvocHeaders) {
+        if (!window.ontologies) {
+            $.ajax({
+                type: "GET",
+                url: `${cvocUrl}/ontologies?display_context=false&display_links=false&display=acronym,name`,
+                dataType: "json",
+                headers: cvocHeaders,
+                success: function (ontologies, textStatus, jqXHR) {
+                    window.ontologies = ontologies;
+                    console.info("ontologies loaded", ontologies);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error(`${textStatus}: ${errorThrown}`);
+                }
+            });
+        }
+    }
+
+    function findVocNameAndAcronymById(id) {
+        if (window.ontologies) {
+            const ontology = window.ontologies.find(item => item["@id"] === id);
+            if (ontology) {
+                return `${ontology.name} (${ontology.acronym})`;
+            }
+        }
+        return id.substring(id.lastIndexOf("/") + 1);
+    }
+
+    function findVocAcronymById(id) {
+        if (window.ontologies) {
+            const ontology = window.ontologies.find(item => item["@id"] === id);
+            if (ontology) {
+                return ontology.acronym;
+            }
+        }
+        return id.substring(id.lastIndexOf("/") + 1);
+    }
+
+    function findVocNameByAcronym(acronym) {
+        if (window.ontologies) {
+            const ontology = window.ontologies.find(item => item["acronym"] === acronym);
+            if (ontology) {
+                return ontology.name;
+            }
+        }
+        return acronym;
+    }
+
     function expand() {
         // Check each selected element
-        $(displaySelector).each(function() {
+        $(displaySelector).each(function () {
             let displayElement = this;
             // If it hasn't already been processed
             if (!$(displayElement).hasClass("expanded")) {
@@ -43,7 +114,7 @@ jQuery(document).ready(function ($) {
                 if (id.startsWith("http")) {
                     let ontology = parent.find(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`).text();
                     let termName = parent.find(`[data-cvoc-metadata-name="${managedFields.termName}"]`).text();
-                    let url = cvocUrl.replace("data.", "") + "ontologies/"+ontology+"?p=classes&conceptid="+encodeURIComponent(id);
+                    let url = cvocUrl.replace("data.", "") + "ontologies/" + ontology + "?p=classes&conceptid=" + encodeURIComponent(id);
                     if (parent.is("a")) {
                         // Display only the term if it is already into a link
                         $(displayElement).text(termName);
@@ -69,7 +140,7 @@ jQuery(document).ready(function ($) {
 
     function updateInputs() {
         // For each input element
-        $(inputSelector).each(function() {
+        $(inputSelector).each(function () {
             var input = this;
             // If we haven't modified this input yet
             if (!input.hasAttribute("data-ontoportal")) {
@@ -88,8 +159,10 @@ jQuery(document).ready(function ($) {
                 let vocabNameSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyName"]}"]`
                 let vocabUriSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyUri"]}"]`
                 let termSelector = `input[data-cvoc-managed-field="${managedFields["termName"]}"]`
-                // TODO : i18n
-                let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : "Select a term";
+
+                loadAcronyms(cvocUrl, cvocHeaders);
+
+                let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : getLocalizedText("selectTerm");
                 // TODO : use in future ?
                 let lang = input.hasAttribute("lang") ? $(input).attr("lang") : "";
                 let langParam = input.hasAttribute("lang") ? "&lang=" + $(input).attr("lang") : "";
@@ -98,7 +171,7 @@ jQuery(document).ready(function ($) {
                 let selectId = "ontoportalAddSelect_" + num;
                 // Pick the first entry as the default to start with when there is more than one vocab
                 // let vocab = Object.keys(vocabs)[0];
-    
+
                 // Mark this field as processed
                 $(input).attr("data-ontoportal", num);
                 // Decide what needs to be hidden. In the single field case, we hide the input itself. For compound fields, we hide everything leading to this input from the specified parent field
@@ -111,10 +184,12 @@ jQuery(document).ready(function ($) {
                 // Then hide all children of this element's parent.
                 // For a single field, this just hides the input itself (and any siblings if there are any).
                 // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
-                
+
                 let children = $(anchorSib).parent().children();
                 $.each(children, function (i) {
                     $(children[i]).find('input').attr("readonly", "readonly");
+                    $(children[i]).removeClass('col-sm-6');
+                    $(children[i]).addClass('col-sm-12');
                 });
                 let vocabVal = $(anchorSib).parent().children().find(termSelector);
                 $(vocabVal).hide();
@@ -194,51 +269,38 @@ jQuery(document).ready(function ($) {
                     theme: "classic",
                     // tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
                     tags: allowFreeText,
-                    templateResult: function(item) {
+                    templateResult: function (item) {
                         // No need to template the searching text
                         if (item.loading) {
                             return item.text;
                         }
                         let term = "";
-                        if (typeof(query) !== "undefined") {
+                        if (typeof (query) !== "undefined") {
                             term = query.term;
                         }
                         // markMatch bolds the search term if/where it appears in the result
                         let $result = markMatch(item.text, term);
                         return $result;
                     },
-                    templateSelection: function(item) {
+                    templateSelection: function (item) {
                         // For a selection, add HTML to make the term uri a link
-                        /*
-                        if (item.text != item.id) {
-                            // Plain text (i.e. with tags:true) would have item.text == item.id
-                            let pos = item.text.search(/http[s]?:\/\//);
-                            if (pos >= 0) {
-                                let termUri = item.text.substr(pos);
-                                return $("<span></span>").append(item.text.replace(termUri, `<a href="${termUri}" target="_blank" rel="noopener">${termUri}</a>`));
-                            }
+                        if(item.uiUrl) {
+                            return $("<span></span>").append(`<a href="${item.uiUrl}" target="_blank" rel="noopener">${item.text}</a>`);
+                        }
+                        // new Option() cases contains url but in item.text
+                        //TODO: add findVocNameAndAcronymById
+                        let pos = item.text.search(/http[s]?:\/\//);
+                        if (pos >= 0) {
+                            let termUri = item.text.substr(pos);
+                            let term = item.text.substr(0,pos);
+                            return $("<span></span>").append(`<a href="${termUri}" target="_blank" rel="noopener">${term}</a>`); 
                         }
                         return item.text;
-                        */
-                        if (item.text == item.id) {
-                            // Plain text (i.e. with tags:true) would have item.text == item.id
-                            return item.text;
-                        } else {
-                            let pos = item.text.search(/http[s]?:\/\//);
-                            if (pos >= 0) {
-                                let termUri = item.text.substr(pos);
-                                let term = item.text.substr(0,pos);
-                                return $("<span></span>").append(`<a href="${termUri}" target="_blank" rel="noopener">${term}</a>`);
-                            } else {
-                                return $("<span></span>").append(item.text);
-                            }
-                        }
                     },
                     language: {
-                        searching: function(params) {
+                        searching: function (params) {
                             // Change this to be appropriate for your application
-                            // TODO : i18n
-                            return "Search by preferred or alternate label...";
+                            return getLocalizedText("searchBy");
                         }
                     },
                     placeholder: placeholder,
@@ -248,7 +310,7 @@ jQuery(document).ready(function ($) {
                     ajax: {
                         // Call the specified ontoportal service to get matching terms
                         // Add the current vocab, any sub-vocabulary(termParentUri) filter, and desired language
-                        url: function() {
+                        url: function () {
                             let vocabsArr = [];
                             for (let key in vocabs) {
                                 vocabsArr.push(key);
@@ -257,26 +319,28 @@ jQuery(document).ready(function ($) {
                         },
                         dataType: "json",
                         headers: cvocHeaders,
-                        data: function(params) {
+                        data: function (params) {
                             // Add the query
                             return `q=${params.term}`;
                         },
                         delay: 500,
-                        processResults: function(data, page) {
+                        processResults: function (data, page) {
                             // console.log("data", data);
                             return {
                                 results: data.collection.map(
-                                    function(x) {
+                                    function (x) {
                                         return {
                                             // For each returned item, show the term, it's alternative label (which may be what matches the query) and the termUri
                                             // text: x.prefLabel + ((x.hasOwnProperty('altLabel') && x.altLabel.length > 0) ? " (" + x.altLabel + "), " : ", ") + x.uri,
-                                            text: `${x.prefLabel}, ${x.links.self.replace("data.", "")}`,
-                                            name: x.prefLabel,
+                                            //FIXME : Temporary fix on prefLabel, pick only the first until language is fixed on /search API
+                                            text: `${x.prefLabel[0]} - ${findVocNameAndAcronymById(x.links.ontology)}`,
+                                            name: x.prefLabel[0],
                                             id: x["@id"],
                                             voc: x.links.ontology,
+                                            uiUrl: x.links.ui,
                                             // Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the ORCID page
                                             // Using title to provide that hint as a popup
-                                            title: selectTitle
+                                            title: getLocalizedText("selectTitle")
                                         }
                                     }
                                 )
@@ -299,9 +363,9 @@ jQuery(document).ready(function ($) {
                         headers: cvocHeaders,
                         success: function(term, textStatus, jqXHR) {
                             termName = term.prefLabel;
-                            let text = `${termName}, ${term.links.self.replace("data.", "")}`;
+                            let text = `${termName}, ${term.links.ui}`;
                             let newOption = new Option(text, id, true, true);
-                            newOption.title = selectTitle;
+                            newOption.title = getLocalizedText("selectTitle");
                             $(`#${selectId}`).append(newOption).trigger("change");
                             // TODO: can't get altLabel from this api call, also can't determine the vocab from this call
                         },
@@ -319,12 +383,12 @@ jQuery(document).ready(function ($) {
                 }
                 */
                 let termName = $(anchorSib).parent().children().find(termSelector).val();
-                let newOption = new Option(`${termName}${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
+                let newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})}${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
                 $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
                 // When a selection is made, set the value of the hidden input field
-                $(`#${selectId}`).on("select2:select", function(e) {
+                $(`#${selectId}`).on("select2:select", function (e) {
                     let data = e.params.data;
                     // data.id = term URI
                     // data.voc = vocabulary URL (not URI) -> need to remove "data." at the beginning
@@ -341,34 +405,25 @@ jQuery(document).ready(function ($) {
                         let parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
                         for (let key in managedFields) {
                             if (key == "vocabularyName") {
-                                $.ajax({
-                                    type: "GET",
-                                    url: data.voc,
-                                    dataType: "json",
-                                    headers: cvocHeaders,
-                                    success: function(ontology, textStatus, jqXHR) {
-                                        $(parent).find(vocabNameSelector).attr("value", ontology.acronym);
-                                    },
-                                    error: function(jqXHR, textStatus, errorThrown) {
-                                        console.error(`${textStatus}: ${errorThrown}`);
-                                        $(parent).find(vocabNameSelector).attr("value", data.voc.substring(data.voc.lastIndexOf("/") + 1));
-                                    }
-                                });
+                                $(parent).find(vocabNameSelector).attr("value", findVocAcronymById(data.voc));
                             } else if (key == "vocabularyUri") {
+                                let uri = data.voc.replace("data.", "");
                                 $.ajax({
                                     type: "GET",
                                     url: `${data.voc}/latest_submission?display=URI`,
                                     dataType: "json",
                                     headers: cvocHeaders,
-                                    success: function(ontology, textStatus, jqXHR) {
-                                        $(parent).find(vocabUriSelector).attr("value", ontology.URI);
+                                    success: function (ontology, textStatus, jqXHR) {
+                                        if(ontology.URI) {
+                                            uri = ontology.URI;
+                                        }
+                                        $(parent).find(vocabUriSelector).attr("value", uri);
                                     },
-                                    error: function(jqXHR, textStatus, errorThrown) {
+                                    error: function (jqXHR, textStatus, errorThrown) {
                                         console.error(`${textStatus}: ${errorThrown}`);
-                                        $(parent).find(vocabUriSelector).attr("value", data.voc.replace("data.", ""));
+                                        $(parent).find(vocabUriSelector).attr("value", uri);
                                     }
                                 });
-                                
                             } else if (key == "termName") {
                                 $(parent).find(termSelector).attr("value", data.name);
                             }
@@ -376,7 +431,7 @@ jQuery(document).ready(function ($) {
                     }
                 });
                 // When a selection is cleared, clear the hidden input
-                $(`#${selectId}`).on("select2:clear", function(e) {
+                $(`#${selectId}`).on("select2:clear", function (e) {
                     $(`input[data-ontoportal="${num}"]`).attr("value", "");
                     $(`#${selectId}`).text("");
                     // And show the vocab selector again if we have more than one vocab
@@ -399,7 +454,7 @@ jQuery(document).ready(function ($) {
             }
         });
     }
-    
+
     // Put the text in a result that matches the term in a span with class
     // select2-rendered__match that can be styled (e.g. bold)
     function markMatch(text, term) {
@@ -410,20 +465,20 @@ jQuery(document).ready(function ($) {
         if (match < 0) {
             return $result.text(text);
         }
-    
+
         // Put in whatever text is before the match
         $result.text(text.substring(0, match));
-    
+
         // Mark the match
         var $match = $('<span class="select2-rendered__match"></span>');
         $match.text(text.substring(match, match + term.length));
-    
+
         // Append the matching text
         $result.append($match);
-    
+
         // Put in whatever is after the match
         $result.append(text.substring(match + term.length));
-    
+
         return $result;
     }
 });
