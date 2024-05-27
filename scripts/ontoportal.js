@@ -56,7 +56,7 @@ jQuery(document).ready(function ($) {
                 headers: cvocHeaders,
                 success: function (ontologies, textStatus, jqXHR) {
                     window.ontologies = ontologies;
-                    console.info("ontologies loaded", ontologies);
+                    //console.info("ontologies loaded", ontologies);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.error(`${textStatus}: ${errorThrown}`);
@@ -445,7 +445,7 @@ jQuery(document).ready(function ($) {
                     if ($(parentFieldDataSelector).length > 0) {
                         var parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
                         for (let key in managedFields) {
-                            if (key in ["vocabularyName", "vocabularyUri", "termName"]) {
+                            if (["vocabularyName", "vocabularyUri", "termName"].includes(key)) {
                                 $(parent).find(`input[data-cvoc-managed-field="${managedFields[key]}"]`).attr("value", "");
                             }
                         }
