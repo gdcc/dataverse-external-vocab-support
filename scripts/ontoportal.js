@@ -33,34 +33,26 @@ jQuery(document).ready(function ($) {
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
     
     expand();
-    // In metadata edition, verify if Ontoportal is up to print select HTML tag
+    // In metadata edition, verify if Ontoportal is up to print select HTML tag + load ontologies
     if ($(inputSelector).length) {
         let cvocUrl = $(inputSelector).first().data("cvoc-service-url").trim();
+        let cvocHeaders = $(inputSelector).first().data("cvoc-headers");
+        cvocHeaders["Accept"] = "application/json";
         if (cvocUrl && cvocUrl.search(/http[s]?:\/\//) == 0) {
-            $.ajax({
-                url: cvocUrl,
-                method: "HEAD",
-                timeout: 500,
-            }).done(function () {
-                updateInputs();
-            });
-        }
-    }
-
-    async function loadAcronyms(cvocUrl, cvocHeaders) {
-        if (!window.ontologies) {
             $.ajax({
                 type: "GET",
                 url: `${cvocUrl}/ontologies?display_context=false&display_links=false&display=acronym,name`,
                 dataType: "json",
                 headers: cvocHeaders,
+                timeout: 500,
                 success: function (ontologies, textStatus, jqXHR) {
                     window.ontologies = ontologies;
-                    //console.info("ontologies loaded", ontologies);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.error(`${textStatus}: ${errorThrown}`);
-                }
+                },
+            }).done(function () {
+                updateInputs();
             });
         }
     }
@@ -159,8 +151,6 @@ jQuery(document).ready(function ($) {
                 let vocabNameSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyName"]}"]`
                 let vocabUriSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyUri"]}"]`
                 let termSelector = `input[data-cvoc-managed-field="${managedFields["termName"]}"]`
-
-                loadAcronyms(cvocUrl, cvocHeaders);
 
                 let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : getLocalizedText("selectTerm");
                 // TODO : use in future ?
@@ -269,6 +259,17 @@ jQuery(document).ready(function ($) {
                     theme: "classic",
                     // tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
                     tags: allowFreeText,
+                    createTag: function (params) {
+                        var term = $.trim(params.term);
+                        if (term === '') {
+                            return null;
+                        }
+                        return {
+                            id: term,
+                            text: term,
+                            newTag: true
+                        }
+                    },
                     templateResult: function (item) {
                         // No need to template the searching text
                         if (item.loading) {
@@ -383,72 +384,64 @@ jQuery(document).ready(function ($) {
                 }
                 */
                 let termName = $(anchorSib).parent().children().find(termSelector).val();
-                let newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})}${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
+                let newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
                 $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
                 // When a selection is made, set the value of the hidden input field
                 $(`#${selectId}`).on("select2:select", function (e) {
+
                     let data = e.params.data;
-                    // data.id = term URI
-                    // data.voc = vocabulary URL (not URI) -> need to remove "data." at the beginning
-                    $(`input[data-ontoportal="${num}"]`).val(data.id);
-                    // If we have more than one vocab, hide the vocab selector since we have a termURI selected
-                    /*if (Object.keys(vocabs).length > 1) {
-                        $(anchorSib).parent().find('.cvoc-vocab').hide();
-                        $(anchorSib).parent().find('.cvoc-term > label').hide();
-                        //and let the term field take up the whole width
-                        $('.cvoc-term').removeClass('col-sm-9');
-                    }*/
-                    // In the multi-field case, we should also fill in the other hidden managed fields
+
                     if ($(parentFieldDataSelector).length > 0) {
                         let parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
-                        for (let key in managedFields) {
-                            if (key == "vocabularyName") {
-                                $(parent).find(vocabNameSelector).attr("value", findVocAcronymById(data.voc));
-                            } else if (key == "vocabularyUri") {
-                                let uri = data.voc.replace("data.", "");
-                                $.ajax({
-                                    type: "GET",
-                                    url: `${data.voc}/latest_submission?display=URI`,
-                                    dataType: "json",
-                                    headers: cvocHeaders,
-                                    success: function (ontology, textStatus, jqXHR) {
-                                        if(ontology.URI) {
-                                            uri = ontology.URI;
+
+                        if(data.newTag) { // newTag attribute is defined while using free text
+                            $(parent).children().each(function () {
+                                $(this).find('input').removeAttr("readonly").attr("value", "");
+                            });
+                            $(parent).find(termSelector).attr("value", data.id);
+                        } else {
+                            $(`input[data-ontoportal="${num}"]`).val(data.id);
+                            $(parent).children().each(function () {
+                                $(this).find('input').attr("readonly", "readonly");
+                            });
+                            for (let key in managedFields) {
+                                if (key == "vocabularyName") {
+                                    $(parent).find(vocabNameSelector).attr("value", findVocAcronymById(data.voc));
+                                } else if (key == "vocabularyUri") {
+                                    let uri = data.voc.replace("data.", "");
+                                    $.ajax({
+                                        type: "GET",
+                                        url: `${data.voc}/latest_submission?display=URI`,
+                                        dataType: "json",
+                                        headers: cvocHeaders,
+                                        success: function (ontology, textStatus, jqXHR) {
+                                            if(ontology.URI) {
+                                                uri = ontology.URI;
+                                            }
+                                            $(parent).find(vocabUriSelector).attr("value", uri);
+                                        },
+                                        error: function (jqXHR, textStatus, errorThrown) {
+                                            console.error(`${textStatus}: ${errorThrown}`);
+                                            $(parent).find(vocabUriSelector).attr("value", uri);
                                         }
-                                        $(parent).find(vocabUriSelector).attr("value", uri);
-                                    },
-                                    error: function (jqXHR, textStatus, errorThrown) {
-                                        console.error(`${textStatus}: ${errorThrown}`);
-                                        $(parent).find(vocabUriSelector).attr("value", uri);
-                                    }
-                                });
-                            } else if (key == "termName") {
-                                $(parent).find(termSelector).attr("value", data.name);
+                                    });
+                                } else if (key == "termName") {
+                                    $(parent).find(termSelector).attr("value", data.name);
+                                }
                             }
                         }
                     }
                 });
                 // When a selection is cleared, clear the hidden input
                 $(`#${selectId}`).on("select2:clear", function (e) {
-                    $(`input[data-ontoportal="${num}"]`).attr("value", "");
-                    $(`#${selectId}`).text("");
-                    // And show the vocab selector again if we have more than one vocab
-                    /*if (Object.keys(vocabs).length > 1) {
-                        $(anchorSib).parent().find('.cvoc-vocab').show();
-                        $(anchorSib).parent().find('.cvoc-term > label').show();
-                        //And schrink the term field to 75% width
-                        $('.cvoc-term').addClass('col-sm-9');
-                    }*/
-                    // And clear any hidden managed fields as well
+                    $(`#${selectId}`).val(null).trigger('change');
                     if ($(parentFieldDataSelector).length > 0) {
                         var parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
-                        for (let key in managedFields) {
-                            if (["vocabularyName", "vocabularyUri", "termName"].includes(key)) {
-                                $(parent).find(`input[data-cvoc-managed-field="${managedFields[key]}"]`).attr("value", "");
-                            }
-                        }
+                        $(parent).children().each(function () {
+                            $(this).find('input').attr("readonly", "readonly").attr("value", "");
+                        });
                     }
                 });
             }
