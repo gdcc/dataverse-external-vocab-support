@@ -22,6 +22,8 @@ jQuery(document).ready(function ($) {
     const displaySelector = "span[data-cvoc-protocol='ontoportal']";
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
     const cacheOntologies = "ontoportal-ontologies";
+    const showChildsInputs = false; // true to debug
+    const emptyOption = '<option></option>'; // This empty option is really important for select2 to work well with a created tag and select event triggered
 
     expand();
     // In metadata edition, verify if Ontoportal is up to print select HTML tag + load ontologies
@@ -126,6 +128,13 @@ jQuery(document).ready(function ($) {
                 }
             }
         });
+
+        //Special case allow-free-text is true + typed value is mapped to termValue instead of termUri
+        $("span[data-cvoc-metadata-name='keywordValue'][data-cvoc-index]").each(function () {
+            if($(`span[data-cvoc-protocol='ontoportal'][data-cvoc-index="${$(this).attr("data-cvoc-index")}"]`).length == 0) {
+                $(this).removeClass("hidden").removeAttr("hidden");
+            }
+        });
     }
 
     function updateInputs() {
@@ -173,14 +182,7 @@ jQuery(document).ready(function ($) {
                 // For a single field, this just hides the input itself (and any siblings if there are any).
                 // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
 
-                let children = $(anchorSib).parent().children();
-                $.each(children, function (i) {
-                    $(children[i]).find("input").attr("readonly", "readonly");
-                    $(children[i]).removeClass("col-sm-6");
-                    $(children[i]).addClass("col-sm-12");
-                });
-                let vocabVal = $(anchorSib).parent().children().find(termSelector);
-                $(vocabVal).hide();
+                $(anchorSib).parent().children().toggle(showChildsInputs);
                 //Vocab Selector
                 //Currently the code creates a selection form even if there is one vocabulary, and then hides it in that case. (ToDo: only create it if needed)
                 //We create a unique id to be able to find this particular input again
@@ -251,7 +253,7 @@ jQuery(document).ready(function ($) {
                         '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
                 }*/
 
-                $(vocabVal).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">`);
+                $(anchorSib).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">${emptyOption}</select>`);
                 // Set up this select2
                 $(`#${selectId}`).select2({
                     theme: "classic",
@@ -381,7 +383,13 @@ jQuery(document).ready(function ($) {
                 }
                 */
                 let termName = $(anchorSib).parent().children().find(termSelector).val();
-                let newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
+                let newOption;
+                if(id) {
+                    newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
+                } else if(termName) {
+                    newOption = new Option(termName, termName, true, true);
+                }
+                
                 $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
@@ -395,14 +403,11 @@ jQuery(document).ready(function ($) {
 
                         if (data.newTag) { // newTag attribute is defined while using free text
                             $(parent).children().each(function () {
-                                $(this).find("input").removeAttr("readonly").attr("value", "");
+                                $(this).find("input").attr("value", "");
                             });
                             $(parent).find(termSelector).attr("value", data.id);
                         } else {
                             $(`input[data-ontoportal="${num}"]`).val(data.id);
-                            $(parent).children().each(function () {
-                                $(this).find("input").attr("readonly", "readonly");
-                            });
                             for (let key in managedFields) {
                                 if (key == "vocabularyName") {
                                     $(parent).find(vocabNameSelector).attr("value", findVocAcronymById(data.voc));
@@ -434,11 +439,12 @@ jQuery(document).ready(function ($) {
                 });
                 // When a selection is cleared, clear the hidden input
                 $(`#${selectId}`).on("select2:clear", function (e) {
+                    $(`#${selectId}`).html(emptyOption);
                     $(`#${selectId}`).val(null).trigger("change");
                     if ($(parentFieldDataSelector).length > 0) {
                         var parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
                         $(parent).children().each(function () {
-                            $(this).find("input").attr("readonly", "readonly").attr("value", "");
+                            $(this).find("input").attr("value", "");
                         });
                     }
                 });
