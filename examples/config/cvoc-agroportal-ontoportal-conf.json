@@ -5,21 +5,13 @@
     "js-url": "https://raw.githubusercontent.com/Recherche-Data-Gouv/dataverse-external-vocab-support/poc_ontoportal/scripts/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
-    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}?language=en,fr",
+    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}?language=fr",
     "term-parent-uri": "",
     "allow-free-text": true,
     "languages":"en, fr",
     "vocabs": {
-        "AGROVOC": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/AGROVOC",
-            "uriSpace": "http"
-        },
-        "ONTOBIOTOPE": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ONTOBIOTOPE",
-            "uriSpace": "http"
-        },
-        "CROPUSAGE": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/CROPUSAGE",
+        "": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ALL",
             "uriSpace": "http"
         }
     },
@@ -44,10 +36,6 @@
             "pattern": "{0}",
             "params": ["/prefLabel"],
             "indexIn": "keywordValue"
-        },
-        "vocabularyName": {
-            "pattern": "{0}",
-            "params": ["/links/ontology"]
         },
         "vocabularyUri": {
             "pattern": "{0}",
