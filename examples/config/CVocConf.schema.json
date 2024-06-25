@@ -610,6 +610,19 @@
                                             "/graph/uri=@id/prefLabel"
                                         ]
                                     ]
+                                },
+
+                                "indexIn": {
+                                    "$id": "#/fieldconfig/properties/retrieval-filtering/element/index-in",
+                                    "type": "string",
+                                    "title": "Element indexIn",
+                                    "description": "indexIn can be the `term-uri-field` or one `managed-fields`",
+                                    "default": "",
+                                    "examples":
+                                    [
+                                        "cvocDemoTermURI",
+                                        "cvocDemoVocabulary"
+                                    ]
                                 }
                             }
                         }
