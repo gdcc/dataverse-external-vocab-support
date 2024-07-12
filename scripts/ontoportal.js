@@ -10,11 +10,13 @@ jQuery(document).ready(function ($) {
             selectTitle: "Open in new tab to view Term page",
             selectTerm: "Select a term",
             searchBy: "Search by preferred or alternate label...",
+            freeTextPrefix: "Free text: ",
         },
         fr: {
             selectTitle: "Ouvre la page du mot-clé dans un nouvel onglet",
             selectTerm: "Tapez le mot-clé",
             searchBy: "Recherchez par mot-clé exact ou synonyme",
+            freeTextPrefix: "Saisie libre: ",
         },
     };
     const language = document.getElementsByTagName("html")[0].getAttribute("lang") === "en" ? "en" : "fr"; // Guaranteed French language by default
@@ -266,9 +268,13 @@ jQuery(document).ready(function ($) {
                         }
                         return {
                             id: term,
-                            text: term,
+                            text: `${getLocalizedText("freeTextPrefix")}${term}`,
                             newTag: true
                         }
+                    },
+                    insertTag: function (data, tag) {
+                        // Insert the tag at the end of the results
+                        data.push(tag);
                     },
                     templateResult: function (item) {
                         // No need to template the searching text
