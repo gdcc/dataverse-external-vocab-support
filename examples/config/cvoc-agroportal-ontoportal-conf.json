@@ -10,8 +10,28 @@
     "allow-free-text": true,
     "languages":"en, fr",
     "vocabs": {
-        "": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ALL",
+        "INRAETHES": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/INRAETHES",
+            "uriSpace": "http"
+        },
+        "ANAEETHES": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ANAEETHES",
+            "uriSpace": "http"
+        },
+        "AGROVOC": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/AGROVOC",
+            "uriSpace": "http"
+        },
+        "NCBITAXON": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/NCBITAXON",
+            "uriSpace": "http"
+        },
+        "CO_321": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/CO_321",
+            "uriSpace": "http"
+        },
+        "TRANSFORMON": {
+            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/TRANSFORMON",
             "uriSpace": "http"
         }
     },
