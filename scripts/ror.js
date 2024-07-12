@@ -1,4 +1,4 @@
-console.log("ror.js..");
+//console.log("ror.js..");
 var rorSelector = "span[data-cvoc-protocol='ror']";
 var rorInputSelector = "input[data-cvoc-protocol='ror']";
 var rorRetrievalUrl = "https://api.ror.org/organizations";
@@ -13,7 +13,7 @@ $(document).ready(function() {
 });
 
 function expandRors() {
-    console.log("expandRors");
+    //console.log("expandRors");
     // Check each selected element
     $(rorSelector).each(function() {
         var rorElement = this;
@@ -41,7 +41,7 @@ function expandRors() {
                             'Accept': 'application/json',
                         },
                         success: function(ror, status) {
-                            console.log(ror);
+                            //console.log(ror);
                             // If found, construct the HTML for display
                             var name = ror.name;
                             var altNames= ror.acronyms;
@@ -146,7 +146,7 @@ function updateRorInputs() {
                         term = params.term;
                         if (!term) {
                             term = "";
-                            console.log("no term!");
+                            //console.log("no term!");
                         }
                         var query = {
                             query: term,
@@ -165,11 +165,11 @@ function updateRorInputs() {
                             results: data['items']
                                 // Sort the list
                                 // Prioritize active orgs
-                                .sort((a, b) => (b.status === 'active') ? 1 : -1)
+                                .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
                                 // Prioritize those with this acronym
-                                .sort((a, b) => (b.acronyms.includes(params.term)) ? 1 : -1)
+                                .sort((a, b) => Number(b.acronyms.includes(params.term)) - Number(a.acronyms.includes(params.term)))
                                 // Prioritize previously used entries
-                                .sort((a, b) => (getValue(rorPrefix, b['id'].replace(rorIdStem,'')).name != null) ? 1 : -1)
+                                .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorIdStem,'')).name != null) - Number(getValue(rorPrefix, a['id'].replace(rorIdStem,'')).name != null))
                                 .map(
                                     function(x) {
                                         return {
