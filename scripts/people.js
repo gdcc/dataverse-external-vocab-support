@@ -30,27 +30,28 @@ function expandPeople() {
                 success: function(person, status) {
                     //If found, construct the HTML for display
                     var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
-                    var html = "<a href='https://orcid.org/" + id + "' target='_blank' rel='noopener' >" + name + "</a> ";
+                    var displayElement = $('<a/>').attr('href','https://orcid.org/' + id).attr('target','_blank').attr('rel', 'noopener').text(name);
                     $(personElement).hide();
                     let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
                     if(sibs.length==0) {
-                        $(personElement).parent().prepend(html);
+                        displayElement.prependTo($(personElement).parent());
                     } else {
-                        sibs.eq(0).before(html);
+                        displayElement.insertBefore(sibs.eq(0));
                     }
+
                     //If email is public, show it using the jquery popover functionality
                     if (person.emails.email.length > 0) {
-                        $(personElement).popover({
+                        displayElement.popover({
                             content: person.emails.email[0].email,
                             placement: 'top',
                             template: '<div class="popover" role="tooltip" style="max-width:600px;word-break:break-all"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
                         });
-                        personElement.onmouseenter = function() {
+                         displayElement.mouseenter(function() {
                             $(this).popover('show');
-                        };
-                        personElement.onmouseleave = function() {
+                        });
+                         displayElement.mouseleave(function() {
                             $(this).popover('hide');
-                        };
+                        });
                     }
                     //Store the most recent ORCIDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
                     storeValue(orcidPrefix, id, name);
