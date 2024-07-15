@@ -185,6 +185,10 @@ jQuery(document).ready(function ($) {
                 // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
 
                 $(anchorSib).parent().children().toggle(showChildsInputs);
+
+                //Hiding conditionnal requirement text message
+                $(input).parents('.form-group[role="group"]').find('.help-block').hide();
+
                 //Vocab Selector
                 //Currently the code creates a selection form even if there is one vocabulary, and then hides it in that case. (ToDo: only create it if needed)
                 //We create a unique id to be able to find this particular input again
