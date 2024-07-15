@@ -1,4 +1,4 @@
-//console.log("ror.js..");
+console.log("ror.js..");
 var rorSelector = "span[data-cvoc-protocol='ror']";
 var rorInputSelector = "input[data-cvoc-protocol='ror']";
 var rorRetrievalUrl = "https://api.ror.org/organizations";
@@ -13,12 +13,20 @@ $(document).ready(function() {
 });
 
 function expandRors() {
-    //console.log("expandRors");
     // Check each selected element
     $(rorSelector).each(function() {
         var rorElement = this;
         // If it hasn't already been processed
         if (!$(rorElement).hasClass('expanded')) {
+          //Child field case - if non-managed display, the string before this is name (affiliation) and we need to remove the duplicate affiliation string
+					//This is true for Dataverse author field - may not be true elsewhere - tbd
+          let prev = $(rorElement)[0].previousSibling;
+          if(prev !== undefined) {
+          let val = $(rorElement)[0].previousSibling.nodeValue;
+            if(val !== null) {
+              $(rorElement)[0].previousSibling.data = val.substring(0,val.indexOf('('));
+            }
+          }
             // Mark it as processed
             $(rorElement).addClass('expanded');
             var id = rorElement.textContent;
@@ -41,7 +49,6 @@ function expandRors() {
                             'Accept': 'application/json',
                         },
                         success: function(ror, status) {
-                            //console.log(ror);
                             // If found, construct the HTML for display
                             var name = ror.name;
                             var altNames= ror.acronyms;
@@ -146,7 +153,6 @@ function updateRorInputs() {
                         term = params.term;
                         if (!term) {
                             term = "";
-                            //console.log("no term!");
                         }
                         var query = {
                             query: term,
