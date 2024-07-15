@@ -73,7 +73,6 @@ function expandPeople() {
 }
 
 function updatePeopleInputs() {
-    console.log("Local people.js");
     //For each input element within personInputSelector elements
     $(personInputSelector).each(function() {
         var personInput = this;
@@ -168,7 +167,6 @@ function updatePeopleInputs() {
                     processResults: function(data, page) {
                         let newItems = data['expanded-result'];
                         if(newItems==null) {
-                          console.log("Returning empty array");
                           return { results: [] };
                         }
                         return {
