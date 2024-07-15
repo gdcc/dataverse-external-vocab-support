@@ -60,8 +60,7 @@ function expandPeople() {
                     $(personElement).show();
                     let index = $(personElement).attr('data-cvoc-index');
                     if(index !== undefined) {
-                        $(personElement).siblings().show();
-                        $(personElement).siblings("[data-cvoc-index='" + index + "']").removeClass('hidden');
+                        $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
                     }
                     //Generic logging if not 404
                     if (jqXHR.status != 404) {
@@ -224,9 +223,10 @@ function updatePeopleInputs() {
                 //If the initial value is not an ORCID (legacy, or if tags are enabled), just display it as is
                 if(Object.keys(managedFields).length > 0) {
                     //Handle managed fields
-
-                    $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
-                    $(personInput).parent().show();
+                    if(id.length > 0) {
+                        $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+                        $(personInput).parent().show();
+                    }
                     id = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val();
                 }
 
