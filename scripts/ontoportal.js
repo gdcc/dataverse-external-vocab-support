@@ -326,7 +326,7 @@ jQuery(document).ready(function ($) {
                             for (let key in vocabs) {
                                 vocabsArr.push(key);
                             }
-                            return `${cvocUrl}/search?include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(",")}`;
+                            return `${cvocUrl}/search?require_exact_match=true&include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(",")}`;
                         },
                         dataType: "json",
                         headers: cvocHeaders,
