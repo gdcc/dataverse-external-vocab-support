@@ -44,6 +44,7 @@ function expandPeople() {
                         storeValue(orcidPrefix, id, name);
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
+                        //Treat as plain text
                         $(personElement).show();
                         let index = $(personElement).attr('data-cvoc-index');
                         if (index !== undefined) {
@@ -55,6 +56,13 @@ function expandPeople() {
                         }
                     }
                 });
+            } else {
+                //Plain text entry
+                $(personElement).show();
+                let index = $(personElement).attr('data-cvoc-index');
+                if(index !== undefined) {
+                    $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
+                }
             }
         }
     });
