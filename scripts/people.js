@@ -30,8 +30,7 @@ function expandPeople() {
                 success: function(person, status) {
                     //If found, construct the HTML for display
                     var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
-                    var displayElement = $('<a/>').attr('href','https://orcid.org/' + id).attr('target','_blank').attr('rel', 'noopener').text(name);
-                    $(personElement).hide();
+                    var displayElement = $('<a/>').attr('href', 'https://orcid.org/' + id).attr('target', '_blank').attr('rel', 'noopener').html(name + ' <img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />');
                     let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
                     if(sibs.length==0) {
                         displayElement.prependTo($(personElement).parent());
@@ -39,20 +38,6 @@ function expandPeople() {
                         displayElement.insertBefore(sibs.eq(0));
                     }
 
-                    //If email is public, show it using the jquery popover functionality
-                    if (person.emails.email.length > 0) {
-                        displayElement.popover({
-                            content: person.emails.email[0].email,
-                            placement: 'top',
-                            template: '<div class="popover" role="tooltip" style="max-width:600px;word-break:break-all"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
-                        });
-                         displayElement.mouseenter(function() {
-                            $(this).popover('show');
-                        });
-                         displayElement.mouseleave(function() {
-                            $(this).popover('hide');
-                        });
-                    }
                     //Store the most recent ORCIDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
                     storeValue(orcidPrefix, id, name);
                 },
