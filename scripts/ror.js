@@ -31,14 +31,14 @@ function expandRors() {
             $(rorElement).addClass('expanded');
             var id = rorElement.textContent;
             if (!id.startsWith(rorIdStem)) {
-                $(rorElement).html(getRorDisplayHtml(id, ['No ROR Entry'], false, true));
+                $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, true));
             } else {
                 //Remove the URL prefix - "https://ror.org/".length = 16
                 id = id.substring(rorIdStem.length);
                 //Check for cached entry
                 let value = getValue(rorPrefix, id);
                 if(value.name !=null) {
-                    $(rorElement).html(getRorDisplayHtml(value.name, value.altNames, false, true));
+                    $(rorElement).html(getRorDisplayHtml(value.name, rorIdStem + id, value.altNames, false, true));
                 } else {
                     // Try it as an ROR entry (could validate that it has the right form or can just let the GET fail)
                     $.ajax({
@@ -53,7 +53,7 @@ function expandRors() {
                             var name = ror.name;
                             var altNames= ror.acronyms;
 
-                            $(rorElement).html(getRorDisplayHtml(name, altNames, false, true));
+                            $(rorElement).html(getRorDisplayHtml(name, rorIdStem + id, altNames, false, true));
                             //Store values in localStorage to avoid repeating calls to CrossRef
                             storeValue(rorPrefix, id, name + "#" + altNames);
                         },
@@ -71,7 +71,7 @@ function expandRors() {
     });
 }
 
-function getRorDisplayHtml(name, altNames, truncate=true, addParens=false) {
+function getRorDisplayHtml(name, url, altNames, truncate=true, addParens=false) {
     if(typeof(altNames) == 'undefined') {
         altNames=[];
     }
@@ -81,8 +81,11 @@ function getRorDisplayHtml(name, altNames, truncate=true, addParens=false) {
         altNames.unshift(name);
         name=name.substring(0,rorMaxLength) + "…";
     }
+    if(url != null) {
+      name =  '<a href="url">' + name +' <img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="24" /></a>';
+    }
     if(addParens) {
-        name = " (" + name +")";
+        name = ' (' + name + ')';
     }
     return $('<span></span>').append(name).attr("title", altNames);
 }
@@ -133,9 +136,9 @@ function updateRorInputs() {
                             altNames = idnum.substr(pos+2).split(',');
                             idnum=idnum.substr(0,pos);
                         }
-                        return getRorDisplayHtml(name, altNames);
+                        return getRorDisplayHtml(name, rorIdStem + idnum, altNames);
                     }
-                    return getRorDisplayHtml(name, ['No ROR Entry']);
+                    return getRorDisplayHtml(name, null, ['No ROR Entry']);
                 },
                 language: {
                     searching: function(params) {
