@@ -31,6 +31,7 @@ function expandPeople() {
                     //If found, construct the HTML for display
                     var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
                     var displayElement = $('<a/>').attr('href', 'https://orcid.org/' + id).attr('target', '_blank').attr('rel', 'noopener').html(name + ' <img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />');
+                    $(personElement).hide();
                     let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
                     if(sibs.length==0) {
                         displayElement.prependTo($(personElement).parent());
