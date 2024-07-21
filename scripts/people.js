@@ -248,7 +248,10 @@ function updatePeopleInputs() {
                         if (key == 'personName') {
                             $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', data.text.split(";", 1)[0]);
                         } else if (key == 'idType') {
-                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', isOrcid ? 'ORCID' : '');
+                          let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                          let orcidVal = $(selectField).find('option:contains("ORCID")').val();
+                            $(selectField).val( isOrcid ? orcidVal:'');
+
                         }
                     }
                     if (Object.keys(managedFields).length > 0) {
@@ -257,7 +260,7 @@ function updatePeopleInputs() {
                             $(parent).find("input[data-person='" + num + "']").parent().hide();
                             $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
                         } else {
-                            //Hide managed fields
+                            //Show managed fields
                             let idField = $(parent).find("input[data-person='" + num + "']");
                             idField.val('');
                             idField.parent().show();
@@ -277,7 +280,7 @@ function updatePeopleInputs() {
                         if (key == 'personName') {
                             $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', '');
                         } else if (key == 'idType') {
-                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', '');
+                          $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select").val('');
                         }
                     }
                 }
