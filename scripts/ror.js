@@ -82,7 +82,7 @@ function getRorDisplayHtml(name, url, altNames, truncate=true, addParens=false) 
         name=name.substring(0,rorMaxLength) + "…";
     }
     if(url != null) {
-       name =  '<a href="' + url + '" target="_blank" rel="nofollow" >' + name + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="24" class="ror"/></a>';
+      name =  name + '<a href="' + url + '" target="_blank" rel="nofollow" >' +'<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="24" class="ror"/></a>';
     }
 
     if(addParens) {
