@@ -1,0 +1,103 @@
+<html>
+   <head>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+      <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet">
+
+      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/ror.js?version=6.3-qdr-dev"></script>
+      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/people.js?version=6.3-qdr-dev"></script>
+
+      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/cvocutils.js?version=6.3-qdr-dev"></script>
+
+      <!--link type="text/css" rel="stylesheet" href="/jakarta.faces.resource/css/structure.css.xhtml?version=6.3-qdr-dev"-->
+      <link type="text/css" rel="stylesheet" href="example.css?version=6.3-qdr-dev">
+   </head>
+   <body>
+      <h1>Quick Static ORCID/ROR Demonstrator</h1>
+      <h2>This static HTML page demonstrates how the scripts in this repository are designed to attach to specific fields via 
+      the use of data-cvoc-* attributes embedded in the page. Once you've viewed the page and tried it out, take a look at the 
+      page source to see the added attributes. With Dataverse, these attributes are automatically generated based 
+      on the :CVocConf setting. For other repositories - if you can add these attributes to your page, you can use the scripts as well.
+      Note - the page is truly static  and the inputs and outputs are not connected (if someone wants to add some Javascript to update 
+      the display entries when new inputs are selected, feel free!)</h2>
+      <h2>Input</h2>
+      <div style="width:600px">
+         <label for="d1">Identifier</label>
+         <div>
+            <input
+               id="d1"
+               name="d1"
+               type="text"
+               value="Myers, Not Jim"
+               role="textbox"
+               data-cvoc-protocol="orcid"
+               data-cvoc-vocabs="{"orcid":{"uriSpace":"https://orcid.org/"}}"
+               data-cvoc-allowfreetext="true"
+               lang=""
+               data-cvoc-headers="{}"
+               data-cvoc-filter=""
+               data-cvoc-service-url=""
+               data-cvoc-managedfields="{}"/>
+         </div>
+      </div>
+      <div>
+         <label for="d2">Affiliation</label>
+         <input
+            id="d2"
+            name="d2"
+            type="text"
+            value="https://ror.org/014trz974"
+            role="textbox"
+
+            data-cvoc-protocol="ror"
+            data-cvoc-vocabs="{"rors":{"uriSpace":"https://ror.org/"}}"
+            data-cvoc-allowfreetext="true"
+            lang=""
+            data-cvoc-headers="{}"
+            data-cvoc-managedfields="{}"
+            data-cvoc-filter=""
+            data-cvoc-service-url="" />
+      </div>
+      <div>
+         <h2>Display</h2>
+         <div>
+            <div>
+               <span>Person 1: </span>
+               <span
+                  data-cvoc-protocol="orcid"
+                  data-cvoc-index="0"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">https://orcid.org/0000-0001-8462-650X</span>
+               &nbsp;
+               <span
+                  data-cvoc-protocol="ror"
+                  data-cvoc-index="0"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">https://ror.org/014trz974</span>
+            </div>
+            <div>
+               <span>Person 2: </span>
+               <span
+                  data-cvoc-protocol="orcid"
+                  data-cvoc-index="1"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">Myers, Not Jim</span>
+               &nbsp;
+               <span
+                  data-cvoc-protocol="ror"
+                  data-cvoc-index="1"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">Not QDR</span>
+            </div>
+         </div>
+      </div>
+   </body>
+</html>
