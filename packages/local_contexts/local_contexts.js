@@ -1,26 +1,16 @@
-var cvoc_lc_projectSelector = "span[data-cvoc-protocol='localcontexts']";
-var cvoc_lc_projectInputSelector = "input[data-cvoc-protocol='localcontexts']";
+var cvoc_lc_projectSelector = "span[data-cvoc-protocol='localcontexts']"
+var cvoc_lc_projectInputSelector = "input[data-cvoc-protocol='localcontexts']"
 
-var cvoc_lc_lcBaseUrl = "https://localcontextshub.org";
+var cvoc_lc_lcBaseUrl = "https://localcontextshub.org"
 
-var cvoc_lc_seach_minimumInputLength = 4;
-var cvoc_lc_search_delay = 1000;
-
-// if (typeof initFunction !== "function") {
-//     function initFunction() {
-//         console.log("doc ready")
-//         cvoc_lc_viewProject();
-//         cvoc_lc_editProject();
-//     }
-//
-//     $(document).ready(initFunction);
-// }
+var cvoc_lc_seach_minimumInputLength = 4
+var cvoc_lc_search_delay = 500
 
 $(document).ready(() => {
     // console.log("doc ready")
-    cvoc_lc_viewProject();
-    cvoc_lc_editProject();
-});
+    cvoc_lc_viewProject()
+    cvoc_lc_editProject()
+})
 
 function cvoc_lc_buildLCProjectPopup(project) {
 
@@ -36,9 +26,9 @@ function cvoc_lc_buildLCProjectPopup(project) {
     // console.log(project)
     const notices = project.notice || []
     const labels = (project.tk_labels || []).concat(project.bc_labels || [])
-    const lcWrapper = `<div style="max-width: 700px; margin-top: 10px;
+    const lcWrapper = `<div style="max-width: 700px; margin-top: 10px
                 border: 0.5px solid darkgray;border-radius: 2rem; background: white">
-        <div  style="padding: 12px;padding-bottom: 0; width: 100&; display: flex; flex-wrap: wrap; justify-content: flex-start">
+        <div  style="padding: 12px;padding-bottom: 0; width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start">
         ${notices.map(createItemImage).join("")}
         ${labels.map(createItemImage).join("")}
         </div>
@@ -61,9 +51,9 @@ function cvoc_lc_buildLCProjectPopup(project) {
 
 async function cvoc_lc_LoadOrFetch(fullUrl) {
     const lc_project_url_base = `${cvoc_lc_lcBaseUrl}/projects/`
-    let lc_uuid = fullUrl;
+    let lc_uuid = fullUrl
     if (lc_uuid.startsWith(lc_project_url_base)) {
-        lc_uuid = lc_uuid.substring(lc_project_url_base.length);
+        lc_uuid = lc_uuid.substring(lc_project_url_base.length)
     }
     const inStorage = sessionStorage.getItem(lc_uuid)
     if (inStorage) {
@@ -71,28 +61,25 @@ async function cvoc_lc_LoadOrFetch(fullUrl) {
     }
     const response = await fetch(`${cvoc_lc_lcBaseUrl}/api/v1/projects/${lc_uuid}`)
     const project = await response.json()
-    sessionStorage.setItem(lc_uuid, JSON.stringify(project));
+    sessionStorage.setItem(lc_uuid, JSON.stringify(project))
     return Promise.resolve(project)
 }
 
 async function cvoc_lc_viewProject() {
     // console.log("cvoc_lc_viewProject")
-    const jqSelect = $(cvoc_lc_projectSelector);
+    const jqSelect = $(cvoc_lc_projectSelector)
     if (jqSelect.length === 0)
         return
-    const projectField = jqSelect[0];
+    const projectField = jqSelect[0]
+    if (projectField.getAttribute("expanded") === "true") {
+        return
+    }
+    projectField.setAttribute("expanded", "true")
     const fullUrl = projectField.textContent
-    // this hack needs to be done, when ready is executed twice. it prevents adding the LC container twice
-    // console.log(projectField.parentNode.children.length)
-    setTimeout(async () => {
-        if (projectField.parentNode.children.length === 1) {
-            const project = await cvoc_lc_LoadOrFetch(fullUrl);
-            let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
-            projectField.after(lcContainerElement);
-        }
-    }, Math.random() * 1000)
-
-    projectField.innerHTML = `<a href='${fullUrl}' target='_blank' rel='noopener' >${fullUrl}</a>`;
+    const project = await cvoc_lc_LoadOrFetch(fullUrl)
+    let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
+    projectField.after(lcContainerElement)
+    projectField.innerHTML = `<a href='${fullUrl}' target='_blank' rel='noopener' >${fullUrl}</a>`
 }
 
 async function cvoc_lc_editProject() {
@@ -105,11 +92,10 @@ async function cvoc_lc_editProject() {
     select_.classList = "form-control add-resource select2"
     select_.setAttribute("aria-hidden", true)
     select_.setAttribute("tabindex", -1)
-    // console.log("PI", projectInput, projectInput[0].value)
     projectInput.after(select_)
     let placeholder = ""
-    if(projectInput[0].value !== "") {
-        const project = await cvoc_lc_LoadOrFetch(projectInput[0].value);
+    if (projectInput[0].value !== "") {
+        const project = await cvoc_lc_LoadOrFetch(projectInput[0].value)
         // console.log(project)
         placeholder = project.title
     } else {
@@ -146,24 +132,17 @@ async function cvoc_lc_editProject() {
                     results: data.results.map(e => ({
                         id: e.unique_id, text: e.title
                     }))
-                };
+                }
             },
             cache: true
         }
-    });
+    })
 
     $(select_).on('select2:select', function (e) {
-        // console.log("select...")
-        let data = e.params.data;
+        let data = e.params.data
         // console.log(data)
-        projectInput.val(`${cvoc_lc_lcBaseUrl}/projects/${data.id}`);
-        cvoc_lc_LoadOrFetch(data.id);
-        // if (data.id != data.text) {
-        //     projectInput.val(`${lcBaseUrl}/projects/${data.id}`);
-        //     get_or_fetch(data.id);
-        // } else {
-        //     projectInput.val(data.id);
-        // }
-    });
+        projectInput.val(`${cvoc_lc_lcBaseUrl}/projects/${data.id}`)
+        cvoc_lc_LoadOrFetch(data.id)
+    })
 }
 
