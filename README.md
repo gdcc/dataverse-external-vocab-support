@@ -17,3 +17,9 @@ Only the third step is specific to enabling external vocabulary support. The oth
 
 If you create your own :CVocConf setting value (i.e. to manage other fields), you can use the /examples/config/CVocConf.schema.json file to validate your syntax.
 
+### Packages
+
+The directory `packages` include complete working sets of metadatablock.tsv / cvoc config and / js files.
+
+- local_contexts
+Is pulling and displaying project-data from https://localcontextshub.org/
