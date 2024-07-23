@@ -13,24 +13,32 @@ $(document).ready(function() {
 });
 
 function expandRors() {
-    console.log("expandRors");
     // Check each selected element
     $(rorSelector).each(function() {
         var rorElement = this;
         // If it hasn't already been processed
         if (!$(rorElement).hasClass('expanded')) {
+          //Child field case - if non-managed display, the string before this is name (affiliation) and we need to remove the duplicate affiliation string
+					//This is true for Dataverse author field - may not be true elsewhere - tbd
+          let prev = $(rorElement)[0].previousSibling;
+          if(prev !== undefined) {
+          let val = $(rorElement)[0].previousSibling.nodeValue;
+            if(val !== null) {
+              $(rorElement)[0].previousSibling.data = val.substring(0,val.indexOf('('));
+            }
+          }
             // Mark it as processed
             $(rorElement).addClass('expanded');
             var id = rorElement.textContent;
             if (!id.startsWith(rorIdStem)) {
-                $(rorElement).html(getRorDisplayHtml(id, ['No ROR Entry'], false, true));
+                $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, true));
             } else {
                 //Remove the URL prefix - "https://ror.org/".length = 16
                 id = id.substring(rorIdStem.length);
                 //Check for cached entry
                 let value = getValue(rorPrefix, id);
                 if(value.name !=null) {
-                    $(rorElement).html(getRorDisplayHtml(value.name, value.altNames, false, true));
+                    $(rorElement).html(getRorDisplayHtml(value.name, rorIdStem + id, value.altNames, false, true));
                 } else {
                     // Try it as an ROR entry (could validate that it has the right form or can just let the GET fail)
                     $.ajax({
@@ -41,12 +49,11 @@ function expandRors() {
                             'Accept': 'application/json',
                         },
                         success: function(ror, status) {
-                            console.log(ror);
                             // If found, construct the HTML for display
                             var name = ror.name;
                             var altNames= ror.acronyms;
 
-                            $(rorElement).html(getRorDisplayHtml(name, altNames, false, true));
+                            $(rorElement).html(getRorDisplayHtml(name, rorIdStem + id, altNames, false, true));
                             //Store values in localStorage to avoid repeating calls to CrossRef
                             storeValue(rorPrefix, id, name + "#" + altNames);
                         },
@@ -64,7 +71,7 @@ function expandRors() {
     });
 }
 
-function getRorDisplayHtml(name, altNames, truncate=true, addParens=false) {
+function getRorDisplayHtml(name, url, altNames, truncate=true, addParens=false) {
     if(typeof(altNames) == 'undefined') {
         altNames=[];
     }
@@ -74,8 +81,12 @@ function getRorDisplayHtml(name, altNames, truncate=true, addParens=false) {
         altNames.unshift(name);
         name=name.substring(0,rorMaxLength) + "…";
     }
+    if(url != null) {
+      name =  name + '<a href="' + url + '" target="_blank" rel="nofollow" >' +'<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="24" class="ror"/></a>';
+    }
+
     if(addParens) {
-        name = " (" + name +")";
+        name = ' (' + name + ')';
     }
     return $('<span></span>').append(name).attr("title", altNames);
 }
@@ -126,9 +137,9 @@ function updateRorInputs() {
                             altNames = idnum.substr(pos+2).split(',');
                             idnum=idnum.substr(0,pos);
                         }
-                        return getRorDisplayHtml(name, altNames);
+                        return getRorDisplayHtml(name, rorIdStem + idnum, altNames);
                     }
-                    return getRorDisplayHtml(name, ['No ROR Entry']);
+                    return getRorDisplayHtml(name, null, ['No ROR Entry']);
                 },
                 language: {
                     searching: function(params) {
@@ -146,7 +157,6 @@ function updateRorInputs() {
                         term = params.term;
                         if (!term) {
                             term = "";
-                            console.log("no term!");
                         }
                         var query = {
                             query: term,
@@ -165,11 +175,11 @@ function updateRorInputs() {
                             results: data['items']
                                 // Sort the list
                                 // Prioritize active orgs
-                                .sort((a, b) => (b.status === 'active') ? 1 : -1)
+                                .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
                                 // Prioritize those with this acronym
-                                .sort((a, b) => (b.acronyms.includes(params.term)) ? 1 : -1)
+                                .sort((a, b) => Number(b.acronyms.includes(params.term)) - Number(a.acronyms.includes(params.term)))
                                 // Prioritize previously used entries
-                                .sort((a, b) => (getValue(rorPrefix, b['id'].replace(rorIdStem,'')).name != null) ? 1 : -1)
+                                .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorIdStem,'')).name != null) - Number(getValue(rorPrefix, a['id'].replace(rorIdStem,'')).name != null))
                                 .map(
                                     function(x) {
                                         return {
