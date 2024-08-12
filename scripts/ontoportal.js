@@ -458,6 +458,13 @@ jQuery(document).ready(function ($) {
                         });
                     }
                 });
+
+                // Focus on input text field when open select2 item
+                // see https://forums.select2.org/t/search-being-unfocused/1203/14
+                $(`#${selectId}`).on("select2:open", () => {
+                    document.querySelector(".select2-container--open .select2-search__field").focus();
+                });
+
             }
         });
     }
@@ -488,4 +495,5 @@ jQuery(document).ready(function ($) {
 
         return $result;
     }
+
 });
