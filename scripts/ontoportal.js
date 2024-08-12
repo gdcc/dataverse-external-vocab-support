@@ -460,15 +460,12 @@ jQuery(document).ready(function ($) {
                     }
                 });
 
-                // Adding a keyword only from the first metadata keyword block
-                if (onlyOneAddButton) {
-                    $('#metadata_keyword').closest('.form-group').find('.field-add-delete:gt(0)').each(function() {
-                        // For all field-add-delete element groups except the first
-                        // Removal of the 'Add' button
-                        $( this ).children().first().remove();
-                    });
-                }
-                
+                // Focus on input text field when open select2 item
+                // see https://forums.select2.org/t/search-being-unfocused/1203/14
+                $(`#${selectId}`).on("select2:open", () => {
+                    document.querySelector(".select2-container--open .select2-search__field").focus();
+                });
+
             }
         });
     }
@@ -499,4 +496,14 @@ jQuery(document).ready(function ($) {
 
         return $result;
     }
+
+    // Adding a keyword only from the first metadata keyword block
+    if (onlyOneAddButton) {
+        $('#metadata_keyword').closest('.form-group').find('.field-add-delete:gt(0)').each(function() {
+            // For all field-add-delete element groups except the first
+            // Removal of the 'Add' button
+            $( this ).children().first().remove();
+        });
+    }
+
 });
