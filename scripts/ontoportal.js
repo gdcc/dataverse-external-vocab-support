@@ -502,8 +502,13 @@ jQuery(document).ready(function ($) {
         $('#metadata_keyword').closest('.form-group').find('.field-add-delete:gt(0)').each(function() {
             // For all field-add-delete element groups except the first
             // Removal of the 'Add' button
-            $( this ).children().first().remove();
+            if ($(this).children().length > 1) {
+                $( this ).children().first().remove();
+            }
         });
     }
 
+    // Cleaning up persistent tooltips
+    $('div.tooltip').remove();
+    
 });
