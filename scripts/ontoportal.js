@@ -26,6 +26,7 @@ jQuery(document).ready(function ($) {
     const cacheOntologies = "ontoportal-ontologies";
     const showChildsInputs = false; // true to debug
     const emptyOption = '<option></option>'; // This empty option is really important for select2 to work well with a created tag and select event triggered
+    const onlyOneAddButton = true; // If true, a new keyword can only be added from the first entry
 
     expand();
     // In metadata edition, verify if Ontoportal is up to print select HTML tag + load ontologies
@@ -496,4 +497,18 @@ jQuery(document).ready(function ($) {
         return $result;
     }
 
+    // Adding a keyword only from the first metadata keyword block
+    if (onlyOneAddButton) {
+        $('#metadata_keyword').closest('.form-group').find('.field-add-delete:gt(0)').each(function() {
+            // For all field-add-delete element groups except the first
+            // Removal of the 'Add' button
+            if ($(this).children().length > 1) {
+                $( this ).children().first().remove();
+            }
+        });
+    }
+
+    // Cleaning up persistent tooltips
+    $('div.tooltip').remove();
+    
 });
