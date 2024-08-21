@@ -327,7 +327,7 @@ jQuery(document).ready(function ($) {
                             for (let key in vocabs) {
                                 vocabsArr.push(key);
                             }
-                            return `${cvocUrl}/search?require_exact_match=true&include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(",")}`;
+                            return `${cvocUrl}/search?require_exact_match=true&include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(",")}&lang=en,fr`;
                         },
                         dataType: "json",
                         headers: cvocHeaders,
@@ -341,12 +341,10 @@ jQuery(document).ready(function ($) {
                             return {
                                 results: data.collection.map(
                                     function (x) {
+                                        let prefLabelArr = x.prefLabel["en"] ? x.prefLabel["en"] : x.prefLabel["fr"] ? x.prefLabel["fr"] : x.prefLabel["none"];
                                         return {
-                                            // For each returned item, show the term, it's alternative label (which may be what matches the query) and the termUri
-                                            // text: x.prefLabel + ((x.hasOwnProperty('altLabel') && x.altLabel.length > 0) ? " (" + x.altLabel + "), " : ", ") + x.uri,
-                                            //FIXME : Temporary fix on prefLabel, pick only the first until language is fixed on /search API
-                                            text: `${x.prefLabel[0]} - ${findVocNameAndAcronymById(x.links.ontology)}`,
-                                            name: x.prefLabel[0],
+                                            text: `${prefLabelArr[0]} - ${findVocNameAndAcronymById(x.links.ontology)}`,
+                                            name: prefLabelArr[0],
                                             id: x["@id"],
                                             voc: x.links.ontology,
                                             uiUrl: x.links.ui,
