@@ -13,30 +13,30 @@ $(document).ready(() => {
 async function cvoc_lc_viewProject() {
   //console.log("cvoc_lc_viewProject")
   var fields = $(cvoc_lc_projectSelector)
-  
+
   //Dataverse-specific, temporary - see below
   var aboveFoldServiceUrl
-  
+
+  // This script is intended to work with only one single-valued metadata field, but the result can appear in more than one place (e.g. facet, advanced search), so this needs to be a loop
+  // Further work may be needed to, for example, not show notice/label icons in these other areas
   for (let i = 0; i < fields.length; i++) {
     const projectField = $(fields[i]);
-    if (projectField.hasClass("expanded")) {
-      return
+    if (!projectField.hasClass("expanded")) {
+      projectField.addClass("expanded")
+      const fullUrl = projectField.text()
+      const serviceUrl = projectField.attr("data-cvoc-service-url")
+
+      //Dataverse-specific, temporary - see below
+      aboveFoldServiceUrl = serviceUrl
+
+      const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl)
+      let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
+      if (!$.isEmptyObject(lcContainerElement)) {
+        projectField.html(lcContainerElement)
+      }
     }
-    projectField.addClass("expanded")
-    const fullUrl = projectField.text()
-    const serviceUrl = projectField.attr("data-cvoc-service-url")
-    
-    //Dataverse-specific, temporary - see below
-    aboveFoldServiceUrl = serviceUrl
-    
-    const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl)
-    let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
-    if (!$.isEmptyObject(lcContainerElement)) {
-      projectField.html(lcContainerElement)
-    }
-  }
   // Temporary - Dataverse doesn't currently support managing a field 'above the fold' on the dataset page
-  // To make this script work for the LCProjectUrl field in the LocalContextsCVoc metadatablock when the 
+  // To make this script work for the LCProjectUrl field in the LocalContextsCVoc metadatablock when the
   // :CustomDatasetSummaryFields setting includes it, the following section looks for the above-fold field
   // using a Dataverse-specific mechanism. This mechanism also assumes that only one field is using this
   // script/that all use the same data-cvoc-service-url. The aboveFoldServiceUrl variable is set to that value
@@ -64,6 +64,7 @@ async function cvoc_lc_viewProject() {
 
 async function cvoc_lc_editProject() {
   var projectInputs = $(cvoc_lc_projectInputSelector)
+  //This is a for loop instead of projectInputs.each() because async functions are called (not allowed with .each)
   for (let i = 0; i < projectInputs.length; i++) {
     const projectInput = $(projectInputs[i])
     projectInput.hide()
@@ -84,6 +85,8 @@ async function cvoc_lc_editProject() {
     }
     // todo we have: projectInput.value
     $(select_).select2({
+      tags: $(projectInput).attr('data-cvoc-allowfreetext'),
+      allowClear: true,
       placeholder: placeholder,
       minimumInputLength: cvoc_lc_seach_minimumInputLength,
       ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
