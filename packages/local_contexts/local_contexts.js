@@ -47,7 +47,7 @@ async function cvoc_lc_viewProject() {
       const td = aboveFold.children('td')
       if (!td.hasClass('expanded')) {
         var url = td.children('a').text()
-        console.log('Found: ' + url)
+
         td.addClass('expanded')
         const project = await cvoc_lc_LoadOrFetch(url, aboveFoldServiceUrl)
         //console.log(JSON.stringify(project));
@@ -240,4 +240,3 @@ async function cvoc_lc_LoadOrFetch(fullUrl, serviceUrl) {
   sessionStorage.setItem(lc_uuid, JSON.stringify(project))
   return Promise.resolve(project)
 }
-
