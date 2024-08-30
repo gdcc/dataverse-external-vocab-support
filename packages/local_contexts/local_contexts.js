@@ -53,7 +53,7 @@ async function cvoc_lc_viewProject() {
       td.addClass('expanded')
       const project = await cvoc_lc_LoadOrFetch(url, aboveFoldServiceUrl)
       //console.log(JSON.stringify(project));
-      let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
+      let lcContainerElement = cvoc_lc_buildLCProjectPopup(project, 60)
       //console.log(lcContainerElement);
       if (!$.isEmptyObject(lcContainerElement)) {
         td.html(lcContainerElement)
@@ -76,7 +76,7 @@ async function cvoc_lc_editProject() {
     projectInput.after(select_)
     let placeholder = ""
     if (projectInput[0].value !== "") {
-      const project = await cvoc_lc_LoadOrFetch(projectInput[0].value)
+      const project = await cvoc_lc_LoadOrFetch(projectInput[0].value, serviceUrl)
       // console.log(project)
       placeholder = project.title
     } else {
@@ -125,21 +125,22 @@ async function cvoc_lc_editProject() {
       let data = e.params.data
       // console.log(data)
       projectInput.val(`${serviceUrl}projects/${data.id}`)
-      cvoc_lc_LoadOrFetch(data.id)
+      cvoc_lc_LoadOrFetch(data.id, serviceUrl)
     })
   }
 }
 
-function cvoc_lc_buildLCProjectPopup(project) {
+function cvoc_lc_buildLCProjectPopup(project, width = 120) {
   if ($.isEmptyObject(project)) {
     //Could report the error - e.g. No project with this URL found at serviceUrl - rather than just not changing the display
 
     return ''
   }
+  const maxDivWidth = width + 40
   const createItemImage = (notice_label) => {
-    return `<div style="flex;flex-direction: column;text-align: center; max-width: 175px">
+    return `<div style="flex;flex-direction: column;text-align: center; max-width: ${maxDivWidth}px">
                     <div style="margin: 12px;">
-                        <img loading="lazy" width="119px" src="${notice_label.img_url}" alt="">
+                        <img loading="lazy" width="${width}px" src="${notice_label.img_url}" alt="">
                         <p style="margin-top:8px; font-size: 14px">${notice_label.name}</p>
                     </div>
                 </div>`
