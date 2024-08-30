@@ -169,7 +169,7 @@ async function cvoc_lc_editProject() {
       $("#" + selectId).on('select2:select', function(e) {
         // console.log("select...")
         let data = e.params.data
-        projectInput.val(`${serviceUrl}projects/${data.id}`)
+        projectInput.val(`${serviceUrl}projects/${data.id}/`)
         cvoc_lc_LoadOrFetch(data.id, serviceUrl)
       })
       // When a selection is cleared, clear the hidden input
@@ -211,7 +211,7 @@ function cvoc_lc_buildLCProjectPopup(project, width = 120) {
                 </a>
             </div>
             <div style="align-items: center;display: flex;margin-right: 8px;font-size: 14px;">
-                <a id="project-link" style="font-weight: bold; color: #007585; cursor: pointer; font-size: 14px; text-decoration: underline;" href="${project.project_page}" target="_blank" rel="noopener noreferrer">${project.title}</a>
+                <a id="project-link" style="font-weight: bold; color: #007585; cursor: pointer; font-size: 14px; text-decoration: underline;" href="${project.project_page}/" target="_blank" rel="noopener noreferrer">${project.title}</a>
             </div>
         </div>
         </div>`
