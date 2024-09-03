@@ -2,11 +2,11 @@
   {
     "field-name": "LCProjectUrl",
     "term-uri-field": "LCProjectUrl",
-    "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/packages/local_contexts/local_contexts.js, https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js",
+    "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/packages/local_contexts/local_contexts.js", "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "localcontexts",
     "retrieval-uri": "https://sandbox.localcontextshub.org/api/v1/projects/{0}",
     "allow-free-text": false,
-    "cvoc-url": "https://sandbox.localcontextshub.org/projects/",
+    "cvoc-url": "https://sandbox.localcontextshub.org/",
     "managed-fields": {},
     "languages": "",
     "vocabs": {},
