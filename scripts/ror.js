@@ -19,7 +19,7 @@ function expandRors() {
         // If it hasn't already been processed
         if (!$(rorElement).hasClass('expanded')) {
           //Child field case - if non-managed display, the string before this is name (affiliation) and we need to remove the duplicate affiliation string
-					//This is true for Dataverse author field - may not be true elsewhere - tbd
+          //This is true for Dataverse author field - may not be true elsewhere - tbd
           let prev = $(rorElement)[0].previousSibling;
           if(prev !== undefined) {
           let val = $(rorElement)[0].previousSibling.nodeValue;
@@ -84,7 +84,6 @@ function getRorDisplayHtml(name, url, altNames, truncate=true, addParens=false) 
     if(url != null) {
       name =  name + '<a href="' + url + '" target="_blank" rel="nofollow" >' +'<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="24" class="ror"/></a>';
     }
-
     if(addParens) {
         name = ' (' + name + ')';
     }
@@ -191,6 +190,23 @@ function updateRorInputs() {
                     }
                 }
             });
+
+          const observer = new MutationObserver((mutationList, observer) => {
+            var button = $('#' + selectId).parent().find('.select2-selection__clear');
+            console.log("BL : " + button.length);
+            button.attr("tabindex","0");
+            button.on('keydown',function(e) {
+              if(e.which == 13) {
+                $('#' + selectId).val(null).trigger('change');
+              }
+            });
+          });
+
+          observer.observe($('#' + selectId).parent()[0], {
+            childList: true,
+            subtree: true }
+          );
+
             // If the input has a value already, format it the same way as if it
             // were a new selection
             var id = $(rorInput).val();
@@ -217,7 +233,7 @@ function updateRorInputs() {
                     }
                 });
             } else {
-                // If the initial value is not in CrossRef, just display it as is
+                // If the initial value is not in ROR, just display it as is
                 var newOption = new Option(id, id, true, true);
                 newOption.altNames = ['No ROR Entry'];
                 $('#' + selectId).append(newOption).trigger('change');
@@ -240,6 +256,12 @@ function updateRorInputs() {
             // When a selection is cleared, clear the hidden input
             $('#' + selectId).on('select2:clear', function(e) {
                 $("input[data-ror='" + num + "']").attr('value', '');
+            });
+            $('#' + selectId).on('select2:open', function(e) {
+              $(".select2-search__field").focus()
+              $(".select2-search__field").attr("id",selectId + "_input")
+              document.getElementById(selectId + "_input").select();
+
             });
         }
     });
