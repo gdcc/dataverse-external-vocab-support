@@ -107,7 +107,7 @@ function updateRorInputs() {
             // choices
             var selectId = "rorAddSelect_" + num;
             $(rorInput).after(
-                '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
+                '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0" >');
             $("#" + selectId).select2({
                 theme: "classic",
                 tags: $(rorInput).attr('data-cvoc-allowfreetext'),
