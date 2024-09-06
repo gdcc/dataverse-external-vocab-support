@@ -31,7 +31,7 @@ function expandPeople() {
                     success: function(person, status) {
                         //If found, construct the HTML for display
                         var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
-                        var displayElement = $('<span/>').text(name).append($('<a/>').attr('href','https://orcid.org/' + id).attr('target','_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
+                        var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', 'https://orcid.org/' + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
                         $(personElement).hide();
                         let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
                         if (sibs.length == 0) {
@@ -39,7 +39,6 @@ function expandPeople() {
                         } else {
                             displayElement.insertBefore(sibs.eq(0));
                         }
-
                         //Store the most recent ORCIDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
                         storeValue(orcidPrefix, id, name);
                     },
@@ -60,7 +59,7 @@ function expandPeople() {
                 //Plain text entry
                 $(personElement).show();
                 let index = $(personElement).attr('data-cvoc-index');
-                if(index !== undefined) {
+                if (index !== undefined) {
                     $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
                 }
             }
@@ -101,7 +100,7 @@ function updatePeopleInputs() {
             //Add a select2 element to allow search and provide a list of choices
             var selectId = "personAddSelect_" + num;
             $(personInput).parent().parent().children('div').eq(0).append(
-                '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
+                '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
             $("#" + selectId).select2({
                 theme: "classic",
                 tags: $(personInput).attr('data-cvoc-allowfreetext'),
@@ -186,6 +185,22 @@ function updatePeopleInputs() {
                     }
                 }
             });
+
+            const observer = new MutationObserver((mutationList, observer) => {
+                var button = $('#' + selectId).parent().find('.select2-selection__clear');
+                console.log("BL : " + button.length);
+                button.attr("tabindex", "0");
+                button.on('keydown', function(e) {
+                    if (e.which == 13) {
+                        $('#' + selectId).val(null).trigger('change');
+                    }
+                });
+            });
+
+            observer.observe($('#' + selectId).parent()[0], {
+                childList: true,
+                subtree: true
+            });
             //If the input has a value already, format it the same way as if it were a new selection
             var id = $(personInput).val();
             if (id.startsWith("https://orcid.org")) {
@@ -248,9 +263,9 @@ function updatePeopleInputs() {
                         if (key == 'personName') {
                             $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', data.text.split(";", 1)[0]);
                         } else if (key == 'idType') {
-                          let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
-                          let orcidVal = $(selectField).find('option:contains("ORCID")').val();
-                            $(selectField).val( isOrcid ? orcidVal:'');
+                            let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                            let orcidVal = $(selectField).find('option:contains("ORCID")').val();
+                            $(selectField).val(isOrcid ? orcidVal : '');
 
                         }
                     }
@@ -278,12 +293,19 @@ function updatePeopleInputs() {
                     var parent = $("input[data-person='" + num + "']").closest("[data-cvoc-parentfield='" + parentField + "']");
                     for (var key in managedFields) {
                         if (key == 'personName') {
-                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', '');
+                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('');
                         } else if (key == 'idType') {
-                          $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select").val('');
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select").val('');
                         }
                     }
                 }
+            });
+            //Force cursor to appear in text box when opening via key press
+            $('#' + selectId).on('select2:open', function(e) {
+                $(".select2-search__field").focus()
+                $(".select2-search__field").attr("id", selectId + "_input")
+                document.getElementById(selectId + "_input").select();
+
             });
         }
     });
