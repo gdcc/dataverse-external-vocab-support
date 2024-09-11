@@ -16,7 +16,7 @@ and have them displayed as a link to the remote site defining the term:
 
 ![Display2](https://github.com/user-attachments/assets/27aab9fe-c876-4ab6-8d74-eb6cc29274c4)
 
-Or, with additions planned for Dataverse 6.4, one could replace the four author related fields with selectors for [ORCID](https://orcid.org) (people) and [ROR](https://ror.org) (organizations)
+Or, with [additions planned for Dataverse 6.4](https://github.com/IQSS/dataverse/pull/10712), one could replace the four author related fields with selectors for [ORCID](https://orcid.org) (people) and [ROR](https://ror.org) (organizations)
 
 ![Input1](https://github.com/user-attachments/assets/b0f724e1-952b-4d48-8f89-8f046d797ce8)
 
@@ -35,6 +35,15 @@ Display can also be graphical, as in displaying [Local Contexts](https://localco
 This repository contains scripts and example materials that demonstrate how to configure Dataverse to leverage them. They are a mixture of initial proofs-of-concept, demonstrations of alternative approaches, and some that are potentially mature enough for production use (although the latter often require later versions of Dataverse which have extensions/bug fixes for the underlying mechanism. Documentation in the /examples subdirectory provides additional details for specific scripts and configuration for specific fields.
 
 It also contains a [JSON Schema that can be used to validate configuration files](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/config/CVocConf.schema.json).
+
+## Scripts in Production
+
+The following scripts/config files are being used in production (or testing) at one or more Dataverse Sites
+
+* **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md)
+
+
+* **Integration with [https://localcontexts.org](https://localcontexts.org)** (on [https://demo.dataverse.org](https://demo.dataverse.org) using the LocalContexts Sandbox) - see [https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts](https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts)
 
 ## Deployment
 
