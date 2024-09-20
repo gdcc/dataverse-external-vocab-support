@@ -80,7 +80,7 @@ async function cvoc_lc_editProject() {
       const baseUrl = `${serviceUrl}projects/`
       const selectId = "LCAddSelect_" + num;
       projectInput.after(
-        '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
+        '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
       if (projectInput[0].value !== "") {
         const project = await cvoc_lc_LoadOrFetch(projectInput[0].value, serviceUrl)
         // console.log(project)
@@ -150,6 +150,24 @@ async function cvoc_lc_editProject() {
           cache: true
         }
       })
+      
+      //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
+      const observer = new MutationObserver((mutationList, observer) => {
+        var button = $('#' + selectId).parent().find('.select2-selection__clear');
+        button.attr("tabindex","0");
+        button.on('keydown',function(e) {
+          if(e.which == 13) {
+            $('#' + selectId).val(null).trigger('change');
+          }
+        });
+      });
+
+      observer.observe($('#' + selectId).parent()[0], {
+        childList: true,
+        subtree: true }
+      );
+      
+      
       // If the input has a value already, format it the same way as if it
       // were a new selection
       var id = projectInput.val();
@@ -175,6 +193,12 @@ async function cvoc_lc_editProject() {
       // When a selection is cleared, clear the hidden input
       $('#' + selectId).on('select2:clear', function(e) {
         $("input[data-lc='" + num + "']").attr('value', '');
+      });
+      //When the field is selected via keyboard, move the focus and cursor to the new input
+      $('#' + selectId).on('select2:open', function(e) {
+          $(".select2-search__field").focus()
+          $(".select2-search__field").attr("id",selectId + "_input")
+          document.getElementById(selectId + "_input").select();
       });
     }
   }
