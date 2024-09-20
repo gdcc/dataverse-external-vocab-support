@@ -190,7 +190,7 @@ function updateRorInputs() {
                     }
                 }
             });
-
+          //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
           const observer = new MutationObserver((mutationList, observer) => {
             var button = $('#' + selectId).parent().find('.select2-selection__clear');
             console.log("BL : " + button.length);
@@ -257,6 +257,7 @@ function updateRorInputs() {
             $('#' + selectId).on('select2:clear', function(e) {
                 $("input[data-ror='" + num + "']").attr('value', '');
             });
+            //When the field is selected via keyboard, move the focus and cursor to the new input
             $('#' + selectId).on('select2:open', function(e) {
               $(".select2-search__field").focus()
               $(".select2-search__field").attr("id",selectId + "_input")

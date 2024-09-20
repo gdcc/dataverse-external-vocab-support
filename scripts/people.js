@@ -185,7 +185,7 @@ function updatePeopleInputs() {
                     }
                 }
             });
-
+            //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
             const observer = new MutationObserver((mutationList, observer) => {
                 var button = $('#' + selectId).parent().find('.select2-selection__clear');
                 console.log("BL : " + button.length);
