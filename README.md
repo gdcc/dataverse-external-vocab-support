@@ -70,3 +70,9 @@ For further details, see [James D. Myers, & Vyacheslav Tykhonov. (2023). A Plug-
 
 
 
+### Packages
+
+The directory `packages` include complete working sets of metadatablock.tsv / cvoc config and / js files.
+
+- local_contexts
+Is pulling and displaying project-data from https://localcontextshub.org/
