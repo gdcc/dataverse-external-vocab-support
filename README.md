@@ -34,7 +34,7 @@ Display can also be graphical, as in displaying [Local Contexts](https://localco
 
 This repository contains scripts and example materials that demonstrate how to configure Dataverse to leverage them. They are a mixture of initial proofs-of-concept, demonstrations of alternative approaches, and some that are potentially mature enough for production use (although the latter often require later versions of Dataverse which have extensions/bug fixes for the underlying mechanism. Documentation in the /examples subdirectory provides additional details for specific scripts and configuration for specific fields.
 
-It also contains a [JSON Schema that can be used to validate configuration files](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/config/CVocConf.schema.json).
+It also contains a [JSON Schema that can be used to validate configuration files](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/config/demo/CVocConf.schema.json).
 
 ## Scripts in Production
 
