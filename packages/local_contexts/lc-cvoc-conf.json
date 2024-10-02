@@ -9,7 +9,11 @@
     "cvoc-url": "https://sandbox.localcontextshub.org/",
     "managed-fields": {},
     "languages": "",
-    "vocabs": {},
+    "vocabs": {
+      "localcontexts": {
+        "uriSpace": "https://sandbox.localcontextshub.org"
+      }
+    },
     "retrieval-filtering": {
       "@context": {
         "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
