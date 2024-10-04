@@ -5,7 +5,7 @@
     "js-url": "https://raw.githubusercontent.com/Recherche-Data-Gouv/dataverse-external-vocab-support/poc_ontoportal/scripts/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
-    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}?lang=en,fr",
+    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{encodeUrl:keywordVocabulary}/classes/{encodeUrl:keywordTermURL}?lang=en,fr",
     "term-parent-uri": "",
     "allow-free-text": true,
     "languages":"en,fr",
