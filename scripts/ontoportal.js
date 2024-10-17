@@ -130,7 +130,11 @@ jQuery(document).ready(function ($) {
                     // Don't change the display if it wasn't a controlled term
                 }*/
                 $(`span[data-cvoc-index="${index}"]`).each(function () {
-                    $(this).replaceWith($("<span></span>").append(convertTextToLinkIfUrl($(this).text())));
+                    let newText = convertTextToLinkIfUrl($(this).text());
+                    if($(this).is(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`)) {
+                        newText = `(${newText})`;
+                    }
+                    $(this).replaceWith($("<span></span>").append(`${newText}&nbsp;`));
                 });
             }
         });
@@ -147,7 +151,7 @@ jQuery(document).ready(function ($) {
         if (text.startsWith("http")) {
             text = `<a href="${text}" target="_blank" rel="noopener">${text}</a>`;
         }
-        return `${text}&nbsp;`;
+        return text;
     }
 
     function updateInputs() {
