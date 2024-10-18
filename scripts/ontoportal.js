@@ -106,7 +106,7 @@ jQuery(document).ready(function ($) {
                 // The value in the element. Currently, this must be either the URI of a term or plain text - with the latter not being formatted at all by this script
                 let id = displayElement.textContent;
                 // Assume anything starting with http is a valid term - could use stricter tests
-                if (id.startsWith("http")) {
+                /*if (id.startsWith("http")) {
                     let ontology = parent.find(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"][data-cvoc-index="${index}"]`).text();
                     let termName = parent.find(`[data-cvoc-metadata-name="${managedFields.termName}"][data-cvoc-index="${index}"]`).text();
                     let url = cvocUrl.replace("data.", "") + "ontologies/" + ontology + "?p=classes&conceptid=" + encodeURIComponent(id);
@@ -128,7 +128,14 @@ jQuery(document).ready(function ($) {
                     }
                 } else {
                     // Don't change the display if it wasn't a controlled term
-                }
+                }*/
+                $(`span[data-cvoc-index="${index}"]`).each(function () {
+                    let newText = convertTextToLinkIfUrl($(this).text());
+                    if($(this).is(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`)) {
+                        newText = `(${newText})`;
+                    }
+                    $(this).replaceWith($("<span></span>").append(`${newText}&nbsp;`));
+                });
             }
         });
 
@@ -138,6 +145,13 @@ jQuery(document).ready(function ($) {
                 $(this).removeClass("hidden").removeAttr("hidden");
             }
         });
+    }
+
+    function convertTextToLinkIfUrl(text) {
+        if (text.startsWith("http")) {
+            text = `<a href="${text}" target="_blank" rel="noopener">${text}</a>`;
+        }
+        return text;
     }
 
     function updateInputs() {
