@@ -94,6 +94,12 @@ jQuery(document).ready(function ($) {
         return acronym;
     }
 
+    function doesAcronymExist(acronym) {
+        let ontologies = JSON.parse(sessionStorage.getItem(cacheOntologies));
+        let ontology = ontologies.find(item => item["acronym"] === acronym);
+        return !!ontology;
+    }
+
     function isFieldsExpanded() {
         return sessionStorage.getItem(cacheIsFieldsExpanded) === "true";
     }
@@ -427,7 +433,7 @@ jQuery(document).ready(function ($) {
                 */
                 let termName = $(anchorSib).parent().children().find(termSelector).val();
                 let newOption;
-                if(id) {
+                if(id && doesAcronymExist(ontology)) {
                     newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
                 } else if(termName) {
                     newOption = new Option(termName, termName, true, true);
