@@ -40,7 +40,7 @@ It also contains a [JSON Schema that can be used to validate configuration files
 
 The following scripts/config files are being used in production (or testing) at one or more Dataverse Sites
 
-* **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md)
+* **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/authorIDandAffilationUsingORCIDandROR.md)
 
 
 * **Integration with [https://localcontexts.org](https://localcontexts.org)** (on [https://demo.dataverse.org](https://demo.dataverse.org) using the LocalContexts Sandbox) - see [https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts](https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts)
