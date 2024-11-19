@@ -11,20 +11,25 @@ jQuery(document).ready(function ($) {
             selectTerm: "Select a term",
             searchBy: "Search by preferred or alternate label...",
             freeTextPrefix: "Free text: ",
+            expandFields: "Expand all fields",
+            shrinkFields: "Shrink all fields",
         },
         fr: {
             selectTitle: "Ouvre la page du mot-clé dans un nouvel onglet",
             selectTerm: "Tapez le mot-clé",
             searchBy: "Recherchez par mot-clé exact ou synonyme",
             freeTextPrefix: "Saisie libre: ",
+            expandFields: "Développer tous les champs",
+            shrinkFields: "Réduire tous les champs",
         },
     };
     const language = document.getElementsByTagName("html")[0].getAttribute("lang") === "en" ? "en" : "fr"; // Guaranteed French language by default
 
+    const parentFieldName = "keyword";
     const displaySelector = "span[data-cvoc-protocol='ontoportal']";
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
     const cacheOntologies = "ontoportal-ontologies";
-    const showChildsInputs = false; // true to debug
+    const cacheIsFieldsExpanded = "fieldsExpanded";
     const emptyOption = '<option></option>'; // This empty option is really important for select2 to work well with a created tag and select event triggered
     const onlyOneAddButton = true; // If true, a new keyword can only be added from the first entry
 
@@ -89,8 +94,17 @@ jQuery(document).ready(function ($) {
         return acronym;
     }
 
+    function isFieldsExpanded() {
+        return sessionStorage.getItem(cacheIsFieldsExpanded) === "true";
+    }
+
+    function getExpandFieldsButtonText() {
+        return isFieldsExpanded() ? getLocalizedText("shrinkFields") : getLocalizedText("expandFields");
+    }
+
     function expand() {
         // Check each selected element
+
         $(displaySelector).each(function () {
             let displayElement = this;
             // If it hasn't already been processed
@@ -199,7 +213,13 @@ jQuery(document).ready(function ($) {
                 // For a single field, this just hides the input itself (and any siblings if there are any).
                 // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
 
-                $(anchorSib).parent().children().toggle(showChildsInputs);
+                $(anchorSib).parent().children().toggle(isFieldsExpanded());
+                $(anchorSib).parent().children().addClass('ontoportal-child-fields');
+                $('.ontoportal-child-fields input').on( "input", function() {
+                    let termName = $(this).closest('[data-cvoc-parentfield]').find(termSelector).val();
+                    let newOption = new Option(termName, termName, true, true);
+                    $(this).closest('.ontoportal-child-fields').siblings('select').html(newOption).trigger("change");
+                });
 
                 //Hiding conditionnal requirement text message
                 $(input).parents('.form-group[role="group"]').find('.help-block').hide();
@@ -477,9 +497,24 @@ jQuery(document).ready(function ($) {
                 $(`#${selectId}`).on("select2:open", () => {
                     document.querySelector(".select2-container--open .select2-search__field").focus();
                 });
-
             }
         });
+
+        // Add expand all fields button
+        if($(inputSelector).length > 1 && $('#expandFieldsButton').length == 0) {
+            let buttonToExpandAllFields = `<button id="expandFieldsButton" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only btn btn-default" style="margin-bottom: 12px; display: block;" type="button" role="button" aria-disabled="false"><span id="expandFieldsButtonText" class="ui-button-text ui-c">${getExpandFieldsButtonText()}</span></button>`;
+            
+            $("input[data-cvoc-protocol='ontoportal']").parents('.dataset-field-values').prepend(buttonToExpandAllFields);
+
+            $("#expandFieldsButton").on( "click", function() {
+                let isFieldsExpandedNewState = !isFieldsExpanded();
+                sessionStorage.setItem(cacheIsFieldsExpanded, JSON.stringify(isFieldsExpandedNewState));
+                $(".ontoportal-child-fields").toggle(isFieldsExpandedNewState);
+                $(`[data-cvoc-parentfield=${parentFieldName}] .selection`).toggle(!isFieldsExpandedNewState);
+                $('#expandFieldsButtonText').text(getExpandFieldsButtonText());
+            });
+        }
+        $(`[data-cvoc-parentfield=${parentFieldName}] .selection`).toggle(!(isFieldsExpanded()));
     }
 
     // Put the text in a result that matches the term in a span with class
