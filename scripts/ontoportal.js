@@ -1,6 +1,6 @@
 /* http://www.apache.org/licenses/LICENSE-2.0
  * Controlled vocabulary for keywords metadata with Agroportal ontologies
- * version 0.2
+ * version 0.3
  */
 
 jQuery(document).ready(function ($) {
@@ -30,7 +30,7 @@ jQuery(document).ready(function ($) {
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
     const cacheOntologies = "ontoportal-ontologies";
     const cacheIsFieldsExpanded = "fieldsExpanded";
-    const emptyOption = '<option></option>'; // This empty option is really important for select2 to work well with a created tag and select event triggered
+    const emptyOption = "<option></option>"; // This empty option is really important for select2 to work well with a created tag and select event triggered
     const onlyOneAddButton = true; // If true, a new keyword can only be added from the first entry
 
     expand();
@@ -94,12 +94,24 @@ jQuery(document).ready(function ($) {
         return acronym;
     }
 
+    function convertTextToLinkIfUrl(text) {
+        if (text.startsWith("http")) {
+            text = `<a href="${text}" target="_blank" rel="noopener">${text}</a>`;
+        }
+        return text;
+    }
+
     function doesAcronymExist(acronym) {
         let ontologies = JSON.parse(sessionStorage.getItem(cacheOntologies));
         let ontology = ontologies.find(item => item["acronym"] === acronym);
         return !!ontology;
     }
 
+    /**
+     * Use session storage to retain the user's choice of displaying or hiding fields.
+     * Dataverse reloads the UI fragment to display an added or deleted keyword.
+     * @returns true if the user wants to display the fields, false otherwise
+     */
     function isFieldsExpanded() {
         return sessionStorage.getItem(cacheIsFieldsExpanded) === "true";
     }
@@ -110,7 +122,6 @@ jQuery(document).ready(function ($) {
 
     function expand() {
         // Check each selected element
-
         $(displaySelector).each(function () {
             let displayElement = this;
             // If it hasn't already been processed
@@ -167,13 +178,6 @@ jQuery(document).ready(function ($) {
         });
     }
 
-    function convertTextToLinkIfUrl(text) {
-        if (text.startsWith("http")) {
-            text = `<a href="${text}" target="_blank" rel="noopener">${text}</a>`;
-        }
-        return text;
-    }
-
     function updateInputs() {
         // For each input element
         $(inputSelector).each(function () {
@@ -215,20 +219,27 @@ jQuery(document).ready(function ($) {
                     // Find it's child that contains the input for the term uri
                     anchorSib = $(input).parentsUntil(parentFieldDataSelector).last();
                 }
-                // Then hide all children of this element's parent.
-                // For a single field, this just hides the input itself (and any siblings if there are any).
-                // For a compound field, this hides other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide children that are marked as managedFields?
-
-                $(anchorSib).parent().children().toggle(isFieldsExpanded());
-                $(anchorSib).parent().children().addClass('ontoportal-child-fields');
-                $('.ontoportal-child-fields input').on( "input", function() {
-                    let termName = $(this).closest('[data-cvoc-parentfield]').find(termSelector).val();
-                    let newOption = new Option(termName, termName, true, true);
-                    $(this).closest('.ontoportal-child-fields').siblings('select').html(newOption).trigger("change");
+                // Then hide or display all children of this element's parent.
+                // For a single field, this just on the input itself (and any siblings if there are any).
+                // For a compound field, this does it on other fields that may store term name/ vocab name/uri ,etc. ToDo: only hide/show children that are marked as managedFields?
+                let cvocFieldsGroup = $(anchorSib).parent().children();
+                cvocFieldsGroup.toggle(isFieldsExpanded());
+                cvocFieldsGroup.addClass("ontoportal-child-fields");
+                // Applies changes to options in select tag if input tags are displayed
+                let timer = null;
+                cvocFieldsGroup.find("input").on("input", function() {
+                    let childInput = this;
+                    // Set a delay of 500ms between each update
+                    clearTimeout(timer);
+                    timer = setTimeout(function() {
+                        let termName = $(childInput).closest("[data-cvoc-parentfield]").find(termSelector).val();
+                        let newOption = new Option(termName, termName, true, true);
+                        $(childInput).closest(".ontoportal-child-fields").siblings("select").html(newOption).trigger("change");
+                    }, 500);
                 });
 
                 //Hiding conditionnal requirement text message
-                $(input).parents('.form-group[role="group"]').find('.help-block').hide();
+                $(input).parents('.form-group[role="group"]').find(".help-block").hide();
 
                 //Vocab Selector
                 //Currently the code creates a selection form even if there is one vocabulary, and then hides it in that case. (ToDo: only create it if needed)
@@ -402,7 +413,7 @@ jQuery(document).ready(function ($) {
                 });
                 // If the input has a value already, format it the same way as if it were a new selection.
                 let id = $(input).val();
-                let ontology = $(anchorSib).parent().children().find(vocabNameSelector).val();
+                let ontology = cvocFieldsGroup.find(vocabNameSelector).val();
                 /* do not perform this ajax call, all values are presents
                 if (id.startsWith("http") && ontology) {
                     $.ajax({
@@ -431,14 +442,16 @@ jQuery(document).ready(function ($) {
                     $(`#${selectId}`).append(newOption).trigger("change");
                 }
                 */
-                let termName = $(anchorSib).parent().children().find(termSelector).val();
+                let termName = cvocFieldsGroup.find(termSelector).val();
                 let newOption;
-                if(id && doesAcronymExist(ontology)) {
+                // Construct link to Agroportal only if acronym exit to prevent dead link with old metadata.
+                // To verify others metadata (termURI, ...) we need to call Agroportal, but there isn't acceptable.
+                // Mitigation to check only the acronym seems to be the least bad choice.
+                if (id && doesAcronymExist(ontology)) {
                     newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
-                } else if(termName) {
+                } else if (termName) {
                     newOption = new Option(termName, termName, true, true);
                 }
-                
                 $(`#${selectId}`).append(newOption).trigger("change");
                 // Could start with the selection menu open
                 // $(`#${selectId}`).select2('open');
@@ -507,17 +520,19 @@ jQuery(document).ready(function ($) {
         });
 
         // Add expand all fields button
-        if($(inputSelector).length > 1 && $('#expandFieldsButton').length == 0) {
-            let buttonToExpandAllFields = `<button id="expandFieldsButton" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only btn btn-default" style="margin-bottom: 12px; display: block;" type="button" role="button" aria-disabled="false"><span id="expandFieldsButtonText" class="ui-button-text ui-c">${getExpandFieldsButtonText()}</span></button>`;
-            
-            $("input[data-cvoc-protocol='ontoportal']").parents('.dataset-field-values').prepend(buttonToExpandAllFields);
+        if ($("#expandFieldsButton").length == 0) {
+            // Can't be a constant because Dataverse reloads the UI fragment to display an added or deleted keyword, and reloads this JS too
+            let buttonToExpandAllFields = `<button id="expandFieldsButton" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only btn btn-default" style="margin-bottom: 12px; display: block;" type="button" role="button" aria-disabled="false"><span class="ui-button-text ui-c">${getExpandFieldsButtonText()}</span></button>`;
+
+            $("input[data-cvoc-protocol='ontoportal']").parents(".dataset-field-values").prepend(buttonToExpandAllFields);
 
             $("#expandFieldsButton").on( "click", function() {
                 let isFieldsExpandedNewState = !isFieldsExpanded();
                 sessionStorage.setItem(cacheIsFieldsExpanded, JSON.stringify(isFieldsExpandedNewState));
                 $(".ontoportal-child-fields").toggle(isFieldsExpandedNewState);
                 $(`[data-cvoc-parentfield=${parentFieldName}] .selection`).toggle(!isFieldsExpandedNewState);
-                $('#expandFieldsButtonText').text(getExpandFieldsButtonText());
+                // Native Javascript is REALLY faster than jQuery to get the first child
+                this.firstChild.textContent = getExpandFieldsButtonText();
             });
         }
         $(`[data-cvoc-parentfield=${parentFieldName}] .selection`).toggle(!(isFieldsExpanded()));
@@ -552,7 +567,7 @@ jQuery(document).ready(function ($) {
 
     // Adding a keyword only from the first metadata keyword block
     if (onlyOneAddButton) {
-        $('#metadata_keyword').closest('.form-group').find('.field-add-delete:gt(0)').each(function() {
+        $("#metadata_keyword").closest(".form-group").find(".field-add-delete:gt(0)").each(function() {
             // For all field-add-delete element groups except the first
             // Removal of the 'Add' button
             if ($(this).children().length > 1) {
@@ -562,6 +577,6 @@ jQuery(document).ready(function ($) {
     }
 
     // Cleaning up persistent tooltips
-    $('div.tooltip').remove();
+    $("div.tooltip").remove();
     
 });
