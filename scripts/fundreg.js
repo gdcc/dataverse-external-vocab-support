@@ -75,7 +75,9 @@ function getFunderDisplayHtml(name, altNames, truncate=true) {
       }
     if (truncate && (name.length >= fundregMaxLength)) {
         // show the first characters of a long name
-        altNames.unshift(name); 
+        if(altNames!=false){
+           altNames.unshift(name); 
+        } 
         name=name.substring(0,fundregMaxLength) + "…";
     }
     return $('<span></span>').append(name).attr("title", altNames);
