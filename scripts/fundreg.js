@@ -2,6 +2,7 @@ console.log("fundreg.js..");
 var fundregSelector = "span[data-cvoc-protocol='fundreg']";
 var fundregInputSelector = "input[data-cvoc-protocol='fundreg']";
 var fundregRetrievalUrl = "https://api.crossref.org/funders";
+var fundregIdStem = "https://doi.org/10.13039";
 var fundregPrefix = "fundreg";
 //Max chars that displays well for a child field
 var fundregMaxLength = 30;
@@ -18,14 +19,21 @@ function expandFunders() {
         var funderElement = this;
         // If it hasn't already been processed
         if (!$(funderElement).hasClass('expanded')) {
+            let prev = $(funderElement)[0].previousSibling;
+            if(prev !== undefined) {
+                let val = $(funderElement)[0].previousSibling.nodeValue;
+                if(val !== null) {
+                    $(funderElement)[0].previousSibling.data = val.substring(0,val.indexOf('('));
+                }
+            }
             // Mark it as processed
             $(funderElement).addClass('expanded');
             var id = funderElement.textContent;
-            if (!id.startsWith("http://dx.doi.org/10.13039/")) {
+            if (!id.startsWith(fundregIdStem)) {
                 $(funderElement).html(getFunderDisplayHtml(id, ['No Crossref Entry'], false));
             } else {
-                //Remove the URL prefix - "http://dx.doi.org/10.13039/".length = 27
-                id = id.substring(27);
+                //Remove the URL prefix - "http://doi.org/10.13039/".length = 24
+                id = id.substring(24);
                 //Check for cached entry
                 let value = getValue(fundregPrefix, id);
                 if(value.name !=null) {
@@ -70,10 +78,12 @@ function expandFunders() {
 function getFunderDisplayHtml(name, altNames, truncate=true) {
     if (typeof(altNames) == 'undefined') {
         altNames = [];
-    }
+      }
     if (truncate && (name.length >= fundregMaxLength)) {
         // show the first characters of a long name
-        altNames.unshift(name);
+        if(altNames!=false){
+           altNames.unshift(name); 
+        } 
         name=name.substring(0,fundregMaxLength) + "…";
     }
     return $('<span></span>').append(name).attr("title", altNames);
@@ -181,8 +191,8 @@ function updateFunderInputs() {
             // If the input has a value already, format it the same way as if it
             // were a new selection
             var id = $(funderInput).val();
-            if (id.startsWith("http://dx.doi.org/10.13039/")) {
-                id = id.substring(27);
+            if (id.startsWith(fundregIdStem)) {
+                id = id.substring(24);
                 //Check for cached entry
                 let value = getValue(fundregPrefix, id);
                 if(value.name !=null) {
