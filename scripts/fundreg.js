@@ -19,13 +19,6 @@ function expandFunders() {
         var funderElement = this;
         // If it hasn't already been processed
         if (!$(funderElement).hasClass('expanded')) {
-            let prev = $(funderElement)[0].previousSibling;
-            if(prev !== undefined) {
-                let val = $(funderElement)[0].previousSibling.nodeValue;
-                if(val !== null) {
-                    $(funderElement)[0].previousSibling.data = val.substring(0,val.indexOf('('));
-                }
-            }
             // Mark it as processed
             $(funderElement).addClass('expanded');
             var id = funderElement.textContent;
