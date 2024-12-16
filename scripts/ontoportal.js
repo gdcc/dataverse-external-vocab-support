@@ -162,7 +162,7 @@ jQuery(document).ready(function ($) {
                 }*/
                 $(`span[data-cvoc-index="${index}"]`).each(function () {
                     let newText = convertTextToLinkIfUrl($(this).text());
-                    if($(this).is(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`)) {
+                    if ($(this).is(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`)) {
                         newText = `(${newText})`;
                     }
                     $(this).replaceWith($("<span></span>").append(`${newText}&nbsp;`));
@@ -172,7 +172,7 @@ jQuery(document).ready(function ($) {
 
         //Special case allow-free-text is true + typed value is mapped to termValue instead of termUri
         $("span[data-cvoc-metadata-name='keywordValue'][data-cvoc-index]").each(function () {
-            if($(`span[data-cvoc-protocol='ontoportal'][data-cvoc-index="${$(this).attr("data-cvoc-index")}"]`).length == 0) {
+            if ($(`span[data-cvoc-protocol='ontoportal'][data-cvoc-index="${$(this).attr("data-cvoc-index")}"]`).length == 0) {
                 $(this).removeClass("hidden").removeAttr("hidden");
             }
         });
@@ -347,7 +347,7 @@ jQuery(document).ready(function ($) {
                     },
                     templateSelection: function (item) {
                         // For a selection, add HTML to make the term uri a link
-                        if(item.uiUrl) {
+                        if (item.uiUrl) {
                             return $("<span></span>").append(`<a href="${item.uiUrl}" target="_blank" rel="noopener">${item.text}</a>`);
                         }
                         // new Option() cases contains url but in item.text
@@ -465,14 +465,14 @@ jQuery(document).ready(function ($) {
 
                         if (data.newTag) { // newTag attribute is defined while using free text
                             $(parent).children().each(function () {
-                                $(this).find("input").attr("value", "");
+                                $(this).find("input").val("");
                             });
-                            $(parent).find(termSelector).attr("value", data.id);
+                            $(parent).find(termSelector).val(data.id);
                         } else {
                             $(`input[data-ontoportal="${num}"]`).val(data.id);
                             for (let key in managedFields) {
                                 if (key == "vocabularyName") {
-                                    $(parent).find(vocabNameSelector).attr("value", findVocAcronymById(data.voc));
+                                    $(parent).find(vocabNameSelector).val(findVocAcronymById(data.voc));
                                 } else if (key == "vocabularyUri") {
                                     // Get the vocabulary URI from Ontoportal with "/latest_submission" API endpoint
                                     let uri = data.voc.replace("data.", "");
@@ -485,15 +485,15 @@ jQuery(document).ready(function ($) {
                                             if (ontology.URI) {
                                                 uri = ontology.URI;
                                             }
-                                            $(parent).find(vocabUriSelector).attr("value", uri);
+                                            $(parent).find(vocabUriSelector).val(uri);
                                         },
                                         error: function (jqXHR, textStatus, errorThrown) {
                                             console.error(`${textStatus}: ${errorThrown}`);
-                                            $(parent).find(vocabUriSelector).attr("value", uri);
+                                            $(parent).find(vocabUriSelector).val(uri);
                                         }
                                     });
                                 } else if (key == "termName") {
-                                    $(parent).find(termSelector).attr("value", data.name);
+                                    $(parent).find(termSelector).val(data.name);
                                 }
                             }
                         }
@@ -506,7 +506,7 @@ jQuery(document).ready(function ($) {
                     if ($(parentFieldDataSelector).length > 0) {
                         var parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
                         $(parent).children().each(function () {
-                            $(this).find("input").attr("value", "");
+                            $(this).find("input").val("");
                         });
                     }
                 });
