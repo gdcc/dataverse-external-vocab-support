@@ -16,75 +16,85 @@ function expandRors() {
     // Check each selected element
     $(rorSelector).each(function() {
         var rorElement = this;
-        // If it hasn't already been processed
-        if (!$(rorElement).hasClass('expanded')) {
-          //Child field case - if non-managed display, the string before this is name (affiliation) and we need to remove the duplicate affiliation string
-          //This is true for Dataverse author field - may not be true elsewhere - tbd
-          let prev = $(rorElement)[0].previousSibling;
-          if(prev !== undefined) {
-          let val = $(rorElement)[0].previousSibling.nodeValue;
-            if(val !== null) {
-              $(rorElement)[0].previousSibling.data = val.substring(0,val.indexOf('('));
-            }
-          }
-            // Mark it as processed
-            $(rorElement).addClass('expanded');
-            var id = rorElement.textContent;
-            if (!id.startsWith(rorIdStem)) {
-                $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, true));
-            } else {
-                //Remove the URL prefix - "https://ror.org/".length = 16
-                id = id.substring(rorIdStem.length);
-                //Check for cached entry
-                let value = getValue(rorPrefix, id);
-                if(value.name !=null) {
-                    $(rorElement).html(getRorDisplayHtml(value.name, rorIdStem + id, value.altNames, false, true));
-                } else {
-                    // Try it as an ROR entry (could validate that it has the right form or can just let the GET fail)
-                    $.ajax({
-                        type: "GET",
-                        url: rorRetrievalUrl + "/" + id,
-                        dataType: 'json',
-                        headers: {
-                            'Accept': 'application/json',
-                        },
-                        success: function(ror, status) {
-                            // If found, construct the HTML for display
-                            var name = ror.name;
-                            var altNames= ror.acronyms;
-
-                            $(rorElement).html(getRorDisplayHtml(name, rorIdStem + id, altNames, false, true));
-                            //Store values in localStorage to avoid repeating calls to CrossRef
-                            storeValue(rorPrefix, id, name + "#" + altNames);
-                        },
-                        failure: function(jqXHR, textStatus, errorThrown) {
-                            // Generic logging - don't need to do anything if 404 (leave
-                            // display as is)
-                            if (jqXHR.status != 404) {
-                                console.error("The following error occurred: " + textStatus, errorThrown);
-                            }
+        if (rorElement != null) {
+            // If it hasn't already been processed
+            if (!$(rorElement).hasClass('expanded')) {
+                //Child field case - if non-managed display, the string before this is name (affiliation) and we need to remove the duplicate affiliation string
+                //This is true for Dataverse author field - may not be true elsewhere - tbd
+                let useParens = true;
+                let truncate = false;
+                let prev = $(rorElement)[0].previousSibling;
+                if (prev != null && prev.tagName != 'BR') {
+                    let val = prev.nodeValue;
+                    if (val !== null) {
+                        let index = val.indexOf('(');
+                        if (index != -1) {
+                            $(rorElement)[0].previousSibling.data = val.substring(0, val.indexOf('('));
                         }
-                    });
+                    }
+                } else {
+                    useParens = false;
+                    truncate = true;
+                }
+                // Mark it as processed
+                $(rorElement).addClass('expanded');
+                var id = rorElement.textContent;
+                if (!id.startsWith(rorIdStem)) {
+                    $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, useParens));
+                } else {
+                    //Remove the URL prefix - "https://ror.org/".length = 16
+                    id = id.substring(rorIdStem.length);
+                    //Check for cached entry
+                    let value = getValue(rorPrefix, id);
+                    if (value.name != null) {
+                        $(rorElement).html(getRorDisplayHtml(value.name, rorIdStem + id, value.altNames, false, useParens));
+                    } else {
+                        // Try it as an ROR entry (could validate that it has the right form or can just let the GET fail)
+                        $.ajax({
+                            type: "GET",
+                            url: rorRetrievalUrl + "/" + id,
+                            dataType: 'json',
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                            success: function(ror, status) {
+                                // If found, construct the HTML for display
+                                var name = ror.name;
+                                var altNames = ror.acronyms;
+
+                                $(rorElement).html(getRorDisplayHtml(name, rorIdStem + id, altNames, false, true));
+                                //Store values in localStorage to avoid repeating calls to CrossRef
+                                storeValue(rorPrefix, id, name + "#" + altNames);
+                            },
+                            failure: function(jqXHR, textStatus, errorThrown) {
+                                // Generic logging - don't need to do anything if 404 (leave
+                                // display as is)
+                                if (jqXHR.status != 404) {
+                                    console.error("The following error occurred: " + textStatus, errorThrown);
+                                }
+                            }
+                        });
+                    }
                 }
             }
         }
     });
 }
 
-function getRorDisplayHtml(name, url, altNames, truncate=true, addParens=false) {
-    if(typeof(altNames) == 'undefined') {
-        altNames=[];
+function getRorDisplayHtml(name, url, altNames, truncate = true, addParens = false) {
+    if (typeof (altNames) == 'undefined') {
+        altNames = [];
     }
     if (truncate && (name.length >= rorMaxLength)) {
         // show the first characters of a long name
         // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
-        name=name.substring(0,rorMaxLength) + "…";
+        name = name.substring(0, rorMaxLength) + "…";
     }
-    if(url != null) {
-      name =  name + '<a href="' + url + '" target="_blank" rel="nofollow" >' +'<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
+    if (url != null) {
+        name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
     }
-    if(addParens) {
+    if (addParens) {
         name = ' (' + name + ')';
     }
     return $('<span></span>').append(name).attr("title", altNames);
@@ -129,12 +139,12 @@ function updateRorInputs() {
                     var pos = item.text.search(/, [a-z0-9]{9}/);
                     if (pos >= 0) {
                         name = name.substr(0, pos);
-                        var idnum = item.text.substr(pos+2);
-                        var altNames=[];
-                        pos=idnum.indexOf(', ');
-                        if(pos>0) {
-                            altNames = idnum.substr(pos+2).split(',');
-                            idnum=idnum.substr(0,pos);
+                        var idnum = item.text.substr(pos + 2);
+                        var altNames = [];
+                        pos = idnum.indexOf(', ');
+                        if (pos > 0) {
+                            altNames = idnum.substr(pos + 2).split(',');
+                            idnum = idnum.substr(0, pos);
                         }
                         return getRorDisplayHtml(name, rorIdStem + idnum, altNames);
                     }
@@ -146,7 +156,7 @@ function updateRorInputs() {
                         return 'Search by name or acronym…';
                     }
                 },
-                placeholder: rorInput.hasAttribute("data-cvoc-placeholder") ? $(rorInput).attr('data-cvoc-placeholder') : "Select a research organization",
+                placeholder: rorInput.hasAttribute("data-cvoc-placeholder") ? $(rorInput).attr('data-cvoc-placeholder') : "Select or enter...",
                 minimumInputLength: 3,
                 allowClear: true,
                 ajax: {
@@ -178,11 +188,11 @@ function updateRorInputs() {
                                 // Prioritize those with this acronym
                                 .sort((a, b) => Number(b.acronyms.includes(params.term)) - Number(a.acronyms.includes(params.term)))
                                 // Prioritize previously used entries
-                                .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorIdStem,'')).name != null) - Number(getValue(rorPrefix, a['id'].replace(rorIdStem,'')).name != null))
+                                .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorIdStem, '')).name != null) - Number(getValue(rorPrefix, a['id'].replace(rorIdStem, '')).name != null))
                                 .map(
                                     function(x) {
                                         return {
-                                            text: x.name +", " + x.id.replace(rorIdStem,'') + ', ' + x.acronyms,
+                                            text: x.name + ", " + x.id.replace(rorIdStem, '') + ', ' + x.acronyms,
                                             id: x.id
                                         }
                                     })
@@ -190,22 +200,23 @@ function updateRorInputs() {
                     }
                 }
             });
-          //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
-          const observer = new MutationObserver((mutationList, observer) => {
-            var button = $('#' + selectId).parent().find('.select2-selection__clear');
-            console.log("BL : " + button.length);
-            button.attr("tabindex","0");
-            button.on('keydown',function(e) {
-              if(e.which == 13) {
-                $('#' + selectId).val(null).trigger('change');
-              }
+            //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
+            const observer = new MutationObserver((mutationList, observer) => {
+                var button = $('#' + selectId).parent().find('.select2-selection__clear');
+                console.log("BL : " + button.length);
+                button.attr("tabindex", "0");
+                button.on('keydown', function(e) {
+                    if (e.which == 13) {
+                        $('#' + selectId).val(null).trigger('change');
+                    }
+                });
             });
-          });
 
-          observer.observe($('#' + selectId).parent()[0], {
-            childList: true,
-            subtree: true }
-          );
+            observer.observe($('#' + selectId).parent()[0], {
+                childList: true,
+                subtree: true
+            }
+            );
 
             // If the input has a value already, format it the same way as if it
             // were a new selection
@@ -222,7 +233,7 @@ function updateRorInputs() {
                     success: function(ror, status) {
                         var name = ror.name;
                         //Display the name and id number in the selection menu
-                        var text = name + ", " + ror.id.replace(rorIdStem,'') +', ' + ror.acronyms;
+                        var text = name + ", " + ror.id.replace(rorIdStem, '') + ', ' + ror.acronyms;
                         var newOption = new Option(text, id, true, true);
                         $('#' + selectId).append(newOption).trigger('change');
                     },
@@ -259,9 +270,9 @@ function updateRorInputs() {
             });
             //When the field is selected via keyboard, move the focus and cursor to the new input
             $('#' + selectId).on('select2:open', function(e) {
-              $(".select2-search__field").focus()
-              $(".select2-search__field").attr("id",selectId + "_input")
-              document.getElementById(selectId + "_input").select();
+                $(".select2-search__field").focus()
+                $(".select2-search__field").attr("id", selectId + "_input")
+                document.getElementById(selectId + "_input").select();
 
             });
         }
