@@ -156,7 +156,7 @@ function updateRorInputs() {
                         return 'Search by name or acronym…';
                     }
                 },
-                placeholder: rorInput.hasAttribute("data-cvoc-placeholder") ? $(rorInput).attr('data-cvoc-placeholder') : "Select a research organization",
+                placeholder: rorInput.hasAttribute("data-cvoc-placeholder") ? $(rorInput).attr('data-cvoc-placeholder') : "Select or enter...",
                 minimumInputLength: 3,
                 allowClear: true,
                 ajax: {
