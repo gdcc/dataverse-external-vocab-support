@@ -24,8 +24,14 @@ Minimal:
 
 - refresh your browser page. That's it. You should see displays like those shown in this repo's README file.
 
+Testing:
+
+- The people.js script can be configured to use the ORCID sandbox by changing the references in authorsOrcidAndRor.json to replace https://orcid.org/ with https://sandbox.orcid.org/ in the cvoc-url, retrieval-url and vocabs entries.
+
 Production:
+
 - Also copy the three script files to a local website and adjust the URLs in authorsOrcidAndRor.json that invoke them to use your local copies. This assures that changes in this repository will not automatically be used on your site.
+
 - Adapt your CSS styling to improve how well the interfaces created by the script match your custom style.
 
 ### Interesting Features
