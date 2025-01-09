@@ -254,19 +254,14 @@ function updateRorInputs() {
             // When a selection is made, set the value of the hidden input field
             $('#' + selectId).on('select2:select', function(e) {
                 var data = e.params.data;
-                // For entries from ROR, the id and text are different
-                //For plain text entries (legacy or if tags are allowed), they are the same
-                if (data.id != data.text) {
-                    // we want just the ror url
-                    $("input[data-ror='" + num + "']").val(data.id);
-                } else {
-                    // Tags are allowed, so just enter the text as is
-                    $("input[data-ror='" + num + "']").val(data.id);
-                }
+                // For entries from ROR, the id and text are different, and we want the ror url (id)
+                // For plain text entries (legacy or if tags are allowed), they are the same
+                // Setting .val() gets the info to Dataverse, using .attr() makes the change visible in the browser console
+                $("input[data-ror='" + num + "']").val(data.id).attr('value',data.id);
             });
             // When a selection is cleared, clear the hidden input
             $('#' + selectId).on('select2:clear', function(e) {
-                $("input[data-ror='" + num + "']").attr('value', '');
+                $("input[data-ror='" + num + "']").val('').attr('value', '');
             });
             //When the field is selected via keyboard, move the focus and cursor to the new input
             $('#' + selectId).on('select2:open', function(e) {
