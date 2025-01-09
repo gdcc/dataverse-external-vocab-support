@@ -300,15 +300,15 @@ function updatePeopleInputs() {
             //When a selection is cleared, clear the hidden input
             $('#' + selectId).on('select2:clear', function(e) {
                 $(this).empty().trigger("change");
-                $("input[data-person='" + num + "']").attr('value', '');
+                $("input[data-person='" + num + "']").val('').attr('value', '');
                 //In the multi-field case, we should also clear the other hidden managed fields
                 if (hasParentField) {
                     var parent = $("input[data-person='" + num + "']").closest("[data-cvoc-parentfield='" + parentField + "']");
                     for (var key in managedFields) {
                         if (key == 'personName') {
-                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('');
+                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
                         } else if (key == 'idType') {
-                            $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select").val('');
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select").val('').attr('value', '');
                         }
                     }
                 }
