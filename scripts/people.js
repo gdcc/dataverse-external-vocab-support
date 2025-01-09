@@ -15,23 +15,29 @@ function expandPeople() {
         if (!$(personElement).hasClass('expanded')) {
             //Mark it as processed
             $(personElement).addClass('expanded');
+            var orcidBaseUrl = $(personElement).attr('data-cvoc-service-url');
+            if(!orcidBaseUrl) {
+                orcidBaseUrl="https://orcid.org/";
+            }
             var id = personElement.textContent;
-            if (id.startsWith("https://orcid.org/")) {
-                id = id.substring(18);
+            if (id.startsWith(orcidBaseUrl)) {
+                id = id.substring(orcidBaseUrl.length);
             }
             if (id.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/) !== null) {
                 //Try it as an ORCID (could validate that it has the right form and even that it validates as an ORCID, or can just let the GET fail
+                var orcidRertrievalUrl = orcidBaseUrl.replace("https://","https://pub.") + "v3.0/" + id + "/person";
                 $.ajax({
                     type: "GET",
-                    url: "https://pub.orcid.org/v3.0/" + id + "/person",
+                    url: orcidRertrievalUrl,
                     dataType: 'json',
                     headers: {
                         'Accept': 'application/json'
                     },
                     success: function(person, status) {
                         //If found, construct the HTML for display
-                        var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
-                        var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', 'https://orcid.org/' + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
+
+                        var name = ((person.name['family-name']) ? person.name['family-name'].value + ", " : "") + person.name['given-names'].value;
+                        var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
                         $(personElement).hide();
                         let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
                         if (sibs.length == 0) {
@@ -75,7 +81,10 @@ function updatePeopleInputs() {
             //Random identifier
             let num = Math.floor(Math.random() * 100000000000);
             $(personInput).attr('data-person', num);
-
+            var orcidBaseUrl = $(personInput).attr('data-cvoc-service-url');
+            if(!orcidBaseUrl) {
+                orcidBaseUrl="https://orcid.org/";
+            }
             let parentField = $(personInput).attr('data-cvoc-parent');
             var parent = $(personInput).closest("[data-cvoc-parentfield='" + parentField + "']");
 
@@ -101,6 +110,7 @@ function updatePeopleInputs() {
             var selectId = "personAddSelect_" + num;
             $(personInput).parent().parent().children('div').eq(0).append(
                 '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+            var orcidSearchUrl = orcidBaseUrl.replace("https://","https://pub.") + "v3.0/expanded-search";
             $("#" + selectId).select2({
                 theme: "classic",
                 tags: $(personInput).attr('data-cvoc-allowfreetext'),
@@ -120,7 +130,7 @@ function updatePeopleInputs() {
                     var pos = item.text.search(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/);
                     if (pos >= 0) {
                         var orcid = item.text.substr(pos, 19);
-                        return $('<span></span>').append(item.text.replace(orcid, "<a href='https://orcid.org/" + orcid + "' target='_blank'>" + orcid + "</a>"));
+                        return $('<span></span>').append(item.text.replace(orcid, "<a href='" + orcidBaseUrl + orcid + "' target='_blank'>" + orcid + "</a>"));
                     }
                     return item.text;
                 },
@@ -141,7 +151,7 @@ function updatePeopleInputs() {
                             term = "";
                         }
                         //Use expanded-search to get the names, email directly in the results
-                        return "https://pub.orcid.org/v3.0/expanded-search";
+                        return orcidSearchUrl;
                     },
                     data: function(params) {
                         term = params.term;
@@ -171,7 +181,7 @@ function updatePeopleInputs() {
                                 .map(
                                     function(x) {
                                         return {
-                                            text: x['family-names'] + ", " + x['given-names'] +
+                                            text: ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
                                                 "; " +
                                                 x['orcid-id'] +
                                                 ((x.email.length > 0) ? "; " + x.email[0] : ""),
@@ -203,17 +213,17 @@ function updatePeopleInputs() {
             });
             //If the input has a value already, format it the same way as if it were a new selection
             var id = $(personInput).val();
-            if (id.startsWith("https://orcid.org")) {
-                id = id.substring(18);
+            if (id.startsWith(orcidBaseUrl)) {
+                id = id.substring(orcidBaseUrl.length);
                 $.ajax({
                     type: "GET",
-                    url: "https://pub.orcid.org/v3.0/" + id + "/person",
+                    url: orcidBaseUrl.replace("https://","https://pub.") + "v3.0/" + id + "/person",
                     dataType: 'json',
                     headers: {
                         'Accept': 'application/json'
                     },
                     success: function(person, status) {
-                        var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
+                        var name = ((person.name['family-name']) ? person.name['family-name'].value + ", " : "") + person.name['given-names'].value;
                         var text = name + "; " + id;
                         if (person.emails.email.length > 0) {
                             text = text + "; " + person.emails.email[0].email;
@@ -249,7 +259,7 @@ function updatePeopleInputs() {
                 var data = e.params.data;
                 //For ORCIDs, the id and text are different
                 if (data.id != data.text) {
-                    $("input[data-person='" + num + "']").val("https://orcid.org/" + data.id);
+                    $("input[data-person='" + num + "']").val(orcidBaseUrl + data.id);
                 } else {
                     //Tags are allowed, so just enter the text as is
                     $("input[data-person='" + num + "']").val(data.id);
@@ -261,7 +271,10 @@ function updatePeopleInputs() {
                     let isOrcid = data.text.includes(';');
                     for (var key in managedFields) {
                         if (key == 'personName') {
-                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', data.text.split(";", 1)[0]);
+                            var pName = data.text.split(";", 1)[0];
+                            //When the field is hidden jQuery .val() doesn't set the value attribute, but does trigger sending the value back to the repository, whereas .attr() does the opposite
+                            // .val() is needed, .attr() helps with debugging (you can see the new value in the browser console)
+                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val(pName).attr('value', pName);
                         } else if (key == 'idType') {
                             let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
                             let orcidVal = $(selectField).find('option:contains("ORCID")').val();
