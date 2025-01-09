@@ -151,7 +151,7 @@ async function cvoc_lc_editProject() {
           cache: true
         }
       })
-
+      
       //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
       const observer = new MutationObserver((mutationList, observer) => {
         var button = $('#' + selectId).parent().find('.select2-selection__clear');
@@ -167,8 +167,8 @@ async function cvoc_lc_editProject() {
         childList: true,
         subtree: true }
       );
-
-
+      
+      
       // If the input has a value already, format it the same way as if it
       // were a new selection
       var id = projectInput.val();
