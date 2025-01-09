@@ -40,18 +40,19 @@ It also contains a [JSON Schema that can be used to validate configuration files
 
 The following scripts/config files are being used in production (or testing) at one or more Dataverse Sites
 
-* **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md)
+* **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/authorIDandAffilationUsingORCIDandROR.md)
 
 
 * **Integration with [https://localcontexts.org](https://localcontexts.org)** (on [https://demo.dataverse.org](https://demo.dataverse.org) using the LocalContexts Sandbox) - see [https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts](https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts)
 
 ## Deployment
 
-In general there are three steps to add interaction with a vocabulary or PID service to Dataverse:
+In general there are four steps to add interaction with a vocabulary or PID service to Dataverse:
 
 * Identify the metadata field to be enhanced. This can be a field in an existing block, or one in a custom block that you install (there are some custom blocks in this repo for various scripts). As with any custom block, you must [install it in Dataverse](https://guides.dataverse.org/en/latest/admin/metadatacustomization.html#metadata-block-setup), enable the use of this new block in your Dataverse collection (e.g. Use the Edit/General Information menu item, /Metadata Fields section to add the block/specific fields.) and add any desired terms from the example block to the Browse/Search Facets list (same Edit/General Information menu item)
 * Create a configuration file and [submit it as the :CVocConf setting value](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf) for your Dataverse. It is probably easiest to modify the example scripts here. Nominally you would only need to change the metadata field the script will enhance and the URL for the location of the script. You should validate your file against the provided [JSON Schema](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf) to avoid errors that can break the Dataverse page display.
 * Deploy the script(s) to a local location that matches the URL you chose in the config file. It is possible to access the scripts from the github.io URLs used in the example config files here, but this is not recommended as we are not yet versioning the scripts and assuring that the version in the repository will not change.
+* (Update the Dataverse Solr schema)[https://guides.dataverse.org/en/latest/admin/metadatacustomization.html#updating-the-solr-schema]. This step is not always needed but is required if the scripts you use write multiple values for a metadatafield that is normally single-valued (e.g. the script writes the id and name of an entity, or multiple translations of a term to a field.).
 
 To deploy scripts to multiple fields, you need to add one section (JSON Object) per field/script combo to the array in your config file.
 

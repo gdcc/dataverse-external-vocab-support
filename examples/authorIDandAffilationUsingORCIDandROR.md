@@ -18,7 +18,7 @@ This example requires several files:
 
 Minimal: 
 
-- load the authorsOrcidAndRor.json file in the :CVocConf setting using the [Dataverse API](https://guides.dataverse.org/en/latest/installation/config.html?highlight=cvocconf). e.g. using curl: `curl -X PUT --upload-file authorsOrcidAndRor.json http://localhost:8080/api/admin/settings/:CVocConf`.
+- load the authorsOrcidAndRor.json file in the :CVocConf setting using the [Dataverse API](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf). e.g. using curl: `curl -X PUT --upload-file authorsOrcidAndRor.json http://localhost:8080/api/admin/settings/:CVocConf`.
 
 - Alternately, add the two JSON Objects in the top level JSON Array in authorsOrcidAndRor.json to you existing :CVocConf setting file (for installations that are deploying other CVoc scripts already)
 
