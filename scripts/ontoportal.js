@@ -1,6 +1,6 @@
 /* http://www.apache.org/licenses/LICENSE-2.0
  * Controlled vocabulary for keywords metadata with Agroportal ontologies
- * version 0.3
+ * version 1.0
  */
 
 jQuery(document).ready(function ($) {
@@ -28,6 +28,7 @@ jQuery(document).ready(function ($) {
     const parentFieldName = "keyword";
     const displaySelector = "span[data-cvoc-protocol='ontoportal']";
     const inputSelector = "input[data-cvoc-protocol='ontoportal']";
+    const freeTextSelector = "span[data-cvoc-metadata-name='keywordValue'][data-cvoc-index].hidden" // "keywordValue" is hardcoded cause "span[data-cvoc-protocol='ontoportal']" is absent on DOM : can't get managed fields
     const cacheOntologies = "ontoportal-ontologies";
     const cacheIsFieldsExpanded = "fieldsExpanded";
     const emptyOption = "<option></option>"; // This empty option is really important for select2 to work well with a created tag and select event triggered
@@ -129,37 +130,11 @@ jQuery(document).ready(function ($) {
                 let parent = $(displayElement).parent();
                 // Mark it as processed
                 $(displayElement).addClass("expanded");
-                // The service URL to contact using this protocol
-                let cvocUrl = $(displayElement).data("cvoc-service-url");
                 // The cvoc managed fields
                 let managedFields = $(displayElement).data("cvoc-managedfields");
+                // The index of the displayed element
                 let index = $(displayElement).data("cvoc-index");
-                // The value in the element. Currently, this must be either the URI of a term or plain text - with the latter not being formatted at all by this script
-                let id = displayElement.textContent;
-                // Assume anything starting with http is a valid term - could use stricter tests
-                /*if (id.startsWith("http")) {
-                    let ontology = parent.find(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"][data-cvoc-index="${index}"]`).text();
-                    let termName = parent.find(`[data-cvoc-metadata-name="${managedFields.termName}"][data-cvoc-index="${index}"]`).text();
-                    let url = cvocUrl.replace("data.", "") + "ontologies/" + ontology + "?p=classes&conceptid=" + encodeURIComponent(id);
-                    if (parent.is("a")) {
-                        // Display only the term if it is already into a link
-                        $(displayElement).text(termName);
-                    } else {
-                        // Display the term with a link to agroportal
-                        let a = document.createElement("a");
-                        a.setAttribute("href", url);
-                        a.setAttribute("title", url);
-                        a.setAttribute("target", "_black");
-                        a.setAttribute("rel", "noopener");
-                        a.appendChild(document.createTextNode(termName));
-                        // Clear the term URI
-                        $(displayElement).empty();
-                        // Display the link
-                        displayElement.append(a);
-                    }
-                } else {
-                    // Don't change the display if it wasn't a controlled term
-                }*/
+                // Display the text like native Dataverse
                 $(`span[data-cvoc-index="${index}"]`).each(function () {
                     let newText = convertTextToLinkIfUrl($(this).text());
                     if ($(this).is(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`)) {
@@ -170,9 +145,10 @@ jQuery(document).ready(function ($) {
             }
         });
 
-        //Special case allow-free-text is true + typed value is mapped to termValue instead of termUri
-        $("span[data-cvoc-metadata-name='keywordValue'][data-cvoc-index]").each(function () {
-            if ($(`span[data-cvoc-protocol='ontoportal'][data-cvoc-index="${$(this).attr("data-cvoc-index")}"]`).length == 0) {
+        // Special case allow-free-text is true + typed value is mapped to termValue instead of termUri
+        // Remove this code bloc if not needed
+        $(freeTextSelector).each(function () {
+            if ($(`${displaySelector}[data-cvoc-index="${$(this).data("cvoc-index")}"]`).length == 0) {
                 $(this).removeClass("hidden").removeAttr("hidden");
             }
         });
@@ -207,8 +183,6 @@ jQuery(document).ready(function ($) {
                 let termParentUri = $(input).data("cvoc-filter");
                 // <select> identifier
                 let selectId = "ontoportalAddSelect_" + num;
-                // Pick the first entry as the default to start with when there is more than one vocab
-                // let vocab = Object.keys(vocabs)[0];
 
                 // Mark this field as processed
                 $(input).attr("data-ontoportal", num);
@@ -238,87 +212,17 @@ jQuery(document).ready(function ($) {
                     }, 500);
                 });
 
-                //Hiding conditionnal requirement text message
+                //Hiding conditional requirement text message
                 $(input).parents('.form-group[role="group"]').find(".help-block").hide();
-
-                //Vocab Selector
-                //Currently the code creates a selection form even if there is one vocabulary, and then hides it in that case. (ToDo: only create it if needed)
-                //We create a unique id to be able to find this particular input again
-                /*var vocabId = "skosmosVocabSelect_" + num;
-                //Create a div covering 3/12s of the width
-                $(anchorSib).before($('<div/>').addClass('cvoc-vocab col-sm-3'));
-                //Add a label
-                $(anchorSib).parent().find('.cvoc-vocab').append($('<label/>').text('Vocabulary'));
-                //Create the select element
-                $(anchorSib).parent().find('.cvoc-vocab').append(
-                    '<select id=' + vocabId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
-                //Add all of the vocabularies as options
-                for (var key in vocabs) {
-                    $("#" + vocabId).append($('<option>').attr('value', key).html($('<a>').attr('href', vocabs[key].vocabularyUri).attr('target', '_blank').attr('rel', 'noopener').text(key)));
-                }
-                //Setup select2 - this allows users to find a vocab by typing a few letters in it to filter the list
-                $("#" + vocabId).select2({
-                    theme: "classic",
-                    tags: false,
-                    delay: 500,
-                    templateResult: function(item) {
-                        // No need to template the searching text
-                        if (item.loading) {
-                            return item.text;
-                        }
-                        var term = '';
-                        if (typeof(query) !== 'undefined') {
-                            term = query.term;
-                        }
-                        // markMatch bolds the search term if/where it
-                        // appears in the result
-                        var $result = markMatch(item.text, term);
-                        return $result;
-                    },
-                    placeholder: "Select a vocabulary",
-                    //Shows the full list when nothing has been typed
-                    minimumInputLength: 0,
-                });
-                //When a vocab is selected
-                $('#' + vocabId).on('select2:select', function(e) {
-                    var data = e.params.data;
-                    vocab = data.id;
-                    //Set the current vocab attribute on our term uri select,
-                    // clear it's current value (which could be from a different vocab)
-                    $('#' + selectId).attr('data-cvoc-cur-vocab', vocab);
-                    $("#" + selectId).text('');
-                    // and trigger a change so that it then clears the original hidden input field
-                    $('#' + selectId).val(null).trigger('change');
-                });
-                //We only need this if there is more than one vocab and we don't already have a value - hide it otherwise
-                if (Object.keys(vocabs).length == 1 || $(input).val().startsWith("http")) {
-                    $(anchorSib).parent().find('.cvoc-vocab').hide();
-                }
-    
-                // Add a select2 element for the term itself - to allow search and provide a list of choices
-                //For multiple vocabs, we put this after the vocab selector
-                if ($(anchorSib).parent().find('.cvoc-vocab').length != 0) {
-                    $(anchorSib).parent().find('.cvoc-vocab').after($('<div/>').addClass('cvoc-term col-sm-9').append($('<label/>').text('Term')).append(
-                        '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">'));
-                    $('#' + selectId).attr('data-cvoc-cur-vocab', vocab);
-                    if (Object.keys(vocabs).length == 1 || $(input).val().startsWith("http")) {
-                        $(anchorSib).parent().find('.cvoc-term > label').hide();
-                        $('.cvoc-term').removeClass('col-sm-9');
-                    }
-                } else {
-                    //Otherwise we put it after the hidden input itself
-                    $(anchorSib).after(
-                        '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
-                }*/
 
                 $(anchorSib).after(`<select id=${selectId} class="form-control add-resource select2" tabindex="-1" aria-hidden="true">${emptyOption}</select>`);
                 // Set up this select2
                 $(`#${selectId}`).select2({
                     theme: "classic",
-                    // tags true allows a free text entry (not a term uri, just plain text): ToDo - make this configurable
+                    // tags true allows a free text entry
                     tags: allowFreeText,
                     createTag: function (params) {
-                        var term = $.trim(params.term);
+                        let term = $.trim(params.term);
                         if (term === "") {
                             return null;
                         }
@@ -348,14 +252,14 @@ jQuery(document).ready(function ($) {
                     templateSelection: function (item) {
                         // For a selection, add HTML to make the term uri a link
                         if (item.uiUrl) {
+                            // If result is provided by a search done by below ajax call
                             return $("<span></span>").append(`<a href="${item.uiUrl}" target="_blank" rel="noopener">${item.text}</a>`);
                         }
-                        // new Option() cases contains url but in item.text
-                        //TODO: add findVocNameAndAcronymById
+                        // Otherwise, check metadata recorded
                         let pos = item.text.search(/http[s]?:\/\//);
                         if (pos >= 0) {
                             let termUri = item.text.substr(pos);
-                            let term = item.text.substr(0,pos);
+                            let term = item.text.substr(0, pos);
                             return $("<span></span>").append(`<a href="${termUri}" target="_blank" rel="noopener">${term}</a>`); 
                         }
                         return item.text;
@@ -378,6 +282,7 @@ jQuery(document).ready(function ($) {
                             for (let key in vocabs) {
                                 vocabsArr.push(key);
                             }
+                            // Hardcoded URL with languages: change it if needed
                             return `${cvocUrl}/search?require_exact_match=true&include_properties=true&pagesize=10&include_views=true&display_context=false&ontologies=${vocabsArr.join(",")}&lang=en,fr`;
                         },
                         dataType: "json",
@@ -388,12 +293,13 @@ jQuery(document).ready(function ($) {
                         },
                         delay: 500,
                         processResults: function (data, page) {
-                            // console.log("data", data);
                             return {
                                 results: data.collection.map(
                                     function (x) {
+                                        // Get prefLabel array values in priority with "en", if not set get with "fr", if not set get with "none"
                                         let prefLabelArr = x.prefLabel["en"] ? x.prefLabel["en"] : x.prefLabel["fr"] ? x.prefLabel["fr"] : x.prefLabel["none"];
                                         return {
+                                            // Get the first preferred term name
                                             text: `${prefLabelArr[0]} - ${findVocNameAndAcronymById(x.links.ontology)}`,
                                             name: prefLabelArr[0],
                                             id: x["@id"],
@@ -414,34 +320,6 @@ jQuery(document).ready(function ($) {
                 // If the input has a value already, format it the same way as if it were a new selection.
                 let id = $(input).val();
                 let ontology = cvocFieldsGroup.find(vocabNameSelector).val();
-                /* do not perform this ajax call, all values are presents
-                if (id.startsWith("http") && ontology) {
-                    $.ajax({
-                        type: "GET",
-                        url: `${cvocUrl}ontologies/${ontology}/classes/${encodeURIComponent(id)}`,
-                        dataType: "json",
-                        headers: cvocHeaders,
-                        success: function(term, textStatus, jqXHR) {
-                            termName = term.prefLabel;
-                            let text = `${termName}, ${term.links.ui}`;
-                            let newOption = new Option(text, id, true, true);
-                            newOption.title = getLocalizedText("selectTitle");
-                            $(`#${selectId}`).append(newOption).trigger("change");
-                            // TODO: can't get altLabel from this api call, also can't determine the vocab from this call
-                        },
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            console.error(`${textStatus}: ${errorThrown}`);
-                            // Something is wrong, but we should show that a value is currently set
-                            let newOption = new Option(id, id, true, true);
-                            $(`#${selectId}`).append(newOption).trigger("change");
-                        }
-                    });
-                } else {
-                    // If the initial value is not a managed term (legacy, or if tags are enabled), just display it as is
-                    let newOption = new Option(id, id, true, true);
-                    $(`#${selectId}`).append(newOption).trigger("change");
-                }
-                */
                 let termName = cvocFieldsGroup.find(termSelector).val();
                 let newOption;
                 // Construct link to Agroportal only if acronym exit to prevent dead link with old metadata.
@@ -453,17 +331,13 @@ jQuery(document).ready(function ($) {
                     newOption = new Option(termName, termName, true, true);
                 }
                 $(`#${selectId}`).append(newOption).trigger("change");
-                // Could start with the selection menu open
-                // $(`#${selectId}`).select2('open');
                 // When a selection is made, set the value of the hidden input field
                 $(`#${selectId}`).on("select2:select", function (e) {
-
                     let data = e.params.data;
-
                     if ($(parentFieldDataSelector).length > 0) {
                         let parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
-
-                        if (data.newTag) { // newTag attribute is defined while using free text
+                        // newTag attribute is defined while using free text
+                        if (data.newTag) {
                             $(parent).children().each(function () {
                                 $(this).find("input").val("");
                             });
@@ -504,7 +378,7 @@ jQuery(document).ready(function ($) {
                     $(`#${selectId}`).html(emptyOption);
                     $(`#${selectId}`).val(null).trigger("change");
                     if ($(parentFieldDataSelector).length > 0) {
-                        var parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
+                        let parent = $(`input[data-ontoportal="${num}"]`).closest(parentFieldDataSelector);
                         $(parent).children().each(function () {
                             $(this).find("input").val("");
                         });
@@ -524,9 +398,9 @@ jQuery(document).ready(function ($) {
             // Can't be a constant because Dataverse reloads the UI fragment to display an added or deleted keyword, and reloads this JS too
             let buttonToExpandAllFields = `<button id="expandFieldsButton" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only btn btn-default" style="margin-bottom: 12px; display: block;" type="button" role="button" aria-disabled="false"><span class="ui-button-text ui-c">${getExpandFieldsButtonText()}</span></button>`;
 
-            $("input[data-cvoc-protocol='ontoportal']").parents(".dataset-field-values").prepend(buttonToExpandAllFields);
+            $(inputSelector).parents(".dataset-field-values").prepend(buttonToExpandAllFields);
 
-            $("#expandFieldsButton").on( "click", function() {
+            $("#expandFieldsButton").on("click", function() {
                 let isFieldsExpandedNewState = !isFieldsExpanded();
                 sessionStorage.setItem(cacheIsFieldsExpanded, JSON.stringify(isFieldsExpandedNewState));
                 $(".ontoportal-child-fields").toggle(isFieldsExpandedNewState);
