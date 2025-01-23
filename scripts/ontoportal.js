@@ -1,5 +1,5 @@
 /* http://www.apache.org/licenses/LICENSE-2.0
- * Controlled vocabulary for keywords metadata with Agroportal ontologies
+ * Controlled vocabulary for keywords metadata with OntoPortal ontologies
  * version 1.0
  */
 
@@ -177,9 +177,6 @@ jQuery(document).ready(function ($) {
                 let termSelector = `input[data-cvoc-managed-field="${managedFields["termName"]}"]`;
 
                 let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : getLocalizedText("selectTerm");
-                // TODO : use in future ?
-                let lang = input.hasAttribute("lang") ? $(input).attr("lang") : "";
-                let langParam = input.hasAttribute("lang") ? "&lang=" + $(input).attr("lang") : "";
                 let termParentUri = $(input).data("cvoc-filter");
                 // <select> identifier
                 let selectId = "ontoportalAddSelect_" + num;
@@ -322,8 +319,8 @@ jQuery(document).ready(function ($) {
                 let ontology = cvocFieldsGroup.find(vocabNameSelector).val();
                 let termName = cvocFieldsGroup.find(termSelector).val();
                 let newOption;
-                // Construct link to Agroportal only if acronym exit to prevent dead link with old metadata.
-                // To verify others metadata (termURI, ...) we need to call Agroportal, but there isn't acceptable.
+                // Construct link to OntoPortal only if acronym exit to prevent dead link with old metadata.
+                // To verify others metadata (termURI, ...) we need to call OntoPortal, but there isn't acceptable.
                 // Mitigation to check only the acronym seems to be the least bad choice.
                 if (id && doesAcronymExist(ontology)) {
                     newOption = new Option(`${termName} - ${findVocNameByAcronym(ontology)} (${ontology})${cvocUrl.replace("data.", "")}ontologies/${ontology}?p=classes&conceptid=${encodeURIComponent(id)}`, id, true, true);
@@ -409,7 +406,7 @@ jQuery(document).ready(function ($) {
                 this.firstChild.textContent = getExpandFieldsButtonText();
             });
         }
-        $(`[data-cvoc-parentfield=${parentFieldName}] .selection`).toggle(!(isFieldsExpanded()));
+        $(`[data-cvoc-parentfield=${parentFieldName}] .selection`).toggle(!isFieldsExpanded());
     }
 
     // Put the text in a result that matches the term in a span with class
