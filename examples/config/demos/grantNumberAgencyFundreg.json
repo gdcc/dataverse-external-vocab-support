@@ -6,12 +6,12 @@
         "protocol": "fundreg",
         "retrieval-uri": "https://data.crossref.org/fundingdata/funder/{0}",
         "allow-free-text": true,
-        "prefix": "http://dx.doi.org/10.13039/",
+        "prefix": "https://doi.org/10.13039/",
         "managed-fields": {},
         "languages":"",
         "vocabs": {
             "funders": {
-                "uriSpace": "http://dx.doi.org/10.13039/"
+                "uriSpace": "https://doi.org/10.13039/"
             }
         },
         "retrieval-filtering": {

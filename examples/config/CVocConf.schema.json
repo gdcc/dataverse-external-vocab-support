@@ -197,6 +197,21 @@
                 ]
             },
 
+            "headers":
+            {
+                "$id": "#/fieldconfig/properties/headers",
+                "type": "object",
+                "title": "HTTP request headers",
+                "description": "HTTP request headers send to the service. This can be useful for specifying the response format, or if the service requires a mandatory HTTP header.",
+                "examples":
+                [
+                    {
+                        "Accept": "application/json",
+                        "Authorization": "Basic YWxhZGRpbjpvcGVuc2VzYW1l"
+                    }
+                ]
+            },
+
             "cvoc-url": 
             {
                 "$id": "#/fieldconfig/properties/cvoc-url",
@@ -263,12 +278,13 @@
                 "$id": "#/fieldconfig/properties/retrieval-uri",
                 "type": "string",
                 "title": "The retrieval-uri",
-                "description": "Dataverse will use the retrieveal-uri internally to retrieve and cached information about a specific term URI when it is first used. Dataverse will call the URL, substituting the term URI for parameter {0}. If there is no error, the response will be filterd according to the retrieval-filtering schema to populate an internal database table and to populate metadata export formats.",
+                "description": "Dataverse will use the retrieveal-uri internally to retrieve and cached information about a specific term URI when it is first used. Dataverse will call the URL, substituting the term URI for parameter {0}. If there is no error, the response will be filterd according to the retrieval-filtering schema to populate an internal database table and to populate metadata export formats. It's possible to use `managed-fields` field names or `term-uri-field` field name as parameters. Also you can specify if the value must be url encoded with `encodeUrl:`.",
                 "default": "",
                 "examples": 
                 [
                     "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
-                    "https://pub.orcid.org/v3.0/{0}/person"
+                    "https://pub.orcid.org/v3.0/{0}/person",
+                    "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}"
                 ]
             },
 
@@ -593,6 +609,19 @@
                                         [
                                             "/graph/uri=@id/prefLabel"
                                         ]
+                                    ]
+                                },
+
+                                "indexIn": {
+                                    "$id": "#/fieldconfig/properties/retrieval-filtering/element/index-in",
+                                    "type": "string",
+                                    "title": "Element indexIn",
+                                    "description": "indexIn can be the `term-uri-field` or one `managed-fields`",
+                                    "default": "",
+                                    "examples":
+                                    [
+                                        "cvocDemoTermURI",
+                                        "cvocDemoVocabulary"
                                     ]
                                 }
                             }

@@ -1,0 +1,29 @@
+[
+  {
+    "field-name": "LCProjectUrl",
+    "term-uri-field": "LCProjectUrl",
+    "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/packages/local_contexts/local_contexts.js", "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
+    "protocol": "localcontexts",
+    "retrieval-uri": "https://localcontextshub.org/api/v1/projects/{0}",
+    "allow-free-text": false,
+    "cvoc-url": "https://localcontextshub.org/",
+    "managed-fields": {},
+    "languages": "",
+    "vocabs": {
+      "localcontexts": {
+        "uriSpace": "https://localcontextshub.org"
+      }
+    },
+    "retrieval-filtering": {
+      "@context": {
+        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
+      },
+      "@id": {
+        "pattern": "{0}",
+        "params": [
+          "@id"
+        ]
+      }
+    }
+  }
+]

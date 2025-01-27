@@ -2,7 +2,7 @@ The affiliation example illustrates a lookup in ROR.org for the author affiliati
 
 Two files comprise this example:
 
-- examples/config/affiliation.json : the configuration file that needs to be uploaded in the :CVocConf setting
+- examples/config/demo/affiliation.json : the configuration file that needs to be uploaded in the :CVocConf setting
 
 - scripts/affiliation.js : the Javascript file that modifies standard Dataverse behaviour
 

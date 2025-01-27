@@ -68,9 +68,9 @@ This field is currently required to be non-null but otherwise doesn't affect thi
 
 * allow-free-text - when true, free text values, strings that don't match one of the choices from the vocabulary service, will be allowed. For ORCID, this allows entering a person's name for someone who does not have an ORCID.
 
-* retrieval-uri - When a controlled term uri is stored in Dataverse, Dataverse will call this URL to cache a copy of information about this term uri/PID. Currently, Dataverse does a GET requesting application/json from this URL. It first substitutes the term uri/PID for the parameter {0}
+* retrieval-uri - When a controlled term uri is stored in Dataverse, Dataverse will call this URL to cache a copy of information about this term uri/PID. Currently, Dataverse does a GET requesting application/json from this URL. It first substitutes the term uri/PID for the parameter {0}. It's possible to use `managed-fields` field names or `term-uri-field` field name as parameters. Also you can specify if the value must be url encoded with `encodeUrl:`. For example : `"retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}"`
 * prefix - Specific to ORCID; the PID is of the form `https://orcid.org/<16 character id>` while the retrieval-uri requires just the 16 character id. Dataverse will first strip the specified prefix from the term URI/PID before substituting in the retrieval-uri
-* retrieval-filtering - Dataverse uses the cached results to index additional metadata (such as the name of the person in this ORCID example) along with the PID itself and can add these values to exports (currently the json and OAI-ORE exports). Since the services often send significantly more information than Dataverse requires, this filtering object allows selection/formatting of a subset of the response for storage. In the ORCID case, the filtering shown here stores the person's name (lastname, firstname), the PID itself, the fact that the PID scheme is ORCID, and the fact that the type of the identified object is a person. The filtering syntax supports substituting parameters found at specific json paths within the response into a new json object that is stored. (@id is a special token specifying the term URI/PID itself, and patterns such as "ORCID" represent hardcoded text).
+* retrieval-filtering - Dataverse uses the cached results to index additional metadata (such as the name of the person in this ORCID example) along with the PID itself and can add these values to exports (currently the json and OAI-ORE exports). Since the services often send significantly more information than Dataverse requires, this filtering object allows selection/formatting of a subset of the response for storage. In the ORCID case, the filtering shown here stores the person's name (lastname, firstname), the PID itself, the fact that the PID scheme is ORCID, and the fact that the type of the identified object is a person. The filtering syntax supports substituting parameters found at specific json paths within the response into a new json object that is stored. (@id is a special token specifying the term URI/PID itself, and patterns such as "ORCID" represent hardcoded text). Also, you can specify the optional parameter `indexIn` to make Dataverse Search more relevant by mapping service data to a specific searchable field (it must be the `term-uri-field` or one `managed-fields`).
 
 These two entries configure how Dataverse will manage to store a cached copy of some information about the term URI/PID that can be used to index for search results and can be included in exported metadata formats. The mechanism shown here - to retrieve information from the authoritative server and to then format the response for Dataverse is intended as a limited internal mechanism sufficient to allow single input/non-compound fields behave like Dataverse's existing manual-entry compound fields. It is expected that, in the future, proxy services could handle reformatting (eliminating the need for the retrieval-filtering parameters) and even minimize/eliminate the need for Dataverse to cache these results (e.g. by handling creation of metadata exports). Until then, this simple mechanism allows Dataverse to record that, for example,  https://orcid.org/0000-0001-8462-650X 
 corresponds to:
@@ -117,7 +117,8 @@ Here's the equivalent configuration for a skosmos service where the field has be
           "pattern": "{0}",
           "params": [
             "/graph/uri=@id/prefLabel"
-          ]
+          ],
+          "indexIn":"skosterm"
         },
         "vocabularyName": {
           "pattern": "{0}",
@@ -212,6 +213,20 @@ To handle multiple fields, this example changes:
 * managed-fields - a list of child field values that correspond with the information the skosmos script is able to supply, namely the term name, vocabular name and vocabulary uri. 
 
 When the skosmos Javascript runs on this type of field, it hides all child fields and displays and allows input for the term uri as it normally would. However, when a slection is made, the script populates the values for all 4 fields. This simplfies using a controlled vocabulary service with an existing field (although a termURI field is needed and would have to be added to use skosmos with the citation.keyword field.) One limitation of this approach is that the child fields for the term and vocabular name only store the value for the current language (versus the full set of translations). 
+
+#Add HTTP headers to external vocabulary service request
+
+Some vocabulary services need specific HTTP headers. For example, Ontoportal need API KEY send by "Authorization" HTTP header. In this case, headers can be parameter with "headers" field, which must be added into JSON configuration file, like below :
+
+    {
+      "headers" : {
+        "Accept": "application/json",
+        "Authorization": "Basic YWxhZGRpbjpvcGVuc2VzYW1l"
+      }
+    }
+
+This headers can be recovered in Javascript with "data-cvoc-headers" attribute, and use to send them to external services.
+Make sure to send only the HTTP headers required and allowed according to the external vocabulary service CORS rules.
 
 #How to make a new Javascript for your Service/Vocabulary
 
