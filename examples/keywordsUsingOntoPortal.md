@@ -35,6 +35,7 @@ In examples/config/cvoc-ontoportal-conf.json :
 
 In scripts/ontoportal.js :
 
-Term URL may contains invalid URL as we have historical data, free text allowed and OntoPortal URLs or OntoPortal service sometimes unavailable. For those reason, we decided display the classical view of keywords values in Dataset Metadata tab view instead of constructed link pointing to the referenced keyword.
-`ontoportal.js` is constructed around free text typing possibility; In addition, it allows users to toggle view between four basic inputs fields to one selectbox OntoPortal search.
-The HTML DOM modification depends on the availability of the API service set with a 3500ms timeout maximum.
+- Term URL may contains invalid URL as we have historical data, free text allowed and OntoPortal URLs or OntoPortal service sometimes unavailable. For those reason, we decided display the classical view of keywords values in Dataset Metadata tab view instead of constructed link pointing to the referenced keyword.
+- `ontoportal.js` is constructed around free text typing possibility; In addition, it allows users to toggle view between four basic inputs fields to one selectbox for OntoPortal search.
+- The HTML DOM modification depends on the availability of the API service set with a 3500ms timeout maximum.
+- A hack has been added to prevent a weird scroll jump on fragment reload when you have many keyword blocks while clicking on "+" button. This hack consists on displaying only one "+" button. Feel free to remove this code.

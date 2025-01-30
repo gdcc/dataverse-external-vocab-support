@@ -436,7 +436,8 @@ jQuery(document).ready(function ($) {
         return $result;
     }
 
-    // Adding a keyword only from the first metadata keyword block
+    // Adding a keyword is only permitted from the first metadata keyword block
+    // This prevent a weird scroll jump on fragment reload when you have many keyword blocks while clicking on "+" button
     if (onlyOneAddButton) {
         $("#metadata_keyword").closest(".form-group").find(".field-add-delete:gt(0)").each(function() {
             // For all field-add-delete element groups except the first
