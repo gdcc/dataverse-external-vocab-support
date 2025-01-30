@@ -1,3 +1,7 @@
+## Demo
+
+https://github.com/user-attachments/assets/4a4ba8c6-1ecb-473d-92d4-70051016fecb
+
 ## OntoPortal for Dataset keywords
 
 This example manages the Keyword child fields (Term, Term URI, Controlled Vocabulary Name, and Controlled Vocabulary URL), providing (OntoPortal based software)[https://github.com/ontoportal] lookup while also allowing free text entries (for entities that don't have these identifiers) and manual entry of alternate identifiers for keywords.
@@ -11,13 +15,13 @@ This example requires two files:
 
 (These scripts also use jquery and select2 which are already included in Dataverse).
 
-### Caution
+## Caution
 
 This examples is entirely developed around [AgroPortal](https://github.com/ontoportal/ontoportal-project), a fork of Ontoportal which contains more advanced features around languages API parameters than other OntoPortal installations as I write these lines. 
 This means depending on the installation of OntoPortal, you may need to fix some javascript that suit your available functionalities.
 Be fully aware that integrating this example will not be easy as adapting or debugging the provided files may require to understand the full stack of the code (From OntoPortal API, passing by Javascript code to all related features hidden in Dataverse software code).
 
-### Subtleties explanation
+## Subtleties explanation
 
 In examples/config/cvoc-ontoportal-conf.json :
 
