@@ -38,6 +38,9 @@ function expandRors() {
                 }
                 // Mark it as processed
                 $(rorElement).addClass('expanded');
+                if(useParens) {
+                    $(rorElement).addClass('parenthetical');
+                }
                 var id = rorElement.textContent;
                 if (!id.startsWith(rorIdStem)) {
                     $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, useParens));
@@ -95,7 +98,7 @@ function getRorDisplayHtml(name, url, altNames, truncate = true, addParens = fal
         name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
     }
     if (addParens) {
-        name = ' (' + name + ')';
+        name = '(' + name + ')';
     }
     return $('<span></span>').append(name).attr("title", altNames);
 }
