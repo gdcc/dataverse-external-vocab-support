@@ -42,7 +42,7 @@ The following scripts/config files are being used in production (or testing) at 
 
 * **ORCID and ROR for Dataset authors** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/authorIDandAffilationUsingORCIDandROR.md](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/authorIDandAffilationUsingORCIDandROR.md)
 
-* **OntoPortal for Dataset keywords** - see [https://github.com/gdcc/dataverse-external-vocab-support/examples/keywordsUsingOntoPortal.md](https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/keywordsUsingOntoPortal.md)
+* **OntoPortal for Dataset keywords** - see [examples/keywordsUsingOntoPortal.md](examples/keywordsUsingOntoPortal.md)
 
 * **Integration with [https://localcontexts.org](https://localcontexts.org)** (on [https://demo.dataverse.org](https://demo.dataverse.org) using the LocalContexts Sandbox) - see [https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts](https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts)
 
