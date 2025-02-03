@@ -38,6 +38,9 @@ function expandRors() {
                 }
                 // Mark it as processed
                 $(rorElement).addClass('expanded');
+                if(useParens) {
+                    $(rorElement).addClass('parenthetical');
+                }
                 var id = rorElement.textContent;
                 if (!id.startsWith(rorIdStem)) {
                     $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, useParens));
