@@ -284,7 +284,7 @@
                 [
                     "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
                     "https://pub.orcid.org/v3.0/{0}/person",
-                    "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURL}"
+                    "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURI}"
                 ]
             },
 

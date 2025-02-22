@@ -29,33 +29,34 @@ async function cvoc_lc_viewProject() {
       let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
       if (!$.isEmptyObject(lcContainerElement)) {
         projectField.html(lcContainerElement)
+      } else {
+        projectField.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${fullUrl}" target="_blank" rel="noopener">${fullUrl}</a>`)
       }
       //Dataverse-specific, temporary - see below
       aboveFoldServiceUrl = projectField.attr("data-cvoc-service-url")
     }
-    // Temporary - Dataverse doesn't currently support managing a field 'above the fold' on the dataset page
-    // To make this script work for the LCProjectUrl field in the LocalContextsCVoc metadatablock when the
-    // :CustomDatasetSummaryFields setting includes it, the following section looks for the above-fold field
-    // using a Dataverse-specific mechanism. This mechanism also assumes that only one field is using this
-    // script/that all use the same data-cvoc-service-url. The aboveFoldServiceUrl variable is set to that value
-    // (since the field found here does not include data-cvoc-* attributes at all)
-    //
-    // If/when Dataverse is enhanced to annotate this above-fold field appropriately, this section won't be needed.
-    //
-    const aboveFold = $('#LCProjectUrl')
-    if (aboveFold.length === 1) {
-      const td = aboveFold.children('td')
-      if (!td.hasClass('expanded')) {
-        var url = td.children('a').text()
-
-        td.addClass('expanded')
-        const project = await cvoc_lc_LoadOrFetch(url, aboveFoldServiceUrl)
-        //console.log(JSON.stringify(project));
-        let lcContainerElement = cvoc_lc_buildLCProjectPopup(project, 60)
-        //console.log(lcContainerElement);
-        if (!$.isEmptyObject(lcContainerElement)) {
-          td.html(lcContainerElement)
-        }
+  }
+  // Temporary - Dataverse doesn't currently support managing a field 'above the fold' on the dataset page
+  // To make this script work for the LCProjectUrl field in the LocalContextsCVoc metadatablock when the
+  // :CustomDatasetSummaryFields setting includes it, the following section looks for the above-fold field
+  // using a Dataverse-specific mechanism. This mechanism also assumes that only one field is using this
+  // script/that all use the same data-cvoc-service-url. The aboveFoldServiceUrl variable is set to that value
+  // (since the field found here does not include data-cvoc-* attributes at all)
+  //
+  // If/when Dataverse is enhanced to annotate this above-fold field appropriately, this section won't be needed.
+  //
+  const aboveFold = $('#LCProjectUrl')
+  if ((aboveFold.length === 1) && aboveFoldServiceUrl) {
+    const td = aboveFold.children('td')
+    if (!td.hasClass('expanded')) {
+      var url = td.children('a').text()
+       td.addClass('expanded')
+      const project = await cvoc_lc_LoadOrFetch(url, aboveFoldServiceUrl)
+      let lcContainerElement = cvoc_lc_buildLCProjectPopup(project, 60)
+      if (!$.isEmptyObject(lcContainerElement)) {
+        td.html(lcContainerElement)
+      } else {
+        td.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${url}" target="_blank" rel="noopener">${url}</a>`)
       }
     }
   }
@@ -192,7 +193,8 @@ async function cvoc_lc_editProject() {
       })
       // When a selection is cleared, clear the hidden input
       $('#' + selectId).on('select2:clear', function(e) {
-        $("input[data-lc='" + num + "']").attr('value', '');
+        //In other scripts, val() and attr() do different things - val() was required to consistently get info back to Dataverse
+        $("input[data-lc='" + num + "']").val('').attr('value', '');
       });
       //When the field is selected via keyboard, move the focus and cursor to the new input
       $('#' + selectId).on('select2:open', function(e) {
