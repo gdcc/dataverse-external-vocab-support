@@ -32,7 +32,7 @@ async function cvoc_lc_viewProject() {
       // Only proceed if persistentId is non-empty
       if (persistentId) {
         const fullUrl = projectField.text()
-        const serviceUrl = projectField.attr("data-cvoc-service-url") + "api/localcontexts/datasets/:persistentId/projectId/"
+        const serviceUrl = projectField.attr("data-cvoc-service-url") + "api/localcontexts/datasets/:persistentId"
         const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId)
         let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
         if (!$.isEmptyObject(lcContainerElement)) {
@@ -41,7 +41,7 @@ async function cvoc_lc_viewProject() {
           projectField.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${fullUrl}" target="_blank" rel="noopener">${fullUrl}</a>`)
         }
         //Dataverse-specific, temporary - see below
-        aboveFoldServiceUrl = projectField.attr("data-cvoc-service-url")  + "api/localcontexts/datasets/:persistentId/projectId/"
+        aboveFoldServiceUrl = projectField.attr("data-cvoc-service-url")  + "api/localcontexts/datasets/:persistentId"
       }
     }
   }
@@ -74,7 +74,8 @@ async function cvoc_lc_viewProject() {
 }
 
 async function cvoc_lc_editProject() {
-  var projectInputs = $(cvoc_lc_projectInputSelector)
+  var projectInputs = $(cvoc_lc_projectInputSelector);
+  const persistentId = new URLSearchParams(window.location.search).get('persistentId');
   // This script is intended to work with one single valued metadata field on the page,
   // but an input can appear in other places than metadata edit (e.g. advanced search)
   // In the current UI, I don't think both of these fields are ever displayed together,
@@ -82,139 +83,75 @@ async function cvoc_lc_editProject() {
 
   // This is a for loop instead of projectInputs.each() because async functions are called (not allowed with .each)
   for (let i = 0; i < projectInputs.length; i++) {
-    const projectInput = $(projectInputs[i])
+    const projectInput = $(projectInputs[i]);
     if (!projectInput.attr('data-lc')) {
-      // Random identifier
+      const serviceUrl = `${projectInput.attr("data-cvoc-service-url")}api/localcontexts/datasets/:persistentId`;
       const num = Math.floor(Math.random() * 100000000000);
       projectInput.attr('data-lc', num);
-      projectInput.hide()
-      const serviceUrl = projectInput.attr('data-cvoc-service-url')
-      const baseUrl = `${serviceUrl}projects/`
-      const selectId = "LCAddSelect_" + num;
-      projectInput.after(
-        '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
-      if (projectInput[0].value !== "") {
-        const project = await cvoc_lc_LoadOrFetch(projectInput[0].value, serviceUrl)
-        // console.log(project)
-      }
-      var placeholder = projectInput.attr('data-cvoc-placeholder')
-      if (typeof placeholder === "undefined") {
-        placeholder = "Search for a project by name or paste the exact project ID"
-      }
-      // todo we have: projectInput.value
-      $("#" + selectId).select2({
-        theme: "classic",
-        tags: $(projectInput).attr('data-cvoc-allowfreetext'),
-        allowClear: true,
-        placeholder: placeholder,
-        delay: cvoc_lc_search_delay,
-        minimumInputLength: cvoc_lc_seach_minimumInputLength,
-        templateResult: function(item) {
-          // No need to template the searching text
-          if (item.loading) {
-            return item.text;
-          }
-          // markMatch bolds the search term if/where it appears in
-          // the result
-          var $result = markMatch2(item.text, term);
-          return $result;
-        },
+      projectInput.hide();
 
-        ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
-          url: (params) => {
-            // check if the user posted a uuid (lc project id) and
-            const uuid_regex = new RegExp("([a-f 0-9]{8})-([a-f 0-9]{4})-([a-f 0-9]{4})-([a-f 0-9]{4})-([a-f 0-9]{12})")
-            if (uuid_regex.test(params.term)) {
-              //await get_or_fetch(params.term)
-              return `${serviceUrl}api/v1/projects/${params.term}`
-            } else {
-              return `${serviceUrl}api/v1/projects/?search=${params.term}`
-            }
-          },
-          data: function(params) {
-            term = params.term;
-            if (!term) {
-              term = "";
-              console.log("no term!");
-            }
-            var query = {
-              query: term,
-            }
-            return query;
-          },
-          dataType: 'json',
+      const displayId = "LCDisplay_" + num;
+      projectInput.after(`<div id="${displayId}"></div>`);
 
-          processResults: function(data, page) { // parse the results into the format expected by Select2.
-            // console.log("processResults", data)
-            // check if we did the search by uuid
-            if (data.results === undefined && data.unique_id !== undefined) {
-              return {
-                results: [{ id: data.unique_id, text: data.title }]
-              }
-            }
-            // normal search results
-            return {
-              results: data.results.map(e => ({
-                id: e.unique_id, text: e.title
-              }))
-            }
-          },
-          cache: true
-        }
-      })
-      
-      //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
-      const observer = new MutationObserver((mutationList, observer) => {
-        var button = $('#' + selectId).parent().find('.select2-selection__clear');
-        button.attr("tabindex","0");
-        button.on('keydown',function(e) {
-          if(e.which == 13) {
-            $('#' + selectId).val(null).trigger('change');
-          }
-        });
-      });
+      const displayElement = $(`#${displayId}`);
 
-      observer.observe($('#' + selectId).parent()[0], {
-        childList: true,
-        subtree: true }
-      );
-      
-      
-      // If the input has a value already, format it the same way as if it
-      // were a new selection
-      var id = projectInput.val();
-      if (id.startsWith(baseUrl)) {
-        var data = await cvoc_lc_LoadOrFetch(id, serviceUrl)
-        var name = data.title;
-        //Display the name and id number in the selection menu
-        var newOption = new Option(name, id, true, true);
-        $('#' + selectId).append(newOption).trigger('change');
+      if (projectInput.val()) {
+        // If projectInput has a value, display it and add an unlink button
+        const project = await cvoc_lc_LoadOrFetch(projectInput.val(), serviceUrl);
+        displayElement.html(cvoc_lc_buildLCProjectPopup(project, 60));
+        displayElement.append(`
+        <button class="btn btn-default" onclick="cvoc_lc_unlinkProject('${num}')">Unlink</button>
+      `);
       } else {
-        // If the initial value is not a project, just display it as is
-        var newOption = new Option(id, id, true, true);
-        newOption.altNames = ['No LocalContexts Entry'];
-        $('#' + selectId).append(newOption).trigger('change');
-      }
+        // If projectInput doesn't have a value, search using the persistentId
+        const response = await fetch(`${serviceUrl}?persistentId=${persistentId}`);
+        const responseJson = await response.json();
+        const data = responseJson.data
 
-      $("#" + selectId).on('select2:select', function(e) {
-        // console.log("select...")
-        let data = e.params.data
-        projectInput.val(`${serviceUrl}projects/${data.id}/`)
-        cvoc_lc_LoadOrFetch(data.id, serviceUrl)
-      })
-      // When a selection is cleared, clear the hidden input
-      $('#' + selectId).on('select2:clear', function(e) {
-        //In other scripts, val() and attr() do different things - val() was required to consistently get info back to Dataverse
-        $("input[data-lc='" + num + "']").val('').attr('value', '');
-      });
-      //When the field is selected via keyboard, move the focus and cursor to the new input
-      $('#' + selectId).on('select2:open', function(e) {
-          $(".select2-search__field").focus()
-          $(".select2-search__field").attr("id",selectId + "_input")
-          document.getElementById(selectId + "_input").select();
-      });
+        if (data.count === 1) {
+          const fullUrl = data.results[0].project_page
+          const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId)
+          // If one project is found, display it with an 'Add Link' button
+          displayElement.html(cvoc_lc_buildLCProjectPopup(project, 60));
+          displayElement.append(`
+          <button class="btn btn-default" onclick="cvoc_lc_linkProject('${num}', '${project.project_page}')">Add Link</button>
+        `);
+        } else if (data.count === 0) {
+          // If no project is found, display the message
+          displayElement.html(`
+          <p>No LocalContext project found. To create a link with a Dataverse dataset, you must create a project at 
+          <a href="https://localcontextshub.com" target="_blank">https://localcontextshub.com</a> and add the data's PID as publication DOI.</p>
+        `);
+        }
+      }
     }
   }
+}
+
+function cvoc_lc_unlinkProject(num) {
+  const currentProject = $(`input[data-lc='${num}']`).val()
+  $(`input[data-lc='${num}']`).val('').attr('value', '')
+  const displayElement = $(`#LCDisplay_${num}`)
+  // Remove the unlink button
+  displayElement.find('button').remove()
+
+  // Add the 'Add Link' button
+  displayElement.append(`
+    <button class="btn btn-default" onclick="cvoc_lc_linkProject('${num}', '${currentProject}')">Add Link</button>
+  `)
+}
+
+async function cvoc_lc_linkProject(num, projectUrl) {
+  const displayElement = $(`#LCDisplay_${num}`)
+  const projectInput = $(`input[data-lc='${num}']`);
+  projectInput.val(projectUrl).attr('value', projectUrl);
+  // Remove the unlink button
+  displayElement.find('button').remove()
+
+  // Add the 'Add Link' button
+  displayElement.append(  `
+      <button class="btn btn-default" onclick="cvoc_lc_unlinkProject('${num}')">Unlink</button>
+    `)
 }
 
 function cvoc_lc_buildLCProjectPopup(project, width = 120) {
@@ -260,8 +197,7 @@ function cvoc_lc_buildLCProjectPopup(project, width = 120) {
 
 async function cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId) {
   let lc_uuid = fullUrl;
-  const baseUrl = `${serviceUrl}projects/`
-  const retrievalUrl = `${serviceUrl}api/v1/projects/`
+  const retrievalUrl = `${serviceUrl}/`
   // Strip any instance of "projects/" and any characters before it
     lc_uuid = lc_uuid.replace(/^.*projects\//, '');
   
