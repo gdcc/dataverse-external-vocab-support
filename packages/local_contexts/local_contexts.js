@@ -19,21 +19,30 @@ async function cvoc_lc_viewProject() {
 
   // This script is intended to work with only one single-valued metadata field, but the result can appear in more than one place (e.g. facet, advanced search), so this needs to be a loop
   // Further work may be needed to, for example, not show notice/label icons in these other areas
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const persistentId = urlParams.get('persistentId');
+  
   for (let i = 0; i < fields.length; i++) {
     const projectField = $(fields[i]);
     if (!projectField.hasClass("expanded")) {
       projectField.addClass("expanded")
-      const fullUrl = projectField.text()
-      const serviceUrl = projectField.attr("data-cvoc-service-url")
-      const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl)
-      let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
-      if (!$.isEmptyObject(lcContainerElement)) {
-        projectField.html(lcContainerElement)
-      } else {
-        projectField.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${fullUrl}" target="_blank" rel="noopener">${fullUrl}</a>`)
+      // Get the persistentId from the URL query parameter
+
+      // Only proceed if persistentId is non-empty
+      if (persistentId) {
+        const fullUrl = projectField.text()
+        const serviceUrl = projectField.attr("data-cvoc-service-url") + "api/localcontexts/datasets/:persistentId/projectId/"
+        const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId)
+        let lcContainerElement = cvoc_lc_buildLCProjectPopup(project)
+        if (!$.isEmptyObject(lcContainerElement)) {
+          projectField.html(lcContainerElement)
+        } else {
+          projectField.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${fullUrl}" target="_blank" rel="noopener">${fullUrl}</a>`)
+        }
+        //Dataverse-specific, temporary - see below
+        aboveFoldServiceUrl = projectField.attr("data-cvoc-service-url")  + "api/localcontexts/datasets/:persistentId/projectId/"
       }
-      //Dataverse-specific, temporary - see below
-      aboveFoldServiceUrl = projectField.attr("data-cvoc-service-url")
     }
   }
   // Temporary - Dataverse doesn't currently support managing a field 'above the fold' on the dataset page
@@ -45,18 +54,20 @@ async function cvoc_lc_viewProject() {
   //
   // If/when Dataverse is enhanced to annotate this above-fold field appropriately, this section won't be needed.
   //
-  const aboveFold = $('#LCProjectUrl')
-  if ((aboveFold.length === 1) && aboveFoldServiceUrl) {
-    const td = aboveFold.children('td')
-    if (!td.hasClass('expanded')) {
-      var url = td.children('a').text()
-       td.addClass('expanded')
-      const project = await cvoc_lc_LoadOrFetch(url, aboveFoldServiceUrl)
-      let lcContainerElement = cvoc_lc_buildLCProjectPopup(project, 60)
-      if (!$.isEmptyObject(lcContainerElement)) {
-        td.html(lcContainerElement)
-      } else {
-        td.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${url}" target="_blank" rel="noopener">${url}</a>`)
+  if (persistentId) {
+    const aboveFold = $('#LCProjectUrl')
+    if ((aboveFold.length === 1) && aboveFoldServiceUrl) {
+      const td = aboveFold.children('td')
+      if (!td.hasClass('expanded')) {
+        var url = td.children('a').text()
+        td.addClass('expanded')
+        const project = await cvoc_lc_LoadOrFetch(url, aboveFoldServiceUrl, persistentId)
+        let lcContainerElement = cvoc_lc_buildLCProjectPopup(project, 60)
+        if (!$.isEmptyObject(lcContainerElement)) {
+          td.html(lcContainerElement)
+        } else {
+          td.html(`<span style="margin:0px 5px 0px 5px">Project Not Found:</span><a href="${url}" target="_blank" rel="noopener">${url}</a>`)
+        }
       }
     }
   }
@@ -247,22 +258,23 @@ function cvoc_lc_buildLCProjectPopup(project, width = 120) {
   return e
 }
 
-async function cvoc_lc_LoadOrFetch(fullUrl, serviceUrl) {
+async function cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId) {
   let lc_uuid = fullUrl;
   const baseUrl = `${serviceUrl}projects/`
   const retrievalUrl = `${serviceUrl}api/v1/projects/`
-  if (lc_uuid.startsWith(baseUrl)) {
-    lc_uuid = lc_uuid.substring(baseUrl.length)
-  }
+  // Strip any instance of "projects/" and any characters before it
+    lc_uuid = lc_uuid.replace(/^.*projects\//, '');
+  
   const inStorage = sessionStorage.getItem(lc_uuid)
   if (inStorage) {
     return Promise.resolve(JSON.parse(inStorage))
   }
-  const response = await fetch(`${retrievalUrl}${lc_uuid}`)
+  const response = await fetch(`${retrievalUrl}${lc_uuid}/?persistentId=${persistentId}`)
   if (!response.ok) {
     return {}
   }
   const project = await response.json()
-  sessionStorage.setItem(lc_uuid, JSON.stringify(project))
-  return Promise.resolve(project)
+  const data = project.data
+  sessionStorage.setItem(lc_uuid, JSON.stringify(data))
+  return data
 }
