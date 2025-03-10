@@ -119,8 +119,8 @@ async function cvoc_lc_editProject() {
         } else if (data.count === 0) {
           // If no project is found, display the message
           displayElement.html(`
-          <p>No LocalContext project found. To create a link with a Dataverse dataset, you must create a project at 
-          <a href="https://localcontextshub.com" target="_blank">https://localcontextshub.com</a> and add the data's PID as publication DOI.</p>
+          <p>No LocalContext project found. To create a link with a Dataverse dataset, you must create a project on the 
+          <a href="${JSON.parse(projectInput.attr('data-cvoc-vocabs')).localcontexts.uriSpace}" target="_blank">Local Contexts Hub</a> and add the data's PID as publication_DOI.</p>
         `);
         }
       }
