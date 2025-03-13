@@ -99,6 +99,10 @@ async function cvoc_lc_editProject() {
         // If projectInput has a value, display it and add an unlink button
         const project = await cvoc_lc_LoadOrFetch(projectInput.val(), serviceUrl);
         displayElement.html(cvoc_lc_buildLCProjectPopup(project, 60));
+        displayElement.prepend(`
+           <div >The following Local Contexts project is linked to this dataset. Click the 'Unlink' button below to remove the link.</div>
+        `);
+
         displayElement.append(`
         <button class="btn btn-default" onclick="cvoc_lc_unlinkProject('${num}')">Unlink</button>
       `);
@@ -113,6 +117,9 @@ async function cvoc_lc_editProject() {
           const project = await cvoc_lc_LoadOrFetch(fullUrl, serviceUrl, persistentId)
           // If one project is found, display it with an 'Add Link' button
           displayElement.html(cvoc_lc_buildLCProjectPopup(project, 60));
+          displayElement.prepend(`
+             <div >A Local Contexts project referencing this dataset has been found. To reference it in the dataset's metadata, and have the Notices and Labels appear in Dataverse, click the 'Add Link' button below.</div>
+          `);
           displayElement.append(`
           <button class="btn btn-default" onclick="cvoc_lc_linkProject('${num}', '${project.project_page}')">Add Link</button>
         `);
@@ -120,7 +127,7 @@ async function cvoc_lc_editProject() {
           // If no project is found, display the message
           displayElement.html(`
           <p>No LocalContext project found. To create a link with a Dataverse dataset, you must create a project on the 
-          <a href="${JSON.parse(projectInput.attr('data-cvoc-vocabs')).localcontexts.uriSpace}" target="_blank">Local Contexts Hub</a> and add the data's PID as publication_DOI.</p>
+          <a href="${JSON.parse(projectInput.attr('data-cvoc-vocabs')).localcontexts.uriSpace}" target="_blank">Local Contexts Hub</a> and add the data's PID as the "Project DOI/Publication DOI".</p>
         `);
         }
       }
