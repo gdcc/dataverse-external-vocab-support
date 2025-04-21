@@ -170,6 +170,7 @@ function updateRorInputs() {
                         if (!term) {
                             term = "";
                         }
+                        term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1");
                         var query = {
                             query: term,
                         }

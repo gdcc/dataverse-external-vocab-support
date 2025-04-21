@@ -145,19 +145,13 @@ function updatePeopleInputs() {
                 allowClear: true,
                 ajax: {
                     //Use an ajax call to ORCID to retrieve matching results
-                    url: function(params) {
-                        var term = params.term;
-                        if (!term) {
-                            term = "";
-                        }
-                        //Use expanded-search to get the names, email directly in the results
-                        return orcidSearchUrl;
-                    },
+                    url: orcidSearchUrl,
                     data: function(params) {
                         term = params.term;
                         if (!term) {
                             term = "";
                         }
+                        term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1");
                         var query = {
                             q: term,
                             //Currently we just get the top 10 hits. We could get, for example, the top 50, sort as below to put recently used orcids at the top, and then limit to 10
