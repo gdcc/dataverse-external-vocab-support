@@ -38,6 +38,9 @@ function expandRors() {
                 }
                 // Mark it as processed
                 $(rorElement).addClass('expanded');
+                if(useParens) {
+                    $(rorElement).addClass('parenthetical');
+                }
                 var id = rorElement.textContent;
                 if (!id.startsWith(rorIdStem)) {
                     $(rorElement).html(getRorDisplayHtml(id, null, ['No ROR Entry'], false, useParens));
@@ -95,7 +98,7 @@ function getRorDisplayHtml(name, url, altNames, truncate = true, addParens = fal
         name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
     }
     if (addParens) {
-        name = ' (' + name + ')';
+        name = '(' + name + ')';
     }
     return $('<span></span>').append(name).attr("title", altNames);
 }
@@ -167,6 +170,7 @@ function updateRorInputs() {
                         if (!term) {
                             term = "";
                         }
+                        term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1");
                         var query = {
                             query: term,
                         }
@@ -254,19 +258,14 @@ function updateRorInputs() {
             // When a selection is made, set the value of the hidden input field
             $('#' + selectId).on('select2:select', function(e) {
                 var data = e.params.data;
-                // For entries from ROR, the id and text are different
-                //For plain text entries (legacy or if tags are allowed), they are the same
-                if (data.id != data.text) {
-                    // we want just the ror url
-                    $("input[data-ror='" + num + "']").val(data.id);
-                } else {
-                    // Tags are allowed, so just enter the text as is
-                    $("input[data-ror='" + num + "']").val(data.id);
-                }
+                // For entries from ROR, the id and text are different, and we want the ror url (id)
+                // For plain text entries (legacy or if tags are allowed), they are the same
+                // Setting .val() gets the info to Dataverse, using .attr() makes the change visible in the browser console
+                $("input[data-ror='" + num + "']").val(data.id).attr('value',data.id);
             });
             // When a selection is cleared, clear the hidden input
             $('#' + selectId).on('select2:clear', function(e) {
-                $("input[data-ror='" + num + "']").attr('value', '');
+                $("input[data-ror='" + num + "']").val('').attr('value', '');
             });
             //When the field is selected via keyboard, move the focus and cursor to the new input
             $('#' + selectId).on('select2:open', function(e) {
