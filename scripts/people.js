@@ -53,7 +53,7 @@ function expandPeople() {
                         $(personElement).show();
                         let index = $(personElement).attr('data-cvoc-index');
                         if (index !== undefined) {
-                            $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
+                            $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden').removeAttr('hidden');
                         }
                         //Generic logging if not 404
                         if (jqXHR.status != 404) {
@@ -66,7 +66,7 @@ function expandPeople() {
                 $(personElement).show();
                 let index = $(personElement).attr('data-cvoc-index');
                 if (index !== undefined) {
-                    $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
+                    $(personElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden').removeAttr('hidden');
                 }
             }
         }
