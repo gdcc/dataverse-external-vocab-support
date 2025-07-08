@@ -2,7 +2,7 @@
 
 This example manages the author field (the name, idType, Identifier, and affiliation child fields), providing (ORCID)[https://orcid/org] and (ROR)[https://ror.org] lookup while also allowing free text entries (for entities that don't have these identifiers) and manual entry of alternate identifiers for authors.
 
-This example requires the changes being added to Dataverse in (PR #10712)[https://github.com/IQSS/dataverse/pull/10712] expected in v6.4.
+This example requires the changes that were added to Dataverse in (PR #10712)[https://github.com/IQSS/dataverse/pull/10712] as part of v6.4.
 
 This example requires several files:
 
@@ -20,7 +20,7 @@ Minimal:
 
 - load the authorsOrcidAndRor.json file in the :CVocConf setting using the [Dataverse API](https://guides.dataverse.org/en/latest/installation/config.html#cvocconf). e.g. using curl: `curl -X PUT --upload-file authorsOrcidAndRor.json http://localhost:8080/api/admin/settings/:CVocConf`.
 
-- Alternately, add the two JSON Objects in the top level JSON Array in authorsOrcidAndRor.json to you existing :CVocConf setting file (for installations that are deploying other CVoc scripts already)
+- Alternately, add the two JSON Objects in the top level JSON Array in authorsOrcidAndRor.json to your existing :CVocConf setting file (for installations that are deploying other CVoc scripts already)
 
 - refresh your browser page. That's it. You should see displays like those shown in this repo's README file.
 
