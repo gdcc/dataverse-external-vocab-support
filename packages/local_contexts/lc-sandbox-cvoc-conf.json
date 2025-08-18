@@ -11,7 +11,7 @@
     "languages": "",
     "vocabs": {
       "localcontexts": {
-        "uriSpace": "https://sandbox.localcontextshub.org"
+        "uriSpace": "https://demo.dataverse.org"
       }
     },
     "retrieval-filtering": {
