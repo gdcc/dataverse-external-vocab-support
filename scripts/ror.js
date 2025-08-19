@@ -62,12 +62,19 @@ function expandRors() {
                             },
                             success: function(ror, status) {
                                 // If found, construct the HTML for display
-                                var name = ror.name;
-                                var altNames = ror.acronyms;
+                                // Find the display name (type: "ror_display" or "label")
+                                const displayName = ror.names.find(n => 
+                                    n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                                )?.value || ror.id;
+                                
+                                // Find all acronyms
+                                const acronyms = ror.names
+                                    .filter(n => n.types && n.types.includes("acronym"))
+                                    .map(n => n.value);
 
-                                $(rorElement).html(getRorDisplayHtml(name, rorIdStem + id, altNames, false, true));
+                                $(rorElement).html(getRorDisplayHtml(displayName, rorIdStem + id, acronyms, false, true));
                                 //Store values in localStorage to avoid repeating calls to CrossRef
-                                storeValue(rorPrefix, id, name + "#" + altNames);
+                                storeValue(rorPrefix, id, displayName + "#" + acronyms.join(','));
                             },
                             failure: function(jqXHR, textStatus, errorThrown) {
                                 // Generic logging - don't need to do anything if 404 (leave
@@ -189,14 +196,34 @@ function updateRorInputs() {
                                 // Sort the list
                                 // Prioritize active orgs
                                 .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
+                                // Extract display name and acronyms from the names array
+                                .map(org => {
+                                    // Find the display name (type: "ror_display" or "label")
+                                    const displayName = org.names.find(n => 
+                                        n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                                    )?.value || org.id;
+                                    
+                                    // Find all acronyms
+                                    const acronyms = org.names
+                                        .filter(n => n.types && n.types.includes("acronym"))
+                                        .map(n => n.value);
+                                    
+                                    return {
+                                        ...org,
+                                        name: displayName,
+                                        acronyms: acronyms
+                                    };
+                                })
                                 // Prioritize those with this acronym
-                                .sort((a, b) => Number(b.acronyms.includes(params.term)) - Number(a.acronyms.includes(params.term)))
+                                .sort((a, b) => Number(b.acronyms.some(acr => acr === params.term)) - 
+                                               Number(a.acronyms.some(acr => acr === params.term)))
                                 // Prioritize previously used entries
-                                .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorIdStem, '')).name != null) - Number(getValue(rorPrefix, a['id'].replace(rorIdStem, '')).name != null))
+                                .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorIdStem, '')).name != null) - 
+                                               Number(getValue(rorPrefix, a['id'].replace(rorIdStem, '')).name != null))
                                 .map(
                                     function(x) {
                                         return {
-                                            text: x.name + ", " + x.id.replace(rorIdStem, '') + ', ' + x.acronyms,
+                                            text: x.name + ", " + x.id.replace(rorIdStem, '') + ', ' + x.acronyms.join(','),
                                             id: x.id
                                         }
                                     })
@@ -235,9 +262,18 @@ function updateRorInputs() {
                         'Accept': 'application/json'
                     },
                     success: function(ror, status) {
-                        var name = ror.name;
+                        // Find the display name (type: "ror_display" or "label")
+                        const displayName = ror.names.find(n => 
+                            n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                        )?.value || ror.id;
+                        
+                        // Find all acronyms
+                        const acronyms = ror.names
+                            .filter(n => n.types && n.types.includes("acronym"))
+                            .map(n => n.value);
+                            
                         //Display the name and id number in the selection menu
-                        var text = name + ", " + ror.id.replace(rorIdStem, '') + ', ' + ror.acronyms;
+                        var text = displayName + ", " + ror.id.replace(rorIdStem, '') + ', ' + acronyms.join(',');
                         var newOption = new Option(text, id, true, true);
                         $('#' + selectId).append(newOption).trigger('change');
                     },
