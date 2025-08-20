@@ -176,8 +176,9 @@ function updateRorInputs() {
                         term = params.term;
                         if (!term) {
                             term = "";
+                        } else {
+                            term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1") + "*";
                         }
-                        term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1");
                         var query = {
                             query: term,
                         }

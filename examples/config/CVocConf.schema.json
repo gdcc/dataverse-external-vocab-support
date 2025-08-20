@@ -15,10 +15,10 @@
             {
                 "field-name": "cvocDemo",
                 "term-uri-field": "cvocDemoTermURI",
-                "cvoc-url": "https://skosmos.dev.finto.fi/",
+                "cvoc-url": "https://demo.skosmos.org/",
                 "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
                 "protocol": "skosmos",
-                "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+                "retrieval-uri": "https://demo.skosmos.org/rest/v1/data?uri={0}",
                 "term-parent-uri": "",
                 "allow-free-text": false,
                 "languages": "en, fr, es, ru",
@@ -220,7 +220,7 @@
                 "description": "For service protocols such as skosmos where there are multiple services available, this parameter specifies the URL of the specific service to connect to",
                 "examples": 
                 [
-                    "https://skosmos.dev.finto.fi/"
+                    "https://demo.skosmos.org/"
                 ]
             },
 
@@ -282,7 +282,7 @@
                 "default": "",
                 "examples": 
                 [
-                    "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+                    "https://demo.skosmos.org/rest/v1/data?uri={0}",
                     "https://pub.orcid.org/v3.0/{0}/person",
                     "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURI}"
                 ]

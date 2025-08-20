@@ -82,10 +82,10 @@ Here's the equivalent configuration for a skosmos service where the field has be
     {
       "field-name": "skosterm",
       "term-uri-field": "skosterm",
-      "cvoc-url": "https://skosmos.dev.finto.fi/",
+      "cvoc-url": "https://demo.skosmos.org/",
       "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
       "protocol": "skosmos",
-      "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+      "retrieval-uri": "https://demo.skosmos.org/rest/v1/data?uri={0}",
       "allow-free-text": false,
       "languages": "en, uk, es, zh, ar, tr, lo, sk, th, pt, hu, pl, de, cs, it, fr, hi, ja, ro, fa",
       "vocabs": {
@@ -152,10 +152,10 @@ The final example, below, shows a skosmos service being associated with a compou
     {
       "field-name": "cvocDemo",
       "term-uri-field": "cvocDemoTermURI",
-      "cvoc-url": "https://skosmos.dev.finto.fi/",
+      "cvoc-url": "https://demo.skosmos.org/",
       "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/skosmos.js",
       "protocol": "skosmos",
-      "retrieval-uri": "https://skosmos.dev.finto.fi/rest/v1/data?uri={0}",
+      "retrieval-uri": "https://demo.skosmos.org/rest/v1/data?uri={0}",
       "term-parent-uri": "",
       "allow-free-text": false,
       "vocabs": {
