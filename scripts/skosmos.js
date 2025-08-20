@@ -112,7 +112,7 @@ function updateSkosmosInputs() {
             let managedFields = JSON.parse($(skosmosInput).attr('data-cvoc-managedfields'));
             let parentField = $(skosmosInput).attr('data-cvoc-parent');
             let termParentUri = $(skosmosInput).attr('data-cvoc-filter');
-            let allowFreeText = $(skosmosInput).attr('data-cvoc-allowfreetext');
+            let allowFreeText = $(skosmosInput).data("cvoc-allowfreetext");
             let placeholder = skosmosInput.hasAttribute("data-cvoc-placeholder") ? $(skosmosInput).attr('data-cvoc-placeholder') : "Select a term";
             let selectId = "skosmosAddSelect_" + num;
             //Pick the first entry as the default to start with when there is more than one vocab

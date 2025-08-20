@@ -123,7 +123,7 @@ function updateRorInputs() {
                 '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0" >');
             $("#" + selectId).select2({
                 theme: "classic",
-                tags: $(rorInput).attr('data-cvoc-allowfreetext'),
+                tags: $(rorInput).data("cvoc-allowfreetext"),
                 delay: 500,
                 templateResult: function(item) {
                     // No need to template the searching text
