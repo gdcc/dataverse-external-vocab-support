@@ -1,3 +1,5 @@
+Note: This example (.json and .js files) currently rely on the ROR v1 API which won't be supported as of ~12/31/2025. They could be updated to use v2 of the API as the main authorIdandAffiliationUsingORCIDandROR example and ror.js script have.)
+
 The affiliation example illustrates a lookup in ROR.org for the author affiliation field. As with the authors example, it is a simple lookup and fill-in solution. Do not expect changes in the ROR database to be propagated in the Dataset metadata.
 
 Two files comprise this example:

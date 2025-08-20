@@ -106,7 +106,7 @@ function createAffiliationModal() {
 
 function affiliationsQuery(str) {
   // Vocabulary search REST call
-  fetch("https://api.ror.org/organizations?query=" + str)
+  fetch("https://api.ror.org/v1/organizations?query=" + str)
   .then(response => response.json())
   .then(data => {
     let table = document.querySelector('#' + affiliationSearchResultsID + ' tbody');
