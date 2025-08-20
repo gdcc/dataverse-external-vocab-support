@@ -1,7 +1,7 @@
 console.log("ror.js..");
 var rorSelector = "span[data-cvoc-protocol='ror']";
 var rorInputSelector = "input[data-cvoc-protocol='ror']";
-var rorRetrievalUrl = "https://api.ror.org/organizations";
+var rorRetrievalUrl = "https://api.ror.org/v2/organizations";
 var rorIdStem = "https://ror.org/";
 var rorPrefix = "ror";
 //Max chars that displays well for a child field
