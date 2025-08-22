@@ -102,7 +102,7 @@ function updateFunderInputs() {
                 '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="-1" aria-hidden="true">');
             $("#" + selectId).select2({
                 theme: "classic",
-                tags: $(funderInput).attr('data-cvoc-allowfreetext'),
+                tags: $(funderInput).data("cvoc-allowfreetext"),
                 delay: 500,
                 templateResult: function(item) {
                     // No need to template the searching text

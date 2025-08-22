@@ -113,7 +113,7 @@ function updatePeopleInputs() {
             var orcidSearchUrl = orcidBaseUrl.replace("https://","https://pub.") + "v3.0/expanded-search";
             $("#" + selectId).select2({
                 theme: "classic",
-                tags: $(personInput).attr('data-cvoc-allowfreetext'),
+                tags: $(personInput).data("cvoc-allowfreetext"),
                 delay: 500,
                 templateResult: function(item) {
                     // No need to template the searching text
