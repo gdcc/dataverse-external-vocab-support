@@ -51,7 +51,9 @@ function updatePidInputs() {
                 '<select id="' + selectId + '" class="form-control add-resource select2" style="display:none;"></select>'
             );
 
-            $("#findOnOrcid_" + num).on('click', function() {
+            $("#findOnOrcid_" + num).on('click', function(e) {
+               e.preventDefault();
+               e.stopPropagation();
                 var orcidId = prompt("Enter ORCID ID:");
                 if (orcidId) {
                     fetchOrcidWorks(orcidId, selectId);
@@ -86,17 +88,25 @@ function fetchOrcidWorks(orcidId, selectId) {
         },
         success: function(data) {
             var works = data.group;
-            var options = works.map(function(work) {
-                var externalIds = work['work-summary'][0]['external-ids']['external-id'];
-                var doi = externalIds.find(id => id['external-id-type'] === 'doi');
-                if (doi) {
-                    return {
-                        id: doi['external-id-value'],
-                        text: work['work-summary'][0].title.title.value
-                    };
-                }
-                return null;
-            }).filter(option => option !== null);
+            var options = [];
+
+            works.forEach(function(workGroup) {
+                workGroup['work-summary'].forEach(function(workSummary) {
+                    if (workSummary['external-ids'] &&
+                        workSummary['external-ids']['external-id']) {
+
+                        var externalIds = workSummary['external-ids']['external-id'];
+                        var doi = externalIds.find(id => id['external-id-type'] === 'doi');
+
+                        if (doi) {
+                            options.push({
+                                id: doi['external-id-value'],
+                                text: workSummary.title.title.value
+                            });
+                        }
+                    }
+                });
+            });
 
             $("#" + selectId).empty().select2({
                 data: options,
