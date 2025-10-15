@@ -8,16 +8,16 @@ jQuery(document).ready(function ($) {
     const translations = {
         en: {
             selectTitle: "Open in new tab to view Term page",
-            selectTerm: "Select a term",
-            searchBy: "Search by preferred or alternate label...",
+            placeholder: "Search by preferred or alternate label",
+            searching: "Searching...",
             freeTextPrefix: "Free text: ",
             expandFields: "Expand all fields",
             shrinkFields: "Shrink all fields",
         },
         fr: {
             selectTitle: "Ouvre la page du mot-clé dans un nouvel onglet",
-            selectTerm: "Tapez le mot-clé",
-            searchBy: "Recherchez par mot-clé exact ou synonyme",
+            placeholder: "Recherchez par mot-clé exact ou synonyme",
+            searching: "Recherche en cours...",
             freeTextPrefix: "Saisie libre: ",
             expandFields: "Développer tous les champs",
             shrinkFields: "Réduire tous les champs",
@@ -176,7 +176,7 @@ jQuery(document).ready(function ($) {
                 let vocabUriSelector = `input[data-cvoc-managed-field="${managedFields["vocabularyUri"]}"]`;
                 let termSelector = `input[data-cvoc-managed-field="${managedFields["termName"]}"]`;
 
-                let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : getLocalizedText("selectTerm");
+                let placeholder = input.hasAttribute("data-cvoc-placeholder") ? $(input).attr("data-cvoc-placeholder") : getLocalizedText("placeholder");
                 let termParentUri = $(input).data("cvoc-filter");
                 // <select> identifier
                 let selectId = "ontoportalAddSelect_" + num;
@@ -264,10 +264,10 @@ jQuery(document).ready(function ($) {
                     language: {
                         searching: function (params) {
                             // Change this to be appropriate for your application
-                            return getLocalizedText("searchBy");
+                            return getLocalizedText("searching");
                         },
                         inputTooShort: function(args) {
-                            //return "Please enter " + args.minimum + " or more characters";
+                            //return "Please enter " + (e.minimum - e.input.length) + " or more characters";
                             return '';
                         },
                     },
