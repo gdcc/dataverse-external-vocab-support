@@ -265,7 +265,11 @@ jQuery(document).ready(function ($) {
                         searching: function (params) {
                             // Change this to be appropriate for your application
                             return getLocalizedText("searchBy");
-                        }
+                        },
+                        inputTooShort: function(args) {
+                            //return "Please enter " + args.minimum + " or more characters";
+                            return '';
+                        },
                     },
                     placeholder: placeholder,
                     // Some vocabs are very slow and/or fail with a 500 error when searching for only 2 letters
