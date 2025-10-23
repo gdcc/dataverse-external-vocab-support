@@ -6,7 +6,8 @@
     "protocol": "localcontexts",
     "retrieval-uri": "https://sandbox.localcontextshub.org/api/v1/projects/{0}",
     "allow-free-text": false,
-    "cvoc-url": "https://sandbox.localcontextshub.org/",
+    "cvoc-url": "https://demo.dataverse.org/",
+    "prefix":"https://sandbox.localcontextshub.org/projects/",
     "managed-fields": {},
     "languages": "",
     "vocabs": {

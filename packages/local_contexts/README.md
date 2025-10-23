@@ -11,12 +11,11 @@ Dataverse supports integration with the Local Contexts Hub so that Labels and No
 
 ## Configuration
 
-There are several steps to Local Contexts integration:
+There are several steps to Local Contexts integration as described in the [Dataverse LocalContexts Integration Guide](https://guides.dataverse.org/en/latest/installation/localcontexts.html), including the requirement to have a Local Contexts Institutional or Integration Partner account. 
+Instructions for the steps involving files in this repository are:
 
-1. Configure the `LOCALCONTEXTS_URL` and `LOCALCONTEXTS_API_KEY` as described in the [Local Contexts section of the Dataverse Installation Guide] https://guides.dataverse.org/en/latest/installation/localcontexts.html). API Keys are available to Local Contexts Integration Partners - see [https://localcontexts.org/hub-agreements/integration-partners/](https://localcontexts.org/hub-agreements/integration-partners/) for details.
+To install the Local Contexts Metadatablock, retrieve the [cvocLocalContexts.tsv](./cvocLocalContexts.tsv) and follow the instructions in the [Dataverse Guides](https://guides.dataverse.org/en/latest/admin/metadatacustomization.html#loading-tsv-files-into-a-dataverse-installation) to install it. Be sure to update the Solr schema as directed.
+The metadatablock contains one field allowing Dataverse to store the URL of an associated Local Contexts Hub project. (As with any metadatablock, the Local Contexts block can be restricted to only being available in a specific collection (and it's subcollections) by adding a dataverseAlias in the second line of the tsv file.)
 
-2. Add the [Local Contexts metadatablock](./cvocLocalContexts.tsv) as described in the [Dataverse Guides](https://guides.dataverse.org/en/6.5/admin/metadatacustomization.html#loading-tsv-files-into-a-dataverse-installation). The metadatablock contains one field allowing Dataverse to store the URL of an associated Local Contexts Hub project.
-
-3. Configure the associated external vocabulary script. The external vocabulary script interacts with the Local Contexts Hub (via the Dataverse server) to display the Labels and Notices associated with the project and provide a link to it. The script also supports adding/removing such a link from the dataset's metadata. Note that only a project that references the dataset in its `publication_doi` field can be linked to a dataset. See the instructions in the main [README.md](../../README.md) of this repository for details on this step. Use the [lc-cvoc-conf.json](./lc-cvoc-conf.json) file for production environments or [lc-sandbox-cvoc.json](./lc-sandbox-cvoc.json) for testing environments.
-
-4. Finally, if you wish the Local Contexts information to be shown in the summary section of the dataset page, as shown in the image above, add `LCProjectUrl` to the list of custom summary fields via the [CustomDatasetSummaryFields](https://guides.dataverse.org/en/latest/installation/config.html#customdatasetsummaryfields) setting.
+To configure the associated external vocabulary script, follow the general instructions for configuring external vocabular scripts provided in the main [README.md](../../README.md) of this repository.
+Use the [lc-cvoc-conf.json](./lc-cvoc-conf.json) file for production environments or [lc-sandbox-cvoc.json](./lc-sandbox-cvoc.json) for testing environments. Edit the "cvoc-url" entry to reference your local Dataverse installation rather than "https://demo.dataverse.org" in the example files.
