@@ -2,9 +2,9 @@
   {
     "field-name": "authorAffiliation",
     "term-uri-field": "authorAffiliation",
-    "js-url": ["https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/ror.js","https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
+    "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/scripts/ror.js","https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "ror",
-    "retrieval-uri": "https://api.ror.org/organizations/{0}",
+    "retrieval-uri": "https://api.ror.org/v1/organizations/{0}",
     "allow-free-text": true,
     "prefix": "https://ror.org/",
     "managed-fields": {},
@@ -36,8 +36,9 @@
   {
     "field-name": "author",
     "term-uri-field": "authorIdentifier",
-    "js-url": ["https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/people.js","https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
+    "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/scripts/people.js","https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "orcid",
+    "cvoc-url": "https://orcid.org/",
     "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
     "allow-free-text": true,
     "prefix": "https://orcid.org/",

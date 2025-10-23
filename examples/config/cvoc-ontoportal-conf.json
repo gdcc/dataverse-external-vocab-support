@@ -2,7 +2,7 @@
     "field-name": "keyword",
     "term-uri-field": "keywordTermURI",
     "cvoc-url": "https://data.agroportal.lirmm.fr/",
-    "js-url": "https://raw.githubusercontent.com/gdcc/dataverse-external-vocab-support/main/scripts/ontoportal.js",
+    "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
     "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{encodeUrl:keywordVocabulary}/classes/{encodeUrl:keywordTermURI}?lang=en,fr",
