@@ -8,7 +8,7 @@ jQuery(document).ready(function ($) {
     const translations = {
         en: {
             selectTitle: "Open in new tab to view Term page",
-            placeholder: "Search by preferred or alternate label",
+            placeholder: "Type one or more words",
             searching: "Searching...",
             freeTextPrefix: "Free text: ",
             expandFields: "Expand all fields",
@@ -16,7 +16,7 @@ jQuery(document).ready(function ($) {
         },
         fr: {
             selectTitle: "Ouvre la page du mot-clé dans un nouvel onglet",
-            placeholder: "Recherchez par mot-clé exact ou synonyme",
+            placeholder: "Taper un ou plusieurs mots",
             searching: "Recherche en cours...",
             freeTextPrefix: "Saisie libre: ",
             expandFields: "Développer tous les champs",
