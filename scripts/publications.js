@@ -55,12 +55,20 @@ function updatePidInputs() {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                var orcidId = prompt("Enter ORCID ID:");
-                if (orcidId) {
-                    // Show loading indicator
-                    $("#" + selectId).empty().append(new Option("Loading publications...", "")).prop("disabled", true).show();
-                    fetchOrcidWorks(orcidId, selectId);
+                // Find all author ORCIDs
+                var authorOrcids = findAuthorOrcids();
+                
+                if (authorOrcids.length === 0) {
+                    alert("No ORCID identifiers found for authors. Please add author ORCID identifiers first.");
+                    return false;
                 }
+                
+                // For now, use the first ORCID found
+                var orcidId = authorOrcids[0];
+                
+                // Show loading indicator
+                $("#" + selectId).empty().append(new Option("Loading publications from ORCID " + orcidId + "...", "")).prop("disabled", true).show();
+                fetchOrcidWorks(orcidId, selectId);
                 
                 return false;
             });
@@ -192,4 +200,52 @@ function formatPublication(publication) {
     );
     
     return $publication;
+}
+
+/**
+ * Extracts the ORCID iD from a full ORCID URL.
+ * 
+ * @param {string} orcidUrlOrId - The full ORCID URL (e.g., "https://orcid.org/0000-0001-8462-650X")
+ *                                 or an ORCID iD itself.
+ * @return {string|null} The extracted ORCID iD (e.g., "0000-0001-8462-650X"), 
+ *                       or the original string if it's not a URL.
+ *                       Returns null if the input is null or empty.
+ */
+function extractOrcidIdFromUrl(orcidUrlOrId) {
+    if (!orcidUrlOrId || orcidUrlOrId.trim() === '') {
+        return null;
+    }
+    
+    var orcidUrlPattern = /^https?:\/\/(?:sandbox\.)?orcid\.org\/(.+)$/i;
+    var match = orcidUrlOrId.match(orcidUrlPattern);
+    
+    if (match && match[1]) {
+        return match[1];
+    }
+    
+    // If it's not a URL, assume it's already the ID
+    return orcidUrlOrId;
+}
+
+/**
+ * Finds all ORCID identifiers from input elements with data-cvoc-protocol="orcid" 
+ * and data-cvoc-parent="author".
+ * 
+ * @return {Array<string>} Array of ORCID IDs (not URLs)
+ */
+function findAuthorOrcids() {
+    var orcidIds = [];
+    var orcidInputs = $('input[data-cvoc-protocol="orcid"][data-cvoc-parent="author"]');
+    
+    orcidInputs.each(function() {
+        var value = $(this).val();
+        if (value) {
+            var orcidId = extractOrcidIdFromUrl(value);
+            if (orcidId && !orcidIds.includes(orcidId)) {
+                orcidIds.push(orcidId);
+            }
+        }
+    });
+    
+    return orcidIds;
 }
