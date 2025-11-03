@@ -4,10 +4,15 @@
     "term-uri-field": "publicationIDNumber",
     "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/scripts/publications.js","https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "publication",
-    "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/works",
+    "retrieval-uri": "https://pub.sandbox.orcid.org/v3.0/{0}/works",
+    "cvoc-url": "https://pub.sandbox.orcid.org/v3.0/",
     "allow-free-text": true,
     "prefix": "https://orcid.org/",
-    "managed-fields": {},
+    "managed-fields": {
+      "idType":"publicationIDType",
+      "citation":"publicationCitation",
+      "url":"publicationURL"
+    },
     "languages":"en",
     "vocabs": {
       "rors": {
