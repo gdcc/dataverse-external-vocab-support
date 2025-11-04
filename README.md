@@ -57,6 +57,42 @@ In general there are four steps to add interaction with a vocabulary or PID serv
 
 To deploy scripts to multiple fields, you need to add one section (JSON Object) per field/script combo to the array in your config file.
 
+This can be done simply by using one of the scripts below to concatenate the JSON configurations for individual/sets of fields.
+
+### Combining Configuration Files
+
+When deploying scripts to multiple fields, you can use one of the provided utility scripts to combine individual JSON configuration files into a single `CVocConf.json` file. Three versions are available:
+
+**Bash Script (Linux/macOS/WSL):**
+Make sure to make the script executable:
+```bash
+chmod +x compose-cvoc-conf.sh
+```
+Then run it:
+```bash
+cd examples/config
+./compose-cvoc-conf.sh authorsOrcidAndRor depositorOrcid demo/keywordsExample
+```
+
+**Python Script:**
+```bash
+cd examples/config
+python3 compose_cvoc_config.py authorsOrcidAndRor depositorOrcid demo/keywordsExample
+```
+
+**Node.js Script:**
+```bash
+cd examples/config
+node compose-cvoc-conf.js authorsOrcidAndRor depositorOrcid demo/keywordsExample
+```
+
+All three scripts:
+* Accept multiple configuration file names as arguments (with or without .json extension)
+* Support relative paths (e.g., demos/authors configs/depositorOrcid)
+* Combine all objects from the input files into a single CVocConf.json array that can be used as the [:CVocConf setting](https://guides.dataverse.org/en/6.2/installation/config.html#cvocconf) in Dataverse
+* Validate the output to ensure it's valid JSON
+* Report the total number of objects included
+
 ## How It All Works
 
 The basic idea of the Dataverse External Vocabulary mechanism is to simplify adding and displaying controlled terms and PIDs as metadata. As far as Dataverse is concerned, all that is happening is that a term or PID URI is being entered into a text field and Dataverse then stores and displays the term/PID URI. The interesting part is that a JavaScript is taking over Dataverse's text input and text display to instead provide support such as a type-ahead lookup from a vocabulary/PID service and, on the diplay side, displaying the human-readable name of associated with the term/PID, and potentially additional metadata about the term/PID, rather than the raw URI.
@@ -67,9 +103,6 @@ There's more of course. When a repository already has separate subfields for nam
 
 For further details, see [James D. Myers, & Vyacheslav Tykhonov. (2023). A Plug-in Approach to Controlled Vocabulary Support in Dataverse.](https://doi.org/10.5281/zenodo.8133723)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8133723.svg)](https://doi.org/10.5281/zenodo.8133723)
-
-
-
 
 
 ### Packages
