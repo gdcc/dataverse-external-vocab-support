@@ -18,12 +18,10 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-# Start the output array
-echo "[" > CVocConf.json
+# Temporary file to store all objects
+temp_file=$(mktemp)
 
-first=true
-
-# Process each file
+# Process each file and collect all objects
 for filepath in "$@"; do
     # Extract directory and filename
     dirname=$(dirname "$filepath")
@@ -47,30 +45,32 @@ for filepath in "$@"; do
         continue
     fi
     
-    # Add comma separator if not the first file
-    if [ "$first" = false ]; then
-        echo "," >> CVocConf.json
+    # Validate that the file contains a JSON array
+    if ! jq -e 'type == "array"' "$filename" > /dev/null 2>&1; then
+        echo "Warning: $filename does not contain a JSON array, skipping..."
+        continue
     fi
-    first=false
     
-    # Extract the array contents (remove outer brackets)
-    # This uses jq to parse and re-output without the outer array brackets
-    jq -c '.[]' "$filename" | while IFS= read -r line; do
-        echo "  $line" >> CVocConf.json
-        # Add comma if not the last line from this file
-        if [ -n "$(tail -n 1)" ]; then
-            sed -i '$ s/$/,/' CVocConf.json 2>/dev/null || sed -i '' '$ s/$/,/' CVocConf.json
-        fi
-    done
+    # Extract each object and append to temp file
+    jq -c '.[]' "$filename" >> "$temp_file"
     
-    echo "Added object(s) from $filename"
+    object_count=$(jq -s 'length' "$filename")
+    echo "Added $object_count object(s) from $filename"
 done
 
-# Remove trailing comma from last entry
-sed -i '$ s/,$//' CVocConf.json 2>/dev/null || sed -i '' '$ s/,$//' CVocConf.json
+# Check if we have any objects
+if [ ! -s "$temp_file" ]; then
+    echo "Error: No valid objects found in any of the input files"
+    rm "$temp_file"
+    exit 1
+fi
 
-# Close the output array
-echo "]" >> CVocConf.json
+# Combine all objects into a single JSON array
+echo "Combining all objects into CVocConf.json..."
+jq -s '.' "$temp_file" > CVocConf.json
+
+# Clean up temp file
+rm "$temp_file"
 
 # Validate the result
 echo ""
