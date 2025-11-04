@@ -39,6 +39,7 @@ function expandPids() {
     });
 }
 
+
 function updatePidInputs() {
     $(doiInputSelector).each(function() {
         var doiInput = this;
@@ -46,149 +47,187 @@ function updatePidInputs() {
             let num = Math.floor(Math.random() * 100000000000);
             $(doiInput).attr('data-pub-lookup', num);
             
-            var selectId = "doiAddSelect_" + num;
-            $(doiInput).parent().append(
-                '<button id="findOnOrcid_' + num + '" class="btn btn-default" type="button">Find on ORCID</button>' +
-                '<select id="' + selectId + '" class="form-control add-resource select2" style="display:none;"></select>'
-            );
             getOrcidBaseUrl(doiInput);
 
-            $("#findOnOrcid_" + num).on('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            // Find the citation field to place the button above it
+            let parentField = $(doiInput).attr('data-cvoc-parent');
+            let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
+            
+            if (hasParentField) {
+                var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+                let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
                 
-                // Find all author ORCIDs
-                var authorOrcids = findAuthorOrcids();
-                
-                if (authorOrcids.length === 0) {
-                    alert("No ORCID identifiers found for authors. Please add author ORCID identifiers first.");
-                    return false;
-                }
-                
-                // Show loading indicator
-                var loadingMessage = authorOrcids.length === 1 
-                    ? "Loading publications from ORCID profile..." 
-                    : "Loading publications from " + authorOrcids.length + " ORCID profiles...";
-                $("#" + selectId).empty().append(new Option(loadingMessage, "")).prop("disabled", true).show();
-                
-                // Fetch works from all ORCIDs
-                fetchOrcidWorks(authorOrcids, selectId);
-                
-                return false;
-            });
-
-            // Initialize select2 with search capability
-            $("#" + selectId).select2({
-                theme: "classic",
-                placeholder: "Select a DOI",
-                allowClear: true,
-                width: '100%'
-            });
-
-            $('#' + selectId).on('select2:select', function(e) {
-                var data = e.params.data;
-                $(doiInput).val(data.id);
-
-                // Handle managed fields similar to people.js
-                let parentField = $(doiInput).attr('data-cvoc-parent');
-                let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
-
-                if (hasParentField) {
-                    var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
-                    let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
+                // Find the citation field
+                if (managedFields['citation']) {
+                    let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields['citation'] + "']");
                     
-                    for (var key in managedFields) {
-                        if (key == 'idType') {
-                            // Set the identifier type to DOI
-                            let selectContainer = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']");
-                            let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
-                            let doiOption = $(selectField).find('option:contains("doi")');
-                            let doiVal = doiOption.val();
-                            $(selectField).val(doiVal).attr('value', doiVal);
-                            // Update the selected attribute on the option
-                            selectField.find('option').removeAttr('selected');
-                            doiOption.attr('selected', 'selected');
-
-                            // Update the visible label that displays the selection
-                            let label = selectContainer.find('label.ui-selectonemenu-label');
-                            if (label.length > 0) {
-                                label.text('doi');
-                                label.removeClass('ui-state-default'); // Remove default styling if present
+                    if (citationField.length > 0) {
+                        // Create button and modal above the citation field
+                        var modalId = "orcidModal_" + num;
+                        var selectId = "doiAddSelect_" + num;
+                        
+                        var modalHtml = 
+                            '<div style="margin-bottom: 10px;">' +
+                            '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button">Find on ORCID</button>' +
+                            '</div>' +
+                            '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="display:none;">' +
+                            '  <div class="modal-dialog modal-lg" role="document">' +
+                            '    <div class="modal-content">' +
+                            '      <div class="modal-header">' +
+                            '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
+                            '          <span aria-hidden="true">&times;</span>' +
+                            '        </button>' +
+                            '        <h4 class="modal-title">Select Publication from ORCID</h4>' +
+                            '      </div>' +
+                            '      <div class="modal-body">' +
+                            '        <div class="form-group">' +
+                            '          <label for="' + selectId + '">Search and select a publication:</label>' +
+                            '          <select id="' + selectId + '" class="form-control add-resource select2" style="width: 100%;"></select>' +
+                            '        </div>' +
+                            '      </div>' +
+                            '      <div class="modal-footer">' +
+                            '        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>' +
+                            '      </div>' +
+                            '    </div>' +
+                            '  </div>' +
+                            '</div>';
+                        
+                        // Insert button and modal above citation field
+                        citationField.before(modalHtml);
+                        
+                        // Button click handler
+                        $("#findOnOrcid_" + num).on('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Find all author ORCIDs
+                            var authorOrcids = findAuthorOrcids();
+                            
+                            if (authorOrcids.length === 0) {
+                                alert("No ORCID identifiers found for authors. Please add author ORCID identifiers first.");
+                                return false;
                             }
-                        } else if (key == 'url') {
-                            // Set the URL to the DOI resolver URL
-                            let urlField = $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']");
-                            $(urlField).val('https://doi.org/' + data.id).attr('value', 'https://doi.org/' + data.id);
-                        } else if (key == 'citation') {
-                            // Fetch the detailed work information to get BibTeX citation
-                            let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']");
-
+                            
+                            // Show the modal
+                            $("#" + modalId).modal('show');
+                            
                             // Show loading indicator
-                            $(citationField).val('Loading citation...').attr('value', 'Loading citation...');
+                            var loadingMessage = authorOrcids.length === 1 
+                                ? "Loading publications from ORCID profile..." 
+                                : "Loading publications from " + authorOrcids.length + " ORCID profiles...";
+                            $("#" + selectId).empty().append(new Option(loadingMessage, "")).prop("disabled", true);
+                            
+                            // Fetch works from all ORCIDs
+                            fetchOrcidWorks(authorOrcids, selectId);
+                            
+                            return false;
+                        });
 
-                            // Fetch work details including BibTeX
-                            fetchWorkDetails(data.orcidId, data.putCode)
-                                .then(function(workDetails) {
-                                    var citation;
+                        // Initialize select2 with search capability
+                        $("#" + selectId).select2({
+                            theme: "classic",
+                            placeholder: "Select a publication",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: $("#" + modalId)
+                        });
 
-                                    // Use BibTeX citation if available
-                                    if (workDetails && workDetails.citation &&
-                                        workDetails.citation['citation-type'] === 'bibtex' &&
-                                        workDetails.citation['citation-value']) {
-                                        citation = formatCitation(data.workSummary, workDetails.citation['citation-value']);
-                                    } else {
-                                        // Fall back to formatted citation from work summary
-                                        citation = formatCitation(data.workSummary);
+                        // Handle selection
+                        $('#' + selectId).on('select2:select', function(e) {
+                            var data = e.params.data;
+                            $(doiInput).val(data.id);
+
+                            // Handle managed fields
+                            for (var key in managedFields) {
+                                if (key == 'idType') {
+                                    // Set the identifier type to DOI
+                                    let selectContainer = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']");
+                                    let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                                    let doiOption = $(selectField).find('option:contains("doi")');
+                                    let doiVal = doiOption.val();
+                                    $(selectField).val(doiVal).attr('value', doiVal);
+                                    // Update the selected attribute on the option
+                                    selectField.find('option').removeAttr('selected');
+                                    doiOption.attr('selected', 'selected');
+
+                                    // Update the visible label that displays the selection
+                                    let label = selectContainer.find('label.ui-selectonemenu-label');
+                                    if (label.length > 0) {
+                                        label.text('doi');
+                                        label.removeClass('ui-state-default');
                                     }
+                                } else if (key == 'url') {
+                                    // Set the URL to the DOI resolver URL
+                                    let urlField = $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']");
+                                    $(urlField).val('https://doi.org/' + data.id).attr('value', 'https://doi.org/' + data.id);
+                                } else if (key == 'citation') {
+                                    // Fetch the detailed work information to get BibTeX citation
+                                    let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']");
 
-                                    $(citationField).val(citation).attr('value', citation);
-                                })
-                                .catch(function(error) {
-                                    console.error("Error fetching work details: ", error);
-                                    // Fall back to basic formatting on error
-                                    var citation = formatCitation(data.workSummary);
-                                    $(citationField).val(citation).attr('value', citation);
-                                });
-                        }
-                    }
-                }
-            });
+                                    // Show loading indicator
+                                    $(citationField).val('Loading citation...').attr('value', 'Loading citation...');
 
-            $('#' + selectId).on('select2:clear', function(e) {
-                $(doiInput).val('').attr('value', '');
+                                    // Fetch work details including BibTeX
+                                    fetchWorkDetails(data.orcidId, data.putCode)
+                                        .then(function(workDetails) {
+                                            var citation;
 
-                // Clear managed fields similar to people.js
-                let parentField = $(doiInput).attr('data-cvoc-parent');
-                let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
+                                            // Use BibTeX citation if available
+                                            if (workDetails && workDetails.citation &&
+                                                workDetails.citation['citation-type'] === 'bibtex' &&
+                                                workDetails.citation['citation-value']) {
+                                                citation = formatCitation(data.workSummary, workDetails.citation['citation-value']);
+                                            } else {
+                                                // Fall back to formatted citation from work summary
+                                                citation = formatCitation(data.workSummary);
+                                            }
 
-                if (hasParentField) {
-                    var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
-                    let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
-                    
-                    for (var key in managedFields) {
-                        if (key == 'idType') {
-                            // Clear the identifier type select field
-                            let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
-                            $(selectField).val('').attr('value', '');
-
-                            // Clear the selected attribute on all options
-                            selectField.find('option').removeAttr('selected');
-
-                            // Update the visible label to show placeholder/empty state
-                            let selectContainer = selectField.closest('.ui-selectonemenu');
-                            let label = selectContainer.find('label.ui-selectonemenu-label');
-                            if (label.length > 0) {
-                                label.text('Select...');
-                                label.addClass('ui-state-default'); // Add default styling back
+                                            $(citationField).val(citation).attr('value', citation);
+                                        })
+                                        .catch(function(error) {
+                                            console.error("Error fetching work details: ", error);
+                                            // Fall back to basic formatting on error
+                                            var citation = formatCitation(data.workSummary);
+                                            $(citationField).val(citation).attr('value', citation);
+                                        });
+                                }
                             }
-                        } else if (key == 'url') {
-                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
-                        } else if (key == 'citation') {
-                            $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
-                        }
+                            
+                            // Close the modal after selection
+                            $("#" + modalId).modal('hide');
+                        });
+
+                        // Handle clear
+                        $('#' + selectId).on('select2:clear', function(e) {
+                            $(doiInput).val('').attr('value', '');
+
+                            // Clear managed fields
+                            for (var key in managedFields) {
+                                if (key == 'idType') {
+                                    // Clear the identifier type select field
+                                    let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                                    $(selectField).val('').attr('value', '');
+
+                                    // Clear the selected attribute on all options
+                                    selectField.find('option').removeAttr('selected');
+
+                                    // Update the visible label to show placeholder/empty state
+                                    let selectContainer = selectField.closest('.ui-selectonemenu');
+                                    let label = selectContainer.find('label.ui-selectonemenu-label');
+                                    if (label.length > 0) {
+                                        label.text('Select...');
+                                        label.addClass('ui-state-default');
+                                    }
+                                } else if (key == 'url') {
+                                    $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
+                                } else if (key == 'citation') {
+                                    $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
+                                }
+                            }
+                        });
                     }
                 }
-            });
+            }
         }
     });
 }
