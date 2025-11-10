@@ -4,7 +4,7 @@
     "term-uri-field": "authorAffiliation",
     "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/scripts/ror.js","https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "ror",
-    "retrieval-uri": "https://api.ror.org/v1/organizations/{0}",
+    "retrieval-uri": "https://api.ror.org/v2/organizations/{0}",
     "allow-free-text": true,
     "prefix": "https://ror.org/",
     "managed-fields": {},
@@ -26,7 +26,7 @@
       },
       "termName": {
         "pattern": "{0}",
-        "params": ["/name"]
+        "params": ["/names/types=ror_display/value"]
       },
       "@type": {
         "pattern": "https://schema.org/Organization"
