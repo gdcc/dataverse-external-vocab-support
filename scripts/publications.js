@@ -40,6 +40,7 @@ function expandPids() {
 }
 
 
+
 function updatePidInputs() {
     $(doiInputSelector).each(function() {
         var doiInput = this;
@@ -66,11 +67,15 @@ function updatePidInputs() {
                         var modalId = "orcidModal_" + num;
                         var selectId = "doiAddSelect_" + num;
                         
-                        var modalHtml = 
+                        // Create button HTML (to be inserted before citation field)
+                        var buttonHtml = 
                             '<div style="margin-bottom: 10px;">' +
                             '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button">Find on ORCID</button>' +
-                            '</div>' +
-                            '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="display:none;">' +
+                            '</div>';
+                        
+                        // Create modal HTML (to be appended to body)
+                        var modalHtml = 
+                            '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog">' +
                             '  <div class="modal-dialog modal-lg" role="document">' +
                             '    <div class="modal-content">' +
                             '      <div class="modal-header">' +
@@ -92,8 +97,21 @@ function updatePidInputs() {
                             '  </div>' +
                             '</div>';
                         
-                        // Insert button and modal above citation field
-                        citationField.before(modalHtml);
+                        // Insert button above citation field
+                        citationField.before(buttonHtml);
+                        
+                        // Append modal to body (this fixes the z-index issue)
+                        $('body').append(modalHtml);
+                        
+                        // Initialize select2 early with basic configuration
+                        $("#" + selectId).select2({
+                            theme: "classic",
+                            placeholder: "Select a publication",
+                            allowClear: true,
+                            width: '100%',
+                            dropdownParent: $("#" + modalId),
+                            minimumResultsForSearch: 0  // Always show search box
+                        });
                         
                         // Button click handler
                         $("#findOnOrcid_" + num).on('click', function(e) {
@@ -121,15 +139,6 @@ function updatePidInputs() {
                             fetchOrcidWorks(authorOrcids, selectId);
                             
                             return false;
-                        });
-
-                        // Initialize select2 with search capability
-                        $("#" + selectId).select2({
-                            theme: "classic",
-                            placeholder: "Select a publication",
-                            allowClear: true,
-                            width: '100%',
-                            dropdownParent: $("#" + modalId)
                         });
 
                         // Handle selection
@@ -231,6 +240,7 @@ function updatePidInputs() {
         }
     });
 }
+
 
 /**
  * Fetches works from one or more ORCID profiles and populates a select element.
@@ -350,18 +360,33 @@ function fetchOrcidWorks(orcidIds, selectId) {
 
         // Enable select2 with search capability
         if (options.length > 0) {
-            $("#" + selectId).empty().prop("disabled", false).select2({
+            // Destroy existing Select2 instance if it exists
+            if ($("#" + selectId).hasClass("select2-hidden-accessible")) {
+                $("#" + selectId).select2('destroy');
+            }
+            
+            // Clear and re-enable the select element
+            $("#" + selectId).empty().prop("disabled", false);
+            
+            // Initialize Select2 with proper configuration
+            $("#" + selectId).select2({
                 data: options,
                 theme: "classic",
                 placeholder: "Type to search publications",
                 allowClear: true,
                 width: '100%',
+                minimumResultsForSearch: 0, // Always show search box
                 templateResult: formatPublication,
-                matcher: customMatcher
+                matcher: customMatcher,
+                dropdownParent: $("#" + selectId).closest('.modal-body') // Ensure dropdown renders within modal
             });
             
-            // Open the dropdown automatically
-            $("#" + selectId).select2('open');
+            // Small delay to ensure DOM is ready, then open the dropdown
+            setTimeout(function() {
+                $("#" + selectId).select2('open');
+                // Focus the search input
+                $('.select2-search__field').focus();
+            }, 100);
         } else {
             var message = "No DOIs found";
             if (successCount > 0) {
