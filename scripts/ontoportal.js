@@ -135,7 +135,7 @@ jQuery(document).ready(function ($) {
                 // The index of the displayed element
                 let index = $(displayElement).data("cvoc-index");
                 // Display the text like native Dataverse
-                $(`span[data-cvoc-index="${index}"]`).each(function () {
+                $(`${displaySelector}[data-cvoc-index="${index}"]`).each(function () {
                     let newText = convertTextToLinkIfUrl($(this).text());
                     if ($(this).is(`[data-cvoc-metadata-name="${managedFields.vocabularyName}"]`)) {
                         newText = `(${newText})`;
