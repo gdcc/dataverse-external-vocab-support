@@ -74,9 +74,10 @@ function updatePidInputs() {
                             '</div>';
                         
                         // Create modal HTML (to be appended to body)
+                        // Create modal HTML with centered positioning
                         var modalHtml = 
-                            '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog">' +
-                            '  <div class="modal-dialog modal-lg" role="document">' +
+                            '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="padding-top: 60px;">' +
+                            '  <div class="modal-dialog modal-lg" role="document" style="margin: 30px auto;">' +
                             '    <div class="modal-content">' +
                             '      <div class="modal-header">' +
                             '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
@@ -135,8 +136,11 @@ function updatePidInputs() {
                                 : "Loading publications from " + authorOrcids.length + " ORCID profiles...";
                             $("#" + selectId).empty().append(new Option(loadingMessage, "")).prop("disabled", true);
                             
+                            // Get current DOI value to pre-select
+                            var currentDoi = $(doiInput).val();
+                            
                             // Fetch works from all ORCIDs
-                            fetchOrcidWorks(authorOrcids, selectId);
+                            fetchOrcidWorks(authorOrcids, selectId, currentDoi);
                             
                             return false;
                         });
@@ -242,13 +246,15 @@ function updatePidInputs() {
 }
 
 
+
 /**
  * Fetches works from one or more ORCID profiles and populates a select element.
  * 
  * @param {string|Array<string>} orcidIds - Single ORCID ID or array of ORCID IDs
  * @param {string} selectId - The ID of the select element to populate
+ * @param {string} preselectedDoi - Optional DOI to pre-select in the dropdown
  */
-function fetchOrcidWorks(orcidIds, selectId) {
+function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
     // Normalize input to always be an array
     var orcidArray = Array.isArray(orcidIds) ? orcidIds : [orcidIds];
     
@@ -380,6 +386,18 @@ function fetchOrcidWorks(orcidIds, selectId) {
                 matcher: customMatcher,
                 dropdownParent: $("#" + selectId).closest('.modal-body') // Ensure dropdown renders within modal
             });
+            
+            // Pre-select the current DOI if it exists in the options
+            if (preselectedDoi) {
+                var normalizedPreselected = preselectedDoi.trim().toLowerCase();
+                var matchingOption = options.find(function(opt) {
+                    return opt.id.toLowerCase() === normalizedPreselected;
+                });
+                
+                if (matchingOption) {
+                    $("#" + selectId).val(matchingOption.id).trigger('change');
+                }
+            }
             
             // Small delay to ensure DOM is ready, then open the dropdown
             setTimeout(function() {
