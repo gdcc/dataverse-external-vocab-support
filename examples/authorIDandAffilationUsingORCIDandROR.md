@@ -14,6 +14,17 @@ This example requires several files:
 
 (These scripts also use jquery and select2 which are already included in Dataverse).
 
+## Dataverse Compatibility note:
+
+The ROR configuration/script now use ROR's v2 API and require Dataverse 6.9+ for full functionality.
+For installations on earlier versions, the ROR organization name will not be added to the DataCite XML metadata.
+Installations on <= Dataverse v6.8 should not upgrade their CVocConf configuration (keeping the retrieval-url pointed to ROR's v1 API or should delete the contents of the "retrieval-filtering" object (e.g. set "retrieval-filtering": {} ).
+
+## ROR Compatibility note:
+As of Dec. 2025, ROR will no longer support it's v1 API. To retain ROR functionality, Dataverse sites should update to use the current ror.js script (which uses ROR's v2 API).
+Dataverse instances on v6.9+ should also update to use the current :CVocConf configuration.
+Dataverse instances using <=v6.8 also need to update the ror.js script but should not update their configuration (or should delete the contents of the retrieval-filtering object as discussed above). 
+
 ### How to install:
 
 Minimal: 
