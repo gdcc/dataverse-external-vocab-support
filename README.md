@@ -16,7 +16,7 @@ and have them displayed as a link to the remote site defining the term:
 
 ![Display2](https://github.com/user-attachments/assets/27aab9fe-c876-4ab6-8d74-eb6cc29274c4)
 
-Or, with [additions added in Dataverse 6.4](https://github.com/IQSS/dataverse/pull/10712), one can replace the four author related fields with selectors for [ORCID](https://orcid.org) (people) and [ROR](https://ror.org) (organizations)
+Or, with [enhancements added in Dataverse 6.4](https://github.com/IQSS/dataverse/pull/10712), one can replace the four author related fields with selectors for [ORCID](https://orcid.org) (people) and [ROR](https://ror.org) (organizations)
 
 ![Input1](https://github.com/user-attachments/assets/b0f724e1-952b-4d48-8f89-8f046d797ce8)
 
