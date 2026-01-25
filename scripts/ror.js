@@ -96,18 +96,31 @@ function getRorDisplayHtml(name, url, altNames, truncate = true, addParens = fal
         altNames = [];
     }
     if (truncate && (name.length >= rorMaxLength)) {
-        // show the first characters of a long name
-        // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
         name = name.substring(0, rorMaxLength) + "…";
     }
+    
+    // Create the span and set the text content (this escapes any HTML)
+    var displayText = addParens ? '(' + name + ')' : name;
+    var $span = $('<span></span>').text(displayText);
+    
+    // If there's a URL, append the link as a DOM element (not a string)
     if (url != null) {
-        name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
+        var $link = $('<a></a>')
+            .attr('href', url)
+            .attr('target', '_blank')
+            .attr('rel', 'nofollow');
+        var $img = $('<img>')
+            .attr('alt', 'ROR logo')
+            .attr('src', 'https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg')
+            .attr('height', '20')
+            .addClass('ror');
+        $link.append($img);
+        $span.append(' ').append($link);  // Add space before the link
     }
-    if (addParens) {
-        name = '(' + name + ')';
-    }
-    return $('<span></span>').append(name).attr("title", altNames);
+    
+    $span.attr("title", altNames.join(', '));
+    return $span;
 }
 
 function updateRorInputs() {

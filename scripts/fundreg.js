@@ -79,7 +79,7 @@ function getFunderDisplayHtml(name, altNames, truncate=true) {
         } 
         name=name.substring(0,fundregMaxLength) + "…";
     }
-    return $('<span></span>').append(name).attr("title", altNames);
+    return $('<span></span>').text(name).attr("title", altNames);
 }
 
 function updateFunderInputs() {
