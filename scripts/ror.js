@@ -62,9 +62,9 @@ function expandRors() {
                             },
                             success: function(ror, status) {
                                 // If found, construct the HTML for display
-                                // Find the display name (type: "ror_display" or "label")
+                                // Find the display name (type: "ror_display")
                                 const displayName = ror.names.find(n => 
-                                    n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                                    n.types && n.types.includes("ror_display")
                                 )?.value || ror.id;
                                 
                                 // Find all acronyms
@@ -212,9 +212,9 @@ function updateRorInputs() {
                                 .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
                                 // Extract display name and acronyms from the names array
                                 .map(org => {
-                                    // Find the display name (type: "ror_display" or "label")
+                                    // Find the display name (type: "ror_display")
                                     const displayName = org.names.find(n => 
-                                        n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                                        n.types && n.types.includes("ror_display")
                                     )?.value || org.id;
                                     
                                     // Find all acronyms
