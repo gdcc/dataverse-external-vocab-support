@@ -1,0 +1,511 @@
+<html>
+   <head>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+      <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet">
+
+      <!-- <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/people.js?version=6.3-qdr-dev"></script> -->
+
+      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/cvocutils.js?version=6.3-qdr-dev"></script>
+
+      <!--link type="text/css" rel="stylesheet" href="/jakarta.faces.resource/css/structure.css.xhtml?version=6.3-qdr-dev"-->
+      <!-- <link type="text/css" rel="stylesheet" href="example.css?version=6.3-qdr-dev"> -->
+      
+      <!-- copied the css below 
+           from https://github.com/gdcc/dataverse-external-vocab-support/blob/main/examples/staticOrcidAndRorExample.css -->
+      <style>
+         /* Some minimal styling for the static example. */
+         h1 {
+         text-align: center;
+         }
+         #select2-drop{
+            width: 400px !important;
+         }
+         .select2-container {
+         min-width: 400px!important;
+         }
+         .select2-container .select2-selection--single .select2-selection__rendered {
+         width:100%;
+         vertical-align:middle;
+         }
+         img {
+         vertical-align: middle;
+         }
+         div {
+         height:40px;
+         width:100%;
+         margin-bottom:30px;
+         }
+         .select2-container {
+            display:block!important;
+         }
+         .select2-container .select2-selection--single .select2-selection__rendered {
+               display:inline-block!important;
+               max-width:85%;
+               padding-right:5px!important;
+         }
+         .select2-selection__clear, .select2-selection__rendered {
+               vertical-align: -webkit-baseline-middle;
+         }
+         .select2-results ul > li {
+               font-weight:400;
+               font-size:14px;
+         }
+         .select2-rendered__match {
+               font-weight:600;
+         }
+      </style>
+   </head>
+   <body>
+      <h1>Quick Static Geonames Demonstrator</h1>
+      <h3>This static HTML page demonstrates how the scripts in this repository are designed to attach to specific fields via 
+      the use of data-cvoc-* attributes embedded in the page. Once you've viewed the page and tried it out, take a look at the 
+      page source to see the added attributes. With Dataverse, these attributes are automatically generated based 
+      on the :CVocConf setting. For other repositories - if you can add these attributes to your page, you can use the scripts as well.
+      Note - the page is truly static  and the inputs and outputs are not connected (if someone wants to add some Javascript to update 
+      the display entries when new inputs are selected, feel free!)</h3>
+      
+      This example uses the 
+      <a href="https://geonames.org">Geonames service <img alt="GeoNames logo" src="https://www.geonames.org/geonames.ico" width="16" height="16" style="margin-left:4px;margin-right:4px;" /></a> for which you must have an account (username) and have the API usage enabled. 
+      
+
+      <h2>Input</h2>
+      <div style="width:600px">
+         <label for="d1">Place (geographic location name)</label>
+         <div>
+            <!-- Note that we have data-cvoc-allowfreetext="true" for testing purposes -->
+            <input
+               id="d1"
+               name="d1"
+               type="text"
+               value="Amsterdam or Mokum, as free text"
+               role="textbox"
+               data-cvoc-protocol="geonames"
+               data-cvoc-vocabs="{&quot;geonames&quot;:{&quot;uriSpace&quot;:&quot;https://sws.geonames.org/&quot;}}"
+               data-cvoc-allowfreetext="true"
+               lang=""
+               data-cvoc-headers="{}"
+               data-cvoc-filter=""
+               data-cvoc-service-url=""
+               data-cvoc-managedfields="{}"/>
+         </div>
+      </div>
+      <div>
+         <h2>Display</h2>
+         <div>
+            <div>
+               <span>Place 1: </span>
+               <span
+                  data-cvoc-protocol="geonames"
+                  data-cvoc-index="0"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">https://sws.geonames.org/2759794</span>
+            </div>
+            <div>
+               <span>Place 2: </span>
+               <span
+                  data-cvoc-protocol="geonames"
+                  data-cvoc-index="1"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">Amsterdam or Mokum, as free text</span>
+            </div>
+         </div>
+      </div>
+   </body>
+   <!-- For orcid copied the people.js code in the script element below as a start -->
+   <script>
+
+// ------ Below should be in geonames.js file ------
+
+
+// TODO
+// Some code for getting the username for the API
+// store it for easy page reload
+
+// Hardcode it here for now
+// NOTE: Replace with real value!
+var geonamesUsername = "your_geonames_username"; // kind of an API key for the Geonames service
+
+// Note that these selectors should match the Dataverse CVOC configuration
+var placeSelector = "span[data-cvoc-protocol='geonames']";
+var placeInputSelector = "input[data-cvoc-protocol='geonames']";
+var placePrefix = "place:"; // maybe use geonames: instead
+
+
+$(document).ready(function() {
+    expandPlaces(); // This is the display part
+    updatePlaceInputs(); // This is the input part (autocomplete dropdown)
+});
+
+// This function formats the place name for display
+// It uses the place object to construct a string
+function getFormattedPlacename(place) {
+    var name = place.name;
+
+    let nameDetailsArray = [];
+
+    if (place.toponymName && place.toponymName !== place.name) {
+        nameDetailsArray.push(place.toponymName);
+    }
+    if (place.adminName1 && place.adminName1 !== place.name) {
+        nameDetailsArray.push(place.adminName1);
+    }
+    if (place.countryName && place.countryName !== place.name) {
+        nameDetailsArray.push(place.countryName);
+    }
+
+    if (nameDetailsArray.length > 0) {
+        // If there are additional details, append them in parentheses
+        name += " (" + nameDetailsArray.join(', ') + ")";
+    }
+    return name;
+}
+
+// For displaying the places; expanding the info for the geonames IDs
+function expandPlaces() {
+    // Check each selected element
+    $(placeSelector).each(function() {
+        var placeElement = this;
+        // If it hasn't already been processed
+        if (!$(placeElement).hasClass('expanded')) {
+            // Mark it as processed
+            $(placeElement).addClass('expanded');
+            // extract the ID
+            var id = placeElement.textContent;
+            if (id.startsWith("https://sws.geonames.org/")) {
+                id = id.substring(25);
+            }
+            // check if id is a number  
+            if (id.match(/^\d+$/) !== null) {
+
+                // If it is a valid ID, try to get the name
+                // Try it as an ID
+                $.ajax({
+                    type: "GET",
+                    url: "http://api.geonames.org/getJSON?formatted=true&geonameId=" + id + "&username=" + geonamesUsername + "&style=full",
+                    dataType: 'json',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    success: function(place, status) {
+                        // If found, construct the HTML for display
+                        // extract the name from the JSON response
+                        //var name = place.name; //place.name['family-name'].value + ", " + place.name['given-names'].value;
+                        var name = getFormattedPlacename(place);
+                        // Note there is no logo for geonames service so we just use the geonames site icon
+                        var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', 'https://sws.geonames.org/' + id)
+                                            .attr('target', '_blank').attr('rel', 'noopener')
+                                            .html('<img alt="Geoname logo?" src="https://www.geonames.org/geonames.ico" width="16" height="16" style="margin-left:4px;margin-right:4px;" />'));
+                        $(placeElement).hide();
+                        let sibs = $(placeElement).siblings("[data-cvoc-index='" + $(placeElement).attr('data-cvoc-index') + "']");
+                        if (sibs.length == 0) {
+                            displayElement.prependTo($(placeElement).parent());
+                        } else {
+                            displayElement.insertBefore(sibs.eq(0));
+                        }
+                        // NOTE: Not sure why it is not just displayElement.insertBefore($(placeElement));
+
+                        //Store the most recent IDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
+                        storeValue(placePrefix, id, name);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        //Treat as plain text
+                        $(placeElement).show();
+                        let index = $(placeElement).attr('data-cvoc-index');
+                        if (index !== undefined) {
+                            $(placeElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
+                        }
+                        //Generic logging if not 404
+                        if (jqXHR.status != 404) {
+                            console.error("The following error occurred: " + textStatus, errorThrown);
+                        }
+                    }
+                });
+            } else {
+                // Plain text entry
+                $(placeElement).show();
+                let index = $(placeElement).attr('data-cvoc-index');
+                if (index !== undefined) {
+                    $(placeElement).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden');
+                }
+            }
+        }
+    });
+}
+
+
+function updatePlaceInputs() {
+    //For each input element within personInputSelector elements
+    $(placeInputSelector).each(function() {
+        var placeInput = this;
+        if (!placeInput.hasAttribute('data-place')) {
+            //Random identifier
+            let num = Math.floor(Math.random() * 100000000000);
+            $(placeInput).attr('data-place', num);
+
+            let parentField = $(placeInput).attr('data-cvoc-parent');
+            var parent = $(placeInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+
+            let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
+            let managedFields = {};
+            if (hasParentField) {
+                managedFields = JSON.parse($(placeInput).attr('data-cvoc-managedfields'));
+                if (Object.keys(managedFields).length > 0) {
+                    //Hide managed fields
+                    $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").hide();
+                    $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
+                }
+                //Hide the actual input and give it a data-place number so we can find it
+                $(placeInput).parent().hide();
+            } else {
+                $(placeInput).hide();
+            }
+
+            $(placeInput).attr('data-place', num);
+            //Todo: if not displayed, wait until it is to then create the select 2 with a non-zero width
+
+            let allowFreeText = ($(placeInput).attr('data-cvoc-allowfreetext') == 'true');
+
+            //Add a select2 element to allow search and provide a list of choices
+            var selectId = "personAddSelect_" + num;
+            $(placeInput).parent().parent().children('div').eq(0).append(
+                '<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+            $("#" + selectId).select2({
+                theme: "classic",
+                tags: allowFreeText,
+                delay: 500,
+                templateResult: function(item) {
+                    // No need to template the searching text
+                    if (item.loading) {
+                        return item.text;
+                    }
+
+                    // markMatch bolds the search term if/where it appears in the result
+                    var $result = markMatch(item.text, term);
+                    return $result;
+                },
+                templateSelection: function(item) {
+                    // For a selection, add HTML to make the ID a link
+                    // get number from the item.text end
+                    var numberMatch = item.text.match(/[0-9]+$/);
+                    if (numberMatch) {
+                        var id = numberMatch[0];
+                        return $('<span></span>').append(item.text.replace(id, "<a href='https://sws.geonames.org/" + id + "' target='_blank'>" + id + "</a>"));
+                    }
+                    return item.text;
+                },
+                language: {
+                    searching: function(params) {
+                        // Change this to be appropriate for your application
+                        return 'Search by name…';
+                    }
+                },
+                placeholder: placeInput.hasAttribute("data-cvoc-placeholder") ? $(placeInput).attr('data-cvoc-placeholder') : "Select or enter...",
+                minimumInputLength: 3,
+                allowClear: true,
+                ajax: {
+                    //Use an ajax call to retrieve matching results
+                    url: function(params) {
+                        var term = params.term;
+                        if (!term) {
+                            term = "";
+                        }
+                        // Use the geonames search service; NOTE it is not HTTPS !
+                        return "http://api.geonames.org/searchJSON";
+                    },
+                    data: function(params) {
+                        term = params.term;
+                        if (!term) {
+                            term = "";
+                        }
+                        var query = {
+                            q: '*',
+                            name_startsWith: term, 
+                            username: geonamesUsername,
+                            // Currently we just get the top 10 hits. We could get, for example, the top 50, sort as below to put recently used IDs at the top, and then limit to 10
+                            maxRows: 10
+                        }
+                        return query;
+                    },
+                    //request json (vs XML default)
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    processResults: function(data, page) {
+                        let newItems = data['geonames'];
+                        if (newItems == null) {
+                            return { results: [] };
+                        }
+                        return {
+                            results: data['geonames']
+                                //Sort to bring recently used IDS to the top of the list
+                                .sort((a, b) => Number(getValue(placePrefix, b['geonameId']).name != null) - Number(getValue(placePrefix, a['geonameId']).name != null))
+                                .map(
+                                    function(x) {
+                                        return {
+                                            text: getFormattedPlacename(x) + "; " + x['geonameId'], 
+                                            id: x['geonameId'],
+                                            //Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the ORCID page
+                                            //Using title to provide that hint as a popup
+                                            title: 'Open in new tab to view geonames page'
+                                        }
+                                    })
+                        };
+                    }
+                }
+            });
+            //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
+            const observer = new MutationObserver((mutationList, observer) => {
+                var button = $('#' + selectId).parent().find('.select2-selection__clear');
+                console.log("BL : " + button.length);
+                button.attr("tabindex", "0");
+                button.on('keydown', function(e) {
+                    if (e.which == 13) {
+                        $('#' + selectId).val(null).trigger('change');
+                    }
+                });
+            });
+
+            observer.observe($('#' + selectId).parent()[0], {
+                childList: true,
+                subtree: true
+            });
+            //If the input has a value already, format it the same way as if it were a new selection
+            var id = $(placeInput).val();
+            if (id.startsWith("https://sws.geonames.org/")) {
+                id = id.substring(25);
+                $.ajax({
+                    type: "GET",
+                    url: "http://api.geonames.org/getJSON?formatted=true&geonameId=" + id + "&username=" + geonamesUsername + "&style=full",
+                    dataType: 'json',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    success: function(place, status) {
+                        // extract the name from the JSON response
+                        var name = getFormattedPlacename(place);
+                        var text = name + "; " + id;
+                        var newOption = new Option(text, id, true, true);
+                        newOption.title = 'Open in new tab to view geonames page';
+                        $('#' + selectId).append(newOption).trigger('change');
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        if (jqXHR.status != 404) {
+                            console.error("The following error occurred: " + textStatus, errorThrown);
+                        }
+                    }
+                });
+            } else {
+                //If the initial value is not an ID (legacy, or if tags are enabled), just display it as is
+                if (Object.keys(managedFields).length > 0) {
+                    //Handle managed fields
+                    if (id.length > 0) {
+                        $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+                        $(placeInput).parent().show();
+                    }
+                    id = $(parent).find("input[data-cvoc-managed-field='" + managedFields.placeName + "']").val();
+                }
+
+                var newOption = new Option(id, id, true, true);
+                $('#' + selectId).append(newOption).trigger('change');
+            }
+            //Cound start with the selection menu open
+            //    $("#" + selectId).select2('open');
+            //When a selection is made, set the value of the hidden input field
+            $('#' + selectId).on('select2:select', function(e) {
+                var data = e.params.data;
+                //For geoname IDs, the id and text are different
+                if (data.id != data.text) {
+                    $("input[data-place='" + num + "']").val("https://sws.geonames.org/" + data.id);
+                } else {
+                    //Tags are allowed, so just enter the text as is
+                    $("input[data-place='" + num + "']").val(data.id);
+                }
+
+                //In the multi-field case, we should also fill in the other hidden managed fields
+                if (hasParentField) {
+                    var parent = $("input[data-place='" + num + "']").closest("[data-cvoc-parentfield='" + parentField + "']");
+                    let isGeonamesId = data.text.includes(';');
+                    for (var key in managedFields) {
+                        if (key == 'placeName') {
+                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").attr('value', data.text.split(";", 1)[0]);
+                        } else if (key == 'idType') {
+                            let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                            let geonamesIdVal = $(selectField).find('option:contains("GEONAMES")').val(); // Not sure how this works!
+                            $(selectField).val(isGeonamesId ? geonamesIdVal : '');
+                        }
+                    }
+                    if (Object.keys(managedFields).length > 0) {
+                        if (isGeonamesId) {
+                            //Hide managed fields
+                            $(parent).find("input[data-place='" + num + "']").parent().hide();
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
+                        } else {
+                            //Show managed fields
+                            let idField = $(parent).find("input[data-place='" + num + "']");
+                            idField.val('');
+                            idField.parent().show();
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+                        }
+                    }
+                }
+            });
+            //When a selection is cleared, clear the hidden input
+            $('#' + selectId).on('select2:clear', function(e) {
+                $(this).empty().trigger("change");
+                $("input[data-place='" + num + "']").attr('value', '');
+                //In the multi-field case, we should also clear the other hidden managed fields
+                if (hasParentField) {
+                    var parent = $("input[data-place='" + num + "']").closest("[data-cvoc-parentfield='" + parentField + "']");
+                    for (var key in managedFields) {
+                        if (key == 'placeName') {
+                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('');
+                        } else if (key == 'idType') {
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select").val('');
+                        }
+                    }
+                }
+            });
+            //Force cursor to appear in text box when opening via key press
+            $('#' + selectId).on('select2:open', function(e) {
+                $(".select2-search__field").focus()
+                $(".select2-search__field").attr("id", selectId + "_input")
+                document.getElementById(selectId + "_input").select();
+            });
+        }
+    });
+}
+
+//--------------
+
+//Put the text in a result that matches the term in a span with class select2-rendered__match that can be styled (e.g. bold)
+function markMatch(text, term) {
+    // Find where the match is
+    var match = text.toUpperCase().indexOf(term.toUpperCase());
+    var $result = $('<span></span>');
+    // If there is no match, move on
+    if (match < 0) {
+        return $result.text(text);
+    }
+
+    // Put in whatever text is before the match
+    $result.text(text.substring(0, match));
+
+    // Mark the match
+    var $match = $('<span class="select2-rendered__match"></span>');
+    $match.text(text.substring(match, match + term.length));
+
+    // Append the matching text
+    $result.append($match);
+
+    // Put in whatever is after the match
+    $result.append(text.substring(match + term.length));
+
+    return $result;
+}
+   </script>
+</html>
