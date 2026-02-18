@@ -1,33 +1,33 @@
 [{
     "field-name": "keyword",
     "term-uri-field": "keywordTermURI",
-    "cvoc-url": "https://data.agroportal.lirmm.fr/",
+    "cvoc-url": "https://data.agroportal.eu/",
     "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
-    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{encodeUrl:keywordVocabulary}/classes/{encodeUrl:keywordTermURI}?lang=en,fr",
+    "retrieval-uri": "https://data.agroportal.eu/ontologies/{encodeUrl:keywordVocabulary}/classes/{encodeUrl:keywordTermURI}?lang=en,fr",
     "term-parent-uri": "",
     "allow-free-text": true,
     "languages":"en,fr",
     "vocabs": {
         "INRAETHES": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/INRAETHES",
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/INRAETHES",
             "uriSpace": "http"
         },
         "ANAEETHES": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ANAEETHES",
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/ANAEETHES",
             "uriSpace": "http"
         },
         "AGROVOC": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/AGROVOC",
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/AGROVOC",
             "uriSpace": "http"
         },
         "NCBITAXON": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/NCBITAXON",
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/NCBITAXON",
             "uriSpace": "http"
         },
         "TRANSFORMON": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/TRANSFORMON",
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/TRANSFORMON",
             "uriSpace": "http"
         }
     },
