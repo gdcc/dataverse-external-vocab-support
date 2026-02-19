@@ -85,7 +85,7 @@ function expandPlaces() {
                         }
                         // NOTE: Not sure why it is not just displayElement.insertBefore($(placeElement));
 
-                        //Store the most recent IDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
+                        //Store the most recent IDs - could cache results, but currently using this just to prioritized recently used Geonames IDs in search results
                         storeValue(placePrefix, id, name);
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
@@ -190,7 +190,7 @@ function updatePlaceInputs() {
                         if (!term) {
                             term = "";
                         }
-                        // Use the geonames search service; NOTE it is not HTTPS !
+                        // Use the Geonames search service over HTTPS
                         return "https://secure.geonames.org/searchJSON";
                     },
                     data: function(params) {
@@ -225,9 +225,9 @@ function updatePlaceInputs() {
                                         return {
                                             text: getFormattedPlacename(x) + "; " + x['geonameId'],    
                                             id: x['geonameId'],
-                                            //Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the ORCID page
+                                            //Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the Geonames page
                                             //Using title to provide that hint as a popup
-                                            title: 'Open in new tab to view geonames page'
+                                            title: 'Open in new tab to view Geonames page'
                                         }
                                     })
                         };
@@ -237,7 +237,7 @@ function updatePlaceInputs() {
             //Add a tab stop and key handling to allow the clear button to be selected via tab/enter
             const observer = new MutationObserver((mutationList, observer) => {
                 var button = $('#' + selectId).parent().find('.select2-selection__clear');
-                console.log("BL : " + button.length);
+                //console.log("BL : " + button.length);
                 button.attr("tabindex", "0");
                 button.on('keydown', function(e) {
                     if (e.which == 13) {
@@ -349,8 +349,8 @@ function updatePlaceInputs() {
             });
             //Force cursor to appear in text box when opening via key press
             $('#' + selectId).on('select2:open', function(e) {
-                $(".select2-search__field").focus()
-                $(".select2-search__field").attr("id", selectId + "_input")
+                $(".select2-search__field").focus();
+                $(".select2-search__field").attr("id", selectId + "_input");
                 document.getElementById(selectId + "_input").select();
             });
         }

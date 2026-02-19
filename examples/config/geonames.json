@@ -4,7 +4,7 @@
       "term-uri-field": "YOURFIELDHERE",
       "js-url": ["/custom/geonames.js","/custom/cvocutils.js"],
       "protocol": "geonames",
-      "retrieval-uri": "http://api.geonames.org/getJSON?formatted=true&geonameId={0}&username=USERNAMEHERE&style=full",
+      "retrieval-uri": "https://secure.geonames.org/getJSON?formatted=true&geonameId={0}&username=USERNAMEHERE&style=full",
       "allow-free-text": true,
       "prefix": "https://sws.geonames.org/",
       "managed-fields": {},
