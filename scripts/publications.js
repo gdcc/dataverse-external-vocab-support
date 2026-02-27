@@ -16,29 +16,68 @@ function expandPids() {
             
             getOrcidBaseUrl(doiElement);
             // Use CrossRef API to get metadata for the DOI
+            var doiOnly = doi.replace(/^doi:/, '');
             $.ajax({
                 type: "GET",
-                url: "https://api.crossref.org/works/" + encodeURIComponent(doi),
+                url: "https://api.crossref.org/works/" + encodeURIComponent(doiOnly),
                 dataType: 'json',
                 success: function(data) {
                     var work = data.message;
                     var title = work.title ? work.title[0] : "Unknown Title";
                     var authors = work.author ? work.author.map(a => a.family + ", " + a.given).join('; ') : "Unknown Authors";
                     
-                    var displayElement = $('<span/>').text(title + " by " + authors)
+                    var relationType = $(doiElement).siblings('.publicationRelationType').text();
+                    
+                    var citationSpan = $('<span class="bg-citation"/>').text(title + " by " + authors)
                         .append($('<a/>').attr('href', "https://doi.org/" + doi).attr('target', '_blank').text(" [DOI]"));
+                    
+                    var displayElement = $('<span/>');
+                    if (relationType) {
+                        displayElement.append($('<span>').text(relationType + ': '));
+                    }
+                    displayElement.append(citationSpan);
                     
                     $(doiElement).hide();
                     displayElement.insertBefore($(doiElement));
                 },
-                error: function() {
-                    $(doiElement).show();
+                error: function(jqXHR, textStatus, errorThrown) {
+                    if (jqXHR.status == 404) {
+                        // Not in CrossRef, try DataCite
+                        $.ajax({
+                            type: "GET",
+                            url: "https://api.datacite.org/dois/" + encodeURIComponent(doiOnly),
+                            dataType: 'json',
+                            success: function(data) {
+                                var work = data.data.attributes;
+                                var title = work.titles && work.titles.length > 0 ? work.titles[0].title : "Unknown Title";
+                                var authors = work.creators ? work.creators.map(c => c.name).join('; ') : "Unknown Authors";
+                                
+                                var relationType = $(doiElement).siblings('.publicationRelationType').text();
+                                
+                                var citationSpan = $('<span class="bg-citation"/>').text(title + " by " + authors)
+                                    .append($('<a/>').attr('href', "https://doi.org/" + doi).attr('target', '_blank').text(" [DOI]"));
+                                
+                                var displayElement = $('<span/>');
+                                if (relationType) {
+                                    displayElement.append($('<span>').text(relationType + ': '));
+                                }
+                                displayElement.append(citationSpan);
+                                
+                                $(doiElement).hide();
+                                displayElement.insertBefore($(doiElement));
+                            },
+                            error: function() {
+                                $(doiElement).show();
+                            }
+                        });
+                    } else {
+                        $(doiElement).show();
+                    }
                 }
             });
         }
     });
 }
-
 
 
 function updatePidInputs() {
