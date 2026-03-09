@@ -1,11 +1,31 @@
 var doiSelector = "span[data-cvoc-protocol='publication']";
 var doiInputSelector = "input[data-cvoc-protocol='publication']";
 var orcidBaseUrl;
+var templatePromises = {};
 
 $(document).ready(function() {
-    expandPids();
-    updatePidInputs();
+    $.getScript("https://cdn.jsdelivr.net/npm/citation-js").done(function() {
+        expandPids();
+        updatePidInputs();
+    });
 });
+
+function formatCitationText(doi) {
+    return fetch('https://raw.githubusercontent.com/citation-style-language/styles/master/chicago-author-date.csl')
+        .then(r => r.text())
+        .then(styleXml => {
+            Cite.plugins.config.get('@csl').templates.add('chicago-author-date', styleXml);
+            return Cite.async(doi); // just pass the DOI string directly
+        })
+        .then(citation => {
+            const formatted = citation.format('bibliography', {
+                format: 'text',
+                template: 'chicago-author-date',
+                lang: 'en-US'
+            });
+            return formatted;
+        });
+}
 
 function expandPids() {
     $(doiSelector).each(function() {
@@ -13,72 +33,54 @@ function expandPids() {
         if (!$(doiElement).hasClass('expanded')) {
             $(doiElement).addClass('expanded');
             var doi = doiElement.textContent;
-            
+
             getOrcidBaseUrl(doiElement);
             // Use CrossRef API to get metadata for the DOI
             var doiOnly = doi.replace(/^doi:/, '');
-            $.ajax({
-                type: "GET",
-                url: "https://api.crossref.org/works/" + encodeURIComponent(doiOnly),
-                dataType: 'json',
-                success: function(data) {
-                    var work = data.message;
-                    var title = work.title ? work.title[0] : "Unknown Title";
-                    var authors = work.author ? work.author.map(a => a.family + ", " + a.given).join('; ') : "Unknown Authors";
-                    
-                    var relationType = $(doiElement).siblings('.publicationRelationType').text();
-                    
-                    var citationSpan = $('<span class="bg-citation"/>').text(title + " by " + authors)
-                        .append($('<a/>').attr('href', "https://doi.org/" + doi).attr('target', '_blank').text(" [DOI]"));
-                    
-                    var displayElement = $('<span/>');
-                    if (relationType) {
-                        displayElement.append($('<span>').text(relationType + ': '));
-                    }
-                    displayElement.append(citationSpan);
-                    
-                    $(doiElement).hide();
-                    displayElement.insertBefore($(doiElement));
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    if (jqXHR.status == 404) {
-                        // Not in CrossRef, try DataCite
-                        $.ajax({
-                            type: "GET",
-                            url: "https://api.datacite.org/dois/" + encodeURIComponent(doiOnly),
-                            dataType: 'json',
-                            success: function(data) {
-                                var work = data.data.attributes;
-                                var title = work.titles && work.titles.length > 0 ? work.titles[0].title : "Unknown Title";
-                                var authors = work.creators ? work.creators.map(c => c.name).join('; ') : "Unknown Authors";
-                                
-                                var relationType = $(doiElement).siblings('.publicationRelationType').text();
-                                
-                                var citationSpan = $('<span class="bg-citation"/>').text(title + " by " + authors)
-                                    .append($('<a/>').attr('href', "https://doi.org/" + doi).attr('target', '_blank').text(" [DOI]"));
-                                
-                                var displayElement = $('<span/>');
-                                if (relationType) {
-                                    displayElement.append($('<span>').text(relationType + ': '));
-                                }
-                                displayElement.append(citationSpan);
-                                
-                                $(doiElement).hide();
-                                displayElement.insertBefore($(doiElement));
-                            },
-                            error: function() {
-                                $(doiElement).show();
-                            }
-                        });
-                    } else {
-                        $(doiElement).show();
-                    }
+            formatCitationText(doi).then(citationText => {
+                // Get the data-cvoc-index from the DOI element
+                var cvocIndex = $(doiElement).attr('data-cvoc-index');
+
+                // Find the relation type element with the same data-cvoc-index
+                var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="' + cvocIndex + '"]');
+                var relationType = relationTypeElement.length > 0 ? relationTypeElement.text().trim() : '';
+
+                var citationContent = $('<div/>').css({
+                    'margin-left': '2em',
+                    'margin-right': '2em',
+                    'background-color': '#e3f2fd',
+                    'padding': '0.75em',
+                    'border-radius': '0.5em',
+                    'display': 'block'
+                }).text(citationText)
+                    .append($('<a/>').attr('href', "https://doi.org/" + doiOnly).attr('target', '_blank').text(" [DOI]"));
+
+                var displayElement = $('<div/>');
+
+                if (relationType) {
+                    // Hide the plain text relation type
+                    relationTypeElement.parent().contents().filter(function() {
+                        return this.nodeType === 3; // Text node
+                    }).wrap('<span style="display:none;"></span>');
+
+                    // Add relation type as bold text above
+                    displayElement.append($('<div/>').css({
+                        'font-style': 'italic',
+                        'margin-bottom': '0.5em'
+                    }).text(relationType));
+
+                    // Add citation with left margin
+                    displayElement.append($('<div/>').css('margin-left', '2em').append(citationContent));
+                } else {
+                    displayElement.append(citationContent);
                 }
+
+                $(doiElement).hide();
+                displayElement.insertBefore($(doiElement));
             });
         }
     });
 }
-
 
 function updatePidInputs() {
     $(doiInputSelector).each(function() {
@@ -157,36 +159,47 @@ function updatePidInputs() {
                         $("#findOnOrcid_" + num).on('click', function(e) {
                             e.preventDefault();
                             e.stopPropagation();
-                            
+
                             // Find all author ORCIDs
                             var authorOrcids = findAuthorOrcids();
-                            
+
                             if (authorOrcids.length === 0) {
                                 alert("No ORCID identifiers found for authors. Please add author ORCID identifiers first.");
                                 return false;
                             }
-                            
+
                             // Show the modal
                             $("#" + modalId).modal('show');
-                            
+
                             // Show loading indicator
-                            var loadingMessage = authorOrcids.length === 1 
-                                ? "Loading publications from ORCID profile..." 
+                            var loadingMessage = authorOrcids.length === 1
+                                ? "Loading publications from ORCID profile..."
                                 : "Loading publications from " + authorOrcids.length + " ORCID profiles...";
                             $("#" + selectId).empty().append(new Option(loadingMessage, "")).prop("disabled", true);
-                            
+
                             // Get current DOI value to pre-select
                             var currentDoi = $(doiInput).val();
-                            
+
                             // Fetch works from all ORCIDs
                             fetchOrcidWorks(authorOrcids, selectId, currentDoi);
-                            
+
                             return false;
                         });
 
                         // Handle selection
                         $('#' + selectId).on('select2:select', function(e) {
                             var data = e.params.data;
+
+                            // Get current DOI value
+                            var currentDoi = $(doiInput).val().trim();
+
+                            // If selecting the same DOI that's already there and it's not blank, close modal without changes
+                            if (currentDoi && data.id === currentDoi) {
+                                $("#" + modalId).modal('hide');
+                                return;
+                            }
+
+                            // Otherwise, update the DOI field (whether it was blank or different)
                             $(doiInput).val(data.id);
 
                             // Handle managed fields
@@ -244,7 +257,7 @@ function updatePidInputs() {
                                         });
                                 }
                             }
-                            
+
                             // Close the modal after selection
                             $("#" + modalId).modal('hide');
                         });
