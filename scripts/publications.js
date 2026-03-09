@@ -88,35 +88,35 @@ function updatePidInputs() {
         if (!doiInput.hasAttribute('data-pub-lookup')) {
             let num = Math.floor(Math.random() * 100000000000);
             $(doiInput).attr('data-pub-lookup', num);
-            
+
             getOrcidBaseUrl(doiInput);
 
             // Find the citation field to place the button above it
             let parentField = $(doiInput).attr('data-cvoc-parent');
             let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
-            
+
             if (hasParentField) {
                 var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
                 let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
-                
+
                 // Find the citation field
                 if (managedFields['citation']) {
                     let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields['citation'] + "']");
-                    
+
                     if (citationField.length > 0) {
                         // Create button and modal above the citation field
                         var modalId = "orcidModal_" + num;
                         var selectId = "doiAddSelect_" + num;
-                        
+
                         // Create button HTML (to be inserted before citation field)
-                        var buttonHtml = 
+                        var buttonHtml =
                             '<div style="margin-bottom: 10px;">' +
                             '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button">Find on ORCID</button>' +
                             '</div>';
-                        
+
                         // Create modal HTML (to be appended to body)
                         // Create modal HTML with centered positioning
-                        var modalHtml = 
+                        var modalHtml =
                             '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="padding-top: 60px;">' +
                             '  <div class="modal-dialog modal-lg" role="document" style="margin: 30px auto;">' +
                             '    <div class="modal-content">' +
@@ -138,13 +138,13 @@ function updatePidInputs() {
                             '    </div>' +
                             '  </div>' +
                             '</div>';
-                        
+
                         // Insert button above citation field
                         citationField.before(buttonHtml);
-                        
+
                         // Append modal to body (this fixes the z-index issue)
                         $('body').append(modalHtml);
-                        
+
                         // Initialize select2 early with basic configuration
                         $("#" + selectId).select2({
                             theme: "classic",
@@ -154,7 +154,7 @@ function updatePidInputs() {
                             dropdownParent: $("#" + modalId),
                             minimumResultsForSearch: 0  // Always show search box
                         });
-                        
+
                         // Button click handler
                         $("#findOnOrcid_" + num).on('click', function(e) {
                             e.preventDefault();
@@ -301,7 +301,7 @@ function updatePidInputs() {
 
 /**
  * Fetches works from one or more ORCID profiles and populates a select element.
- * 
+ *
  * @param {string|Array<string>} orcidIds - Single ORCID ID or array of ORCID IDs
  * @param {string} selectId - The ID of the select element to populate
  * @param {string} preselectedDoi - Optional DOI to pre-select in the dropdown
@@ -309,16 +309,16 @@ function updatePidInputs() {
 function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
     // Normalize input to always be an array
     var orcidArray = Array.isArray(orcidIds) ? orcidIds : [orcidIds];
-    
+
     if (orcidArray.length === 0) {
         $("#" + selectId).empty().append(new Option("No ORCID identifiers provided", "")).prop("disabled", true);
         return;
     }
-    
+
     // Track all AJAX requests
     var requests = [];
     var allWorks = [];
-    
+
     // Create a request for each ORCID
     orcidArray.forEach(function(orcidId) {
         var request = $.ajax({
@@ -348,25 +348,25 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                 };
             }
         );
-        
+
         requests.push(request);
     });
-    
+
     // Wait for all requests to complete
     $.when.apply($, requests).then(function() {
         // Arguments will be the results from each request
         var results = arguments.length === 1 ? [arguments[0]] : Array.prototype.slice.call(arguments);
-        
+
         var options = [];
         var doiMap = new Map(); // To track unique DOIs and avoid duplicates
         var successCount = 0;
         var errorCount = 0;
-        
+
         // Process results from all ORCIDs
         results.forEach(function(result) {
             if (result.success) {
                 successCount++;
-                
+
                 result.works.forEach(function(workGroup) {
                     workGroup['work-summary'].forEach(function(workSummary) {
                         if (workSummary['external-ids'] &&
@@ -377,19 +377,19 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
 
                             if (doi) {
                                 var doiValue = doi['external-id-value'];
-                                
+
                                 // Only add if we haven't seen this DOI before
                                 if (!doiMap.has(doiValue)) {
                                     // Get publication year if available
                                     var year = "";
                                     var yearValue = 0;
-                                    if (workSummary['publication-date'] && 
-                                        workSummary['publication-date']['year'] && 
+                                    if (workSummary['publication-date'] &&
+                                        workSummary['publication-date']['year'] &&
                                         workSummary['publication-date']['year']['value']) {
                                         yearValue = parseInt(workSummary['publication-date']['year']['value']);
                                         year = " (" + yearValue + ")";
                                     }
-                                    
+
                                     var option = {
                                         id: doiValue,
                                         text: workSummary.title.title.value + year,
@@ -398,7 +398,7 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                                         workSummary: workSummary,
                                         putCode: workSummary['put-code']
                                     };
-                                    
+
                                     options.push(option);
                                     doiMap.set(doiValue, option);
                                 }
@@ -410,7 +410,7 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                 errorCount++;
             }
         });
-        
+
         // Sort by year (newest first)
         options.sort(function(a, b) {
             return b.year - a.year;
@@ -422,10 +422,10 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
             if ($("#" + selectId).hasClass("select2-hidden-accessible")) {
                 $("#" + selectId).select2('destroy');
             }
-            
+
             // Clear and re-enable the select element
             $("#" + selectId).empty().prop("disabled", false);
-            
+
             // Initialize Select2 with proper configuration
             $("#" + selectId).select2({
                 data: options,
@@ -438,19 +438,23 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                 matcher: customMatcher,
                 dropdownParent: $("#" + selectId).closest('.modal-body') // Ensure dropdown renders within modal
             });
-            
+
             // Pre-select the current DOI if it exists in the options
+            var matchingOption;
             if (preselectedDoi) {
                 var normalizedPreselected = preselectedDoi.trim().toLowerCase();
-                var matchingOption = options.find(function(opt) {
+                matchingOption = options.find(function(opt) {
                     return opt.id.toLowerCase() === normalizedPreselected;
                 });
-                
-                if (matchingOption) {
-                    $("#" + selectId).val(matchingOption.id).trigger('change');
-                }
             }
-            
+            if (matchingOption) {
+                $("#" + selectId).val(matchingOption.id).trigger('change');
+            } else {
+                // If no pre-selection, ensure the placeholder is shown
+                $("#" + selectId).val(null).trigger('change');
+            }
+
+
             // Small delay to ensure DOM is ready, then open the dropdown
             setTimeout(function() {
                 $("#" + selectId).select2('open');
@@ -476,18 +480,18 @@ function customMatcher(params, data) {
     if ($.trim(params.term) === '') {
         return data;
     }
-    
+
     // Do not display the item if there is no 'text' property
     if (typeof data.text === 'undefined') {
         return null;
     }
-    
+
     // `params.term` should be the term that is used for searching
     // `data.text` is the text that is displayed for the data object
     if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
         return data;
     }
-    
+
     // Return `null` if the term should not be displayed
     return null;
 }
@@ -497,12 +501,12 @@ function formatPublication(publication) {
     if (!publication.id) {
         return publication.text;
     }
-    
+
     var orcidInfo = '';
     if (publication.orcidId) {
         orcidInfo = '<div class="publication-orcid text-muted small">From ORCID: ' + publication.orcidId + '</div>';
     }
-    
+
     var $publication = $(
         '<div class="publication-item">' +
         '<div class="publication-title">' + publication.text + '</div>' +
@@ -510,16 +514,16 @@ function formatPublication(publication) {
         orcidInfo +
         '</div>'
     );
-    
+
     return $publication;
 }
 
 /**
  * Extracts the ORCID iD from a full ORCID URL.
- * 
+ *
  * @param {string} orcidUrlOrId - The full ORCID URL (e.g., "https://orcid.org/0000-0001-8462-650X")
  *                                 or an ORCID iD itself.
- * @return {string|null} The extracted ORCID iD (e.g., "0000-0001-8462-650X"), 
+ * @return {string|null} The extracted ORCID iD (e.g., "0000-0001-8462-650X"),
  *                       or the original string if it's not a URL.
  *                       Returns null if the input is null or empty.
  */
@@ -527,28 +531,28 @@ function extractOrcidIdFromUrl(orcidUrlOrId) {
     if (!orcidUrlOrId || orcidUrlOrId.trim() === '') {
         return null;
     }
-    
+
     var orcidUrlPattern = /^https?:\/\/(?:sandbox\.)?orcid\.org\/(.+)$/i;
     var match = orcidUrlOrId.match(orcidUrlPattern);
-    
+
     if (match && match[1]) {
         return match[1];
     }
-    
+
     // If it's not a URL, assume it's already the ID
     return orcidUrlOrId;
 }
 
 /**
- * Finds all ORCID identifiers from input elements with data-cvoc-protocol="orcid" 
+ * Finds all ORCID identifiers from input elements with data-cvoc-protocol="orcid"
  * and data-cvoc-parent="author".
- * 
+ *
  * @return {Array<string>} Array of ORCID IDs (not URLs)
  */
 function findAuthorOrcids() {
     var orcidIds = [];
     var orcidInputs = $('input[data-cvoc-protocol="orcid"][data-cvoc-parent="author"]');
-    
+
     orcidInputs.each(function() {
         var value = $(this).val();
         if (value) {
@@ -558,13 +562,13 @@ function findAuthorOrcids() {
             }
         }
     });
-    
+
     return orcidIds;
 }
 
 /**
  * Fetches detailed work information from ORCID API, including BibTeX citation.
- * 
+ *
  * @param {string} orcidId - The ORCID identifier
  * @param {string} putCode - The put-code for the specific work
  * @return {Promise} Promise that resolves with the work details
@@ -583,7 +587,7 @@ function fetchWorkDetails(orcidId, putCode) {
 /**
  * Formats a citation from an ORCID work summary.
  * If BibTeX citation is available, it will be used; otherwise falls back to basic formatting.
- * 
+ *
  * @param {Object} workSummary - The work summary object from ORCID API
  * @param {string} bibtex - Optional BibTeX citation string
  * @return {string} Formatted citation string
@@ -598,7 +602,7 @@ function formatCitation(workSummary, bibtex) {
 
 /**
  * Converts BibTeX citation to formatted citation using Citation.js.
- * 
+ *
  * @param {string} bibtex - BibTeX citation string
  * @param {Object} workSummary - The work summary object (used as fallback)
  * @return {string} Formatted citation
@@ -610,19 +614,19 @@ function convertBibtexToCitation(bibtex, workSummary) {
             console.warn("Citation.js not loaded, falling back to basic formatting");
             return formatBasicCitation(workSummary);
         }
-        
+
         // Parse BibTeX and format as IEEE style
         var cite = new Cite(bibtex);
-        
+
         // Format as IEEE (you can also use 'apa', 'vancouver', 'harvard1', etc.)
         var formatted = cite.format('bibliography', {
             format: 'text',
             template: 'ieee',
             lang: 'en-US'
         });
-        
+
         return formatted;
-        
+
     } catch (error) {
         console.error("Error converting BibTeX with Citation.js:", error);
         // Fall back to basic formatting using workSummary
@@ -632,25 +636,25 @@ function convertBibtexToCitation(bibtex, workSummary) {
 
 /**
  * Basic citation formatting fallback.
- * 
+ *
  * @param {Object} workSummary - The work summary object from ORCID API
  * @return {string} Basic formatted citation
  */
 function formatBasicCitation(workSummary) {
     var citation = workSummary.title.title.value;
-    
+
     // Add year if available
-    if (workSummary['publication-date'] && 
-        workSummary['publication-date']['year'] && 
+    if (workSummary['publication-date'] &&
+        workSummary['publication-date']['year'] &&
         workSummary['publication-date']['year']['value']) {
         citation += " (" + workSummary['publication-date']['year']['value'] + ")";
     }
-    
+
     // Add journal title if available
     if (workSummary['journal-title'] && workSummary['journal-title']['value']) {
         citation += ". " + workSummary['journal-title']['value'];
     }
-    
+
     return citation;
 }
 
