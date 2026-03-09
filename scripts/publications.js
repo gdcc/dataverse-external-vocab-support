@@ -82,94 +82,170 @@ function expandPids() {
     });
 }
 
+// --------------------------------------------------------------------------
+// Internationalization (i18n) Support
+// --------------------------------------------------------------------------
+var i18n = {};
+
+/**
+ * Asynchronously loads the internationalization properties for the given locale.
+ * Defaults to 'en' if the locale is not found.
+ * @param {string} lang - The language code (e.g., 'en', 'fr').
+ * @param {string} scriptPath - The path to the current script.
+ * @returns {Promise<Object>} A promise that resolves with the i18n object.
+ */
+function loadI18n(lang, scriptPath) {
+    var langFile = scriptPath.substring(0, scriptPath.lastIndexOf('/')) + '/i18n/publications_' + lang + '.json';
+
+    return fetch(langFile)
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            // Fallback to English if the language file is not found
+            if (lang !== 'en') {
+                console.warn("Language file not found for: " + lang + ". Falling back to 'en'.");
+                return loadI18n('en', scriptPath);
+            }
+            throw new Error('Default language file "en.json" not found.');
+        })
+        .then(data => {
+            i18n = data;
+            return i18n;
+        })
+        .catch(error => {
+            console.error('Failed to load i18n file:', error);
+            // Use a minimal set of English defaults as a last resort
+            i18n = {
+                findOnOrcid: "Find on ORCID",
+                selectPublicationFromOrcid: "Select Publication from ORCID",
+                searchAndSelectPublication: "Search and select a publication:",
+                cancel: "Cancel",
+                noOrcidIdentifiers: "No ORCID identifiers found for authors. Please add author ORCID identifiers first.",
+                loadingPublicationsOne: "Loading publications from ORCID profile...",
+                loadingPublicationsMany: "Loading publications from {0} ORCID profiles...",
+                selectPublication: "Select a publication",
+                findUsingOrcid: "Find using ORCID",
+                findUsingOrcid_ariaLabel: "Find publication using ORCID",
+                findAndImportPublicationFromOrcid: "Find and import publication from ORCID"
+            };
+            return i18n;
+        });
+}
+
+/**
+ * Simple string formatter. Replaces {0}, {1}, etc. with arguments.
+ * @param {string} str - The string to format.
+ * @returns {string} The formatted string.
+ */
+function formatString(str) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return str.replace(/{(\d+)}/g, function(match, number) {
+        return typeof args[number] != 'undefined' ? args[number] : match;
+    });
+}
+
 function updatePidInputs() {
-    $(doiInputSelector).each(function() {
-        var doiInput = this;
-        if (!doiInput.hasAttribute('data-pub-lookup')) {
-            let num = Math.floor(Math.random() * 100000000000);
-            $(doiInput).attr('data-pub-lookup', num);
+    // Get the current language from the HTML element
+    var lang = $('html').attr('lang') || 'en';
+    var scriptSrc = $('script[src*="publications.js"]').attr('src');
 
-            getOrcidBaseUrl(doiInput);
+    // Load translations before proceeding
+    loadI18n(lang, scriptSrc).then(function() {
+        $(doiInputSelector).each(function() {
+            var doiInput = this;
+            if (!doiInput.hasAttribute('data-pub-lookup')) {
+                let num = Math.floor(Math.random() * 100000000000);
+                $(doiInput).attr('data-pub-lookup', num);
 
-            // Find the citation field to place the button above it
-            let parentField = $(doiInput).attr('data-cvoc-parent');
-            let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
+                getOrcidBaseUrl(doiInput);
 
-            if (hasParentField) {
-                var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
-                let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
+                // Find the citation field to place the button above it
+                let parentField = $(doiInput).attr('data-cvoc-parent');
+                let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
 
-                // Find the citation field
-                if (managedFields['citation']) {
-                    let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields['citation'] + "']");
+                if (hasParentField) {
+                    var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+                    let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
 
-                    if (citationField.length > 0) {
-                        // Create button and modal above the citation field
-                        var modalId = "orcidModal_" + num;
-                        var selectId = "doiAddSelect_" + num;
+                    // Find the citation field
+                    if (managedFields['citation']) {
+                        let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields['citation'] + "']");
 
-                        // Create button HTML (to be inserted before citation field)
-                        var buttonHtml =
-                            '<div style="margin-bottom: 10px;">' +
-                            '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button">Find on ORCID</button>' +
-                            '</div>';
-
-                        // Create modal HTML (to be appended to body)
-                        // Create modal HTML with centered positioning
-                        var modalHtml =
-                            '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="padding-top: 60px;">' +
-                            '  <div class="modal-dialog modal-lg" role="document" style="margin: 30px auto;">' +
-                            '    <div class="modal-content">' +
-                            '      <div class="modal-header">' +
-                            '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
-                            '          <span aria-hidden="true">&times;</span>' +
-                            '        </button>' +
-                            '        <h4 class="modal-title">Select Publication from ORCID</h4>' +
-                            '      </div>' +
-                            '      <div class="modal-body">' +
-                            '        <div class="form-group">' +
-                            '          <label for="' + selectId + '">Search and select a publication:</label>' +
-                            '          <select id="' + selectId + '" class="form-control add-resource select2" style="width: 100%;"></select>' +
-                            '        </div>' +
-                            '      </div>' +
-                            '      <div class="modal-footer">' +
-                            '        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>' +
-                            '      </div>' +
-                            '    </div>' +
-                            '  </div>' +
-                            '</div>';
-
-                        // Insert button above citation field
-                        citationField.before(buttonHtml);
-
-                        // Append modal to body (this fixes the z-index issue)
-                        $('body').append(modalHtml);
-
-                        // Initialize select2 early with basic configuration
-                        $("#" + selectId).select2({
-                            theme: "classic",
-                            placeholder: "Select a publication",
-                            allowClear: true,
-                            width: '100%',
-                            dropdownParent: $("#" + modalId),
-                            minimumResultsForSearch: 0  // Always show search box
-                        });
-
-                        // Button click handler
-                        $("#findOnOrcid_" + num).on('click', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            // Find all author ORCIDs
+                        if (citationField.length > 0) {
+                            // Only add the button if there are authors with ORCID identifiers
                             var authorOrcids = findAuthorOrcids();
+                            if (authorOrcids.length > 0) {
+                                // Create button and modal above the citation field
+                                var modalId = "orcidModal_" + num;
+                                var selectId = "doiAddSelect_" + num;
 
-                            if (authorOrcids.length === 0) {
-                                alert("No ORCID identifiers found for authors. Please add author ORCID identifiers first.");
-                                return false;
-                            }
+                                // ORCID SVG icon for the button
+                                var orcidIconSvg = '<svg width="16" height="16" viewBox="0 0 256 256" style="vertical-align: middle; margin-right: 5px;"><path fill="#A6CE39" d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"/><path fill="#FFF" d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111.2 183.8 88 148.8 88h-24.5v84.4zM80.4 66.4c-8.5 0-15.4-6.9-15.4-15.4 0-8.5 6.9-15.4 15.4-15.4 8.5 0 15.4 6.9 15.4 15.4 0 8.5-6.9 15.4-15.4 15.4z"/></svg>';
 
-                            // Show the modal
-                            $("#" + modalId).modal('show');
+                                // Create button HTML (to be inserted before citation field)
+                                var buttonHtml =
+                                    '<div style="margin-bottom: 10px;">' +
+                                    '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button" aria-label="' + i18n.findUsingOrcid_ariaLabel + '">' + orcidIconSvg + i18n.findUsingOrcid + '</button>' +
+                                    '</div>';
+
+                                // Create modal HTML (to be appended to body)
+                                // Create modal HTML with centered positioning
+                                var modalHtml =
+                                    '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="padding-top: 60px;">' +
+                                    '  <div class="modal-dialog modal-lg" role="document" style="margin: 30px auto;">' +
+                                    '    <div class="modal-content">' +
+                                    '      <div class="modal-header">' +
+                                    '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
+                                    '          <span aria-hidden="true">&times;</span>' +
+                                    '        </button>' +
+                                    '        <h4 class="modal-title">' + i18n.findAndImportPublicationFromOrcid + '</h4>' +
+                                    '      </div>' +
+                                    '      <div class="modal-body">' +
+                                    '        <div class="form-group">' +
+                                    '          <label for="' + selectId + '">' + i18n.searchAndSelectPublication + '</label>' +
+                                    '          <select id="' + selectId + '" class="form-control add-resource select2" style="width: 100%;"></select>' +
+                                    '        </div>' +
+                                    '      </div>' +
+                                    '      <div class="modal-footer">' +
+                                    '        <button type="button" class="btn btn-default" data-dismiss="modal">' + i18n.cancel + '</button>' +
+                                    '      </div>' +
+                                    '    </div>' +
+                                    '  </div>' +
+                                    '</div>';
+
+                                // Insert button above citation field
+                                citationField.before(buttonHtml);
+
+                                // Append modal to body (this fixes the z-index issue)
+                                $('body').append(modalHtml);
+
+                                // Initialize select2 early with basic configuration
+                                $("#" + selectId).select2({
+                                    theme: "classic",
+                                    placeholder: i18n.selectPublication,
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $("#" + modalId),
+                                    minimumResultsForSearch: 0  // Always show search box
+                                });
+
+                                // Button click handler
+                                $("#findOnOrcid_" + num).on('click', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    // Find all author ORCIDs
+                                    var authorOrcids = findAuthorOrcids();
+
+                                    // This check is now redundant but harmless to keep as a safeguard
+                                    if (authorOrcids.length === 0) {
+                                        alert(i18n.noOrcidIdentifiers);
+                                        return false;
+                                    }
+
+                                    // Show the modal
+                                    $("#" + modalId).modal('show');
 
                             // Show loading indicator
                             var loadingMessage = authorOrcids.length === 1
@@ -254,9 +330,9 @@ function updatePidInputs() {
                                             // Fall back to basic formatting on error
                                             var citation = formatCitation(data.workSummary);
                                             $(citationField).val(citation).attr('value', citation);
-                                        });
-                                }
+                                });
                             }
+                        }
 
                             // Close the modal after selection
                             $("#" + modalId).modal('hide');
@@ -282,22 +358,20 @@ function updatePidInputs() {
                                     if (label.length > 0) {
                                         label.text('Select...');
                                         label.addClass('ui-state-default');
-                                    }
+                    }
                                 } else if (key == 'url') {
                                     $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
                                 } else if (key == 'citation') {
                                     $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
-                                }
-                            }
-                        });
+                }
+            }
+        });
                     }
                 }
             }
         }
     });
 }
-
-
 
 /**
  * Fetches works from one or more ORCID profiles and populates a select element.
