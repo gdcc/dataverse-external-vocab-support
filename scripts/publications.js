@@ -1,5 +1,5 @@
-var doiSelector = "span[data-cvoc-protocol='publication']";
-var doiInputSelector = "input[data-cvoc-protocol='publication']";
+var publicationSelector = "span[data-cvoc-protocol='publication']";
+var publicationInputSelector = "input[data-cvoc-protocol='publication']";
 var orcidBaseUrl;
 var templatePromises = {};
 
@@ -28,18 +28,18 @@ function formatCitationText(doi) {
 }
 
 function expandPids() {
-    $(doiSelector).each(function() {
-        var doiElement = this;
-        if (!$(doiElement).hasClass('expanded')) {
-            $(doiElement).addClass('expanded');
-            var doi = doiElement.textContent;
+    $(publicationSelector).each(function() {
+        var publicationIdentifierElement = this;
+        if (!$(publicationIdentifierElement).hasClass('expanded')) {
+            $(publicationIdentifierElement).addClass('expanded');
+            var identifier = publicationIdentifierElement.textContent;
 
-            getOrcidBaseUrl(doiElement);
-            // Use CrossRef API to get metadata for the DOI
-            var doiOnly = doi.replace(/^doi:/, '');
-            formatCitationText(doi).then(citationText => {
+            getOrcidBaseUrl(publicationIdentifierElement);
+
+            var doiOnly = identifier.replace(/^doi:/, '');
+            formatCitationText(identifier).then(citationText => {
                 // Get the data-cvoc-index from the DOI element
-                var cvocIndex = $(doiElement).attr('data-cvoc-index');
+                var cvocIndex = $(publicationIdentifierElement).attr('data-cvoc-index');
 
                 // Find the relation type element with the same data-cvoc-index
                 var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="' + cvocIndex + '"]');
@@ -75,8 +75,8 @@ function expandPids() {
                     displayElement.append(citationContent);
                 }
 
-                $(doiElement).hide();
-                displayElement.insertBefore($(doiElement));
+                $(publicationIdentifierElement).hide();
+                displayElement.insertBefore($(publicationIdentifierElement));
             });
         }
     });
@@ -150,7 +150,7 @@ function updatePidInputs() {
 
     // Load translations before proceeding
     loadI18n(lang, scriptSrc).then(function() {
-        $(doiInputSelector).each(function() {
+        $(publicationInputSelector).each(function() {
             var doiInput = this;
             if (!doiInput.hasAttribute('data-pub-lookup')) {
                 let num = Math.floor(Math.random() * 100000000000);
@@ -272,26 +272,37 @@ function updatePidInputs() {
                                     // Handle managed fields
                                     for (var key in managedFields) {
                                         if (key == 'idType') {
-                                            // Set the identifier type to DOI
+                                            // Set the identifier type to the selected external-id-type
                                             let selectContainer = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']");
                                             let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
-                                            let doiOption = $(selectField).find('option:contains("doi")');
-                                            let doiVal = doiOption.val();
-                                            $(selectField).val(doiVal).attr('value', doiVal);
-                                            // Update the selected attribute on the option
-                                            selectField.find('option').removeAttr('selected');
-                                            doiOption.attr('selected', 'selected');
+                                            let selectedIdentifierType = (data.identifierType || '').toLowerCase();
+                                            let fieldIdentifierType = selectedIdentifierType === 'uri' ? 'url' : selectedIdentifierType;
+                                            let identifierOption = $(selectField).find('option').filter(function() {
+                                                return $(this).text().trim().toLowerCase() === fieldIdentifierType;
+                                            }).first();
+                                            let identifierVal = identifierOption.val();
 
-                                            // Update the visible label that displays the selection
-                                            let label = selectContainer.find('label.ui-selectonemenu-label');
-                                            if (label.length > 0) {
-                                                label.text('doi');
-                                                label.removeClass('ui-state-default');
+                                            if (identifierVal !== undefined) {
+                                                $(selectField).val(identifierVal).attr('value', identifierVal);
+                                                selectField.find('option').removeAttr('selected');
+                                                identifierOption.attr('selected', 'selected');
+
+                                                let label = selectContainer.find('label.ui-selectonemenu-label');
+                                                if (label.length > 0) {
+                                                    label.text(fieldIdentifierType);
+                                                    label.removeClass('ui-state-default');
+                                                }
                                             }
                                         } else if (key == 'url') {
                                             // Set the URL to the DOI resolver URL
                                             let urlField = $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']");
-                                            $(urlField).val('https://doi.org/' + data.id).attr('value', 'https://doi.org/' + data.id);
+                                            let urlValue = data.url;
+                                            if(!urlValue) {
+                                                if(data.identifierType === 'doi') {
+                                                    urlValue = 'https://doi.org/' + data.id;
+                                                }
+                                            }
+                                            $(urlField).val(urlValue).attr('value', urlValue);
                                         } else if (key == 'citation') {
                                             // Fetch the detailed work information to get BibTeX citation
                                             let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']");
@@ -429,9 +440,41 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
         var results = arguments.length === 1 ? [arguments[0]] : Array.prototype.slice.call(arguments);
 
         var options = [];
-        var doiMap = new Map(); // To track unique DOIs and avoid duplicates
+        var identifierMap = new Map(); // To track unique identifiers and avoid duplicates
         var successCount = 0;
         var errorCount = 0;
+        var fallbackExternalIdTypes = [
+            'ark', 'arxiv', 'bibcode', 'cstr', 'ean13', 'eissn', 'handle',
+            'isbn', 'issn', 'istc', 'lissn', 'lsid', 'pmid', 'purl',
+            'upc', 'url', 'uri', 'urn'
+        ];
+
+        function getPreferredExternalId(externalIds) {
+            if (!Array.isArray(externalIds)) {
+                return null;
+            }
+
+            var selfIds = externalIds.filter(function(id) {
+                return id && id['external-id-relationship'] === 'self';
+            });
+
+            if (selfIds.length === 0) {
+                return null;
+            }
+
+            var doiId = selfIds.find(function(id) {
+                return (id['external-id-type'] || '').toLowerCase() === 'doi';
+            });
+
+            if (doiId) {
+                return doiId;
+            }
+
+            return selfIds.find(function(id) {
+                var type = (id['external-id-type'] || '').toLowerCase();
+                return fallbackExternalIdTypes.includes(type);
+            }) || null;
+        }
 
         // Process results from all ORCIDs
         results.forEach(function(result) {
@@ -444,13 +487,14 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                             workSummary['external-ids']['external-id']) {
 
                             var externalIds = workSummary['external-ids']['external-id'];
-                            var doi = externalIds.find(id => id['external-id-type'] === 'doi');
+                            var preferredExternalId = getPreferredExternalId(externalIds);
 
-                            if (doi) {
-                                var doiValue = doi['external-id-value'];
-
-                                // Only add if we haven't seen this DOI before
-                                if (!doiMap.has(doiValue)) {
+                            if (preferredExternalId) {
+                                var identifierValue = preferredExternalId['external-id-value'];
+                                var identifierType = (preferredExternalId['external-id-type'] || '').toLowerCase();
+                                var urlValue = preferredExternalId['url'];
+                                // Only add if we haven't seen this identifier before
+                                if (!identifierMap.has(identifierValue)) {
                                     // Get publication year if available
                                     var year = "";
                                     var yearValue = 0;
@@ -462,16 +506,18 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                                     }
 
                                     var option = {
-                                        id: doiValue,
+                                        id: identifierValue,
                                         text: workSummary.title.title.value + year,
                                         year: yearValue,
                                         orcidId: result.orcidId,
                                         workSummary: workSummary,
-                                        putCode: workSummary['put-code']
+                                        putCode: workSummary['put-code'],
+                                        identifierType: identifierType,
+                                        url: urlValue
                                     };
 
                                     options.push(option);
-                                    doiMap.set(doiValue, option);
+                                    identifierMap.set(identifierValue, option);
                                 }
                             }
                         }
@@ -533,7 +579,7 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                 $('.select2-search__field').focus();
             }, 100);
         } else {
-            var message = "No DOIs found";
+            var message = "No identifiers found";
             if (successCount > 0) {
                 message += " in " + successCount + " ORCID profile" + (successCount > 1 ? "s" : "");
             }
