@@ -1,83 +1,152 @@
-var publicationSelector = "span[data-cvoc-protocol='publication']";
-var publicationInputSelector = "input[data-cvoc-protocol='publication']";
-var orcidBaseUrl;
-var templatePromises = {};
+window.publications = window.publications || {};
+window.publications.config = window.publications.config || {
+    publicationSelector: "span[data-cvoc-protocol='publication']",
+    publicationInputSelector: "input[data-cvoc-protocol='publication']",
+    selectedFormat: 'chicago-author-date'
+};
+
+window.publications.state = window.publications.state || {
+    orcidBaseUrl: null,
+    i18n: null,
+    i18nPromise: null,
+    cslStylePromise: null
+};
 
 $(document).ready(function() {
     $.getScript("https://cdn.jsdelivr.net/npm/citation-js").done(function() {
-        expandPids();
-        updatePidInputs();
+        // Fetch and cache the CSL style file once on load
+        var selectedFormat = window.publications.config.selectedFormat;
+        if(!window.publications.state.cslStylePromise) {
+            window.publications.state.cslStylePromise = fetch('https://raw.githubusercontent.com/citation-style-language/styles/master/' + selectedFormat + '.csl')
+                .then(r => r.text())
+                .then(styleXml => {
+                    Cite.plugins.config.get('@csl').templates.add(selectedFormat, styleXml);
+                    return styleXml;
+                });
+        }
+        var lang = $('html').attr('lang') || 'en';
+        var scriptSrc = $('script[src*="publications.js"]').attr('src');
+        loadI18n(lang, scriptSrc).then(function() {
+            expandPublications();
+            updatePublicationInputs();
+        });
     });
 });
 
-function formatCitationText(doi) {
-    return fetch('https://raw.githubusercontent.com/citation-style-language/styles/master/chicago-author-date.csl')
-        .then(r => r.text())
-        .then(styleXml => {
-            Cite.plugins.config.get('@csl').templates.add('chicago-author-date', styleXml);
-            return Cite.async(doi); // just pass the DOI string directly
-        })
-        .then(citation => {
-            const formatted = citation.format('bibliography', {
-                format: 'text',
-                template: 'chicago-author-date',
-                lang: 'en-US'
-            });
-            return formatted;
-        });
+function getPidUrl(identifierType, identifier, explicitUrl) {
+    var normalizedIdentifierType = (identifierType || '').toLowerCase();
+    var trimmedIdentifier = (identifier || '').trim();
+
+    if (explicitUrl) {
+        return explicitUrl;
+    }
+
+    if (!trimmedIdentifier) {
+        return '';
+    }
+
+    if (normalizedIdentifierType === 'doi') {
+        return 'https://doi.org/' + trimmedIdentifier.replace(/^doi:/i, '');
+    }
+
+    if (normalizedIdentifierType === 'uri' || normalizedIdentifierType === 'url') {
+        return trimmedIdentifier;
+    }
+
+    return '';
 }
 
-function expandPids() {
-    $(publicationSelector).each(function() {
+function normalizeUrlForComparison(url) {
+    return (url || '').trim().replace(/\/+$/, '').toLowerCase();
+}
+
+function getElementValue(element) {
+    if (!element || element.length === 0) {
+        return '';
+    }
+
+    if (element.is('input, textarea, select')) {
+        return (element.val() || '').trim();
+    }
+
+    return (element.text() || '').trim();
+}
+
+function expandPublications() {
+    $(window.publications.config.publicationSelector).each(function() {
         var publicationIdentifierElement = this;
         if (!$(publicationIdentifierElement).hasClass('expanded')) {
             $(publicationIdentifierElement).addClass('expanded');
-            var identifier = publicationIdentifierElement.textContent;
 
-            getOrcidBaseUrl(publicationIdentifierElement);
+            var identifier = (publicationIdentifierElement.textContent || '').trim();
+            var cvocIndex = $(publicationIdentifierElement).attr('data-cvoc-index');
 
-            var doiOnly = identifier.replace(/^doi:/, '');
-            formatCitationText(identifier).then(citationText => {
-                // Get the data-cvoc-index from the DOI element
-                var cvocIndex = $(publicationIdentifierElement).attr('data-cvoc-index');
+            var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="' + cvocIndex + '"]');
+            var citationElement = $('[data-cvoc-metadata-name="publicationCitation"][data-cvoc-index="' + cvocIndex + '"]');
+            var identifierTypeElement = $('[data-cvoc-metadata-name="publicationIDType"][data-cvoc-index="' + cvocIndex + '"]');
+            var urlElement = $('[data-cvoc-metadata-name="publicationURL"][data-cvoc-index="' + cvocIndex + '"]');
 
-                // Find the relation type element with the same data-cvoc-index
-                var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="' + cvocIndex + '"]');
-                var relationType = relationTypeElement.length > 0 ? relationTypeElement.text().trim() : '';
+            var relationType = getElementValue(relationTypeElement);
+            if(!relationType) {
+                relationType = window.publications.state.i18n.relationNotSpecified;
+            }
+            var citationText = getElementValue(citationElement);
+            var identifierType = getElementValue(identifierTypeElement);
+            var urlValue = getElementValue(urlElement);
+            var pidUrl = getPidUrl(identifierType, identifier, '');
 
-                var citationContent = $('<div/>').css({
-                    'margin-left': '2em',
-                    'margin-right': '2em',
-                    'background-color': '#e3f2fd',
-                    'padding': '0.75em',
-                    'border-radius': '0.5em',
-                    'display': 'block'
-                }).text(citationText)
-                    .append($('<a/>').attr('href', "https://doi.org/" + doiOnly).attr('target', '_blank').text(" [DOI]"));
+            if (!citationText) {
+                citationText = identifier;
+            }
 
-                var displayElement = $('<div/>');
+            var citationContent = $('<div/>').css({
+                'margin-left': '2em',
+                'margin-right': '2em',
+                'background-color': '#e3f2fd',
+                'padding': '0.75em',
+                'border-radius': '0.5em',
+                'display': 'block'
+            }).text(citationText);
 
-                if (relationType) {
-                    // Hide the plain text relation type
-                    relationTypeElement.parent().contents().filter(function() {
-                        return this.nodeType === 3; // Text node
-                    }).wrap('<span style="display:none;"></span>');
+            if (pidUrl) {
+                citationContent.append(
+                    $('<a/>')
+                        .attr('href', pidUrl)
+                        .attr('target', '_blank')
+                        .attr('rel', 'noopener noreferrer')
+                        .text(' [PID]')
+                );
+            }
 
-                    // Add relation type as bold text above
-                    displayElement.append($('<div/>').css({
-                        'font-style': 'italic',
-                        'margin-bottom': '0.5em'
-                    }).text(relationType));
+            if (urlValue && normalizeUrlForComparison(urlValue) !== normalizeUrlForComparison(pidUrl)) {
+                citationContent.append(
+                    $('<a/>')
+                        .attr('href', urlValue)
+                        .attr('target', '_blank')
+                        .attr('rel', 'noopener noreferrer')
+                        .text(' [URL]')
+                );
+            }
 
-                    // Add citation with left margin
-                    displayElement.append($('<div/>').css('margin-left', '2em').append(citationContent));
-                } else {
-                    displayElement.append(citationContent);
-                }
+            var displayElement = $('<div/>');
 
-                $(publicationIdentifierElement).hide();
-                displayElement.insertBefore($(publicationIdentifierElement));
-            });
+            if (relationType) {
+                relationTypeElement.parent().contents().filter(function() {
+                    return this.nodeType === 3;
+                }).wrap('<span style="display:none;"></span>');
+
+                displayElement.append($('<div/>').css({
+                    'font-style': 'italic',
+                    'margin-bottom': '0.5em'
+                }).text(relationType));
+
+                displayElement.append($('<div/>').css('margin-left', '2em').append(citationContent));
+            } else {
+                displayElement.append(citationContent);
+            }
+
+            $(publicationIdentifierElement).hide();
+            displayElement.insertBefore($(publicationIdentifierElement));
         }
     });
 }
@@ -85,50 +154,77 @@ function expandPids() {
 // --------------------------------------------------------------------------
 // Internationalization (i18n) Support
 // --------------------------------------------------------------------------
-var i18n = {};
 
 /**
- * Asynchronously loads the internationalization properties for the given locale.
+ * Asynchronously loads the internationalization properties for the current locale.
  * Defaults to 'en' if the locale is not found.
  * @param {string} lang - The language code (e.g., 'en', 'fr').
  * @param {string} scriptPath - The path to the current script.
  * @returns {Promise<Object>} A promise that resolves with the i18n object.
  */
 function loadI18n(lang, scriptPath) {
-    var langFile = scriptPath.substring(0, scriptPath.lastIndexOf('/')) + '/i18n/publications_' + lang + '.json';
+    var state = window.publications.state;
 
-    return fetch(langFile)
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            }
-            // Fallback to English if the language file is not found
-            if (lang !== 'en') {
-                console.warn("Language file not found for: " + lang + ". Falling back to 'en'.");
-                return loadI18n('en', scriptPath);
-            }
-            throw new Error('Default language file "en.json" not found.');
+    if (state.i18n) {
+        return Promise.resolve(state.i18n);
+    }
+
+    if (state.i18nPromise) {
+        return state.i18nPromise;
+    }
+
+    function getDefaultI18n() {
+        return {
+            searchAndSelectPublication: "Search and select a publication:",
+            cancel: "Cancel",
+            loadingPublicationsOne: "Loading publications from ORCID profile...",
+            loadingPublicationsMany: "Loading publications from {0} ORCID profiles...",
+            selectPublication: "Select a publication",
+            findUsingOrcid: "Find using ORCID",
+            findUsingOrcid_ariaLabel: "Simplify adding publications by importing them the authors' ORCID profiles",
+            findAndImportPublicationFromOrcid: "Find and import publication from ORCID",
+            addOrcidForAuthorsHint: "Hint: If you add ORCIDs for authors, you can select Related Publications from their profiles!",
+            relationNotSpecified: "(Relation not specified)"
+        };
+    }
+
+    function fetchI18n(targetLang) {
+        var langFile = scriptPath.substring(0, scriptPath.lastIndexOf('/')) + '/i18n/publications_' + targetLang + '.json';
+
+        return fetch(langFile)
+            .then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                }
+
+                if (targetLang !== 'en') {
+                    console.warn("Language file not found for: " + targetLang + ". Falling back to 'en'.");
+                    return fetchI18n('en');
+                }
+
+                throw new Error('Default language file "en.json" not found.');
+            })
+            .catch(function(error) {
+                console.error('Failed to load i18n file:', error);
+
+                if (targetLang !== 'en') {
+                    return fetchI18n('en');
+                }
+
+                return getDefaultI18n();
+            });
+    }
+
+    state.i18nPromise = fetchI18n(lang || 'en')
+        .then(function(data) {
+            state.i18n = data;
+            return data;
         })
-        .then(data => {
-            i18n = data;
-            return i18n;
-        })
-        .catch(error => {
-            console.error('Failed to load i18n file:', error);
-            // Use a minimal set of English defaults as a last resort
-            i18n = {
-                searchAndSelectPublication: "Search and select a publication:",
-                cancel: "Cancel",
-                loadingPublicationsOne: "Loading publications from ORCID profile...",
-                loadingPublicationsMany: "Loading publications from {0} ORCID profiles...",
-                selectPublication: "Select a publication",
-                findUsingOrcid: "Find using ORCID",
-                findUsingOrcid_ariaLabel: "Simplify adding publications by importing them the authors' ORCID profiles",
-                findAndImportPublicationFromOrcid: "Find and import publication from ORCID",
-                addOrcidForAuthorsHint: "Hint: If you add ORCIDs for authors, you can select Related Publications from their profiles!"
-            };
-            return i18n;
+        .finally(function() {
+            state.i18nPromise = null;
         });
+
+    return state.i18nPromise;
 }
 
 /**
@@ -143,241 +239,225 @@ function formatString(str) {
     });
 }
 
-function updatePidInputs() {
-    // Get the current language from the HTML element
-    var lang = $('html').attr('lang') || 'en';
-    var scriptSrc = $('script[src*="publications.js"]').attr('src');
+function updatePublicationInputs() {
+    var i18n = window.publications.state.i18n;
 
-    // Load translations before proceeding
-    loadI18n(lang, scriptSrc).then(function() {
-        $(publicationInputSelector).each(function() {
-            var doiInput = this;
-            if (!doiInput.hasAttribute('data-pub-lookup')) {
-                let num = Math.floor(Math.random() * 100000000000);
-                $(doiInput).attr('data-pub-lookup', num);
+    $(window.publications.config.publicationInputSelector).each(function () {
+        var identifierInput = this;
+        if (!identifierInput.hasAttribute('data-pub-lookup')) {
+            let num = Math.floor(Math.random() * 100000000000);
+            $(identifierInput).attr('data-pub-lookup', num);
 
-                getOrcidBaseUrl(doiInput);
+            getOrcidBaseUrl(identifierInput);
 
-                // Find the citation field to place the button above it
-                let parentField = $(doiInput).attr('data-cvoc-parent');
-                let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
+            // Find the citation field to place the button above it
+            let parentField = $(identifierInput).attr('data-cvoc-parent');
+            let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
 
-                if (hasParentField) {
-                    var parent = $(doiInput).closest("[data-cvoc-parentfield='" + parentField + "']");
-                    let managedFields = JSON.parse($(doiInput).attr('data-cvoc-managedfields'));
+            if (hasParentField) {
+                var parent = $(identifierInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+                let managedFields = JSON.parse($(identifierInput).attr('data-cvoc-managedfields'));
 
-                    // Find the citation field
-                    if (managedFields['citation']) {
-                        let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields['citation'] + "']");
+                // Find the citation field
+                if (managedFields['citation']) {
+                    let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields['citation'] + "']");
 
-                        if (citationField.length > 0) {
-                            // Only add the button if there are authors with ORCID identifiers
-                            var authorOrcids = findAuthorOrcids();
-                            if (authorOrcids.length > 0) {
-                                // Create button and modal above the citation field
-                                var modalId = "orcidModal_" + num;
-                                var selectId = "doiAddSelect_" + num;
+                    if (citationField.length > 0) {
+                        // Only add the button if there are authors with ORCID identifiers
+                        var authorOrcids = findAuthorOrcids();
+                        if (authorOrcids.length > 0) {
+                            // Create button and modal above the citation field
+                            var modalId = "orcidModal_" + num;
+                            var selectId = "pubPidAddSelect_" + num;
 
-                                // ORCID SVG icon for the button
-                                var orcidIconSvg = '<svg width="16" height="16" viewBox="0 0 256 256" style="vertical-align: text-bottom; margin-right: 5px;"><path fill="#A6CE39" d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"/><path fill="#FFF" d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111.2 183.8 88 148.8 88h-24.5v84.4zM80.4 66.4c-8.5 0-15.4-6.9-15.4-15.4 0-8.5 6.9-15.4 15.4-15.4 8.5 0 15.4 6.9 15.4 15.4 0 8.5-6.9 15.4-15.4 15.4z"/></svg>';
+                            // ORCID SVG icon for the button
+                            var orcidIconSvg = '<svg width="16" height="16" viewBox="0 0 256 256" style="vertical-align: text-bottom; margin-right: 5px;"><path fill="#A6CE39" d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"/><path fill="#FFF" d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111.2 183.8 88 148.8 88h-24.5v84.4zM80.4 66.4c-8.5 0-15.4-6.9-15.4-15.4 0-8.5 6.9-15.4 15.4-15.4 8.5 0 15.4 6.9 15.4 15.4 0 8.5-6.9 15.4-15.4 15.4z"/></svg>';
 
-                                // Create button HTML (to be inserted before citation field)
-                                var buttonHtml =
-                                    '<div style="margin-bottom: 10px;">' +
-                                    '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button" aria-label="' + i18n.findUsingOrcid_ariaLabel + '" title="' + i18n.findUsingOrcid_ariaLabel + '">' + i18n.findUsingOrcid + ' ' + orcidIconSvg  + '</button>' +
-                                    '</div>';
+                            // Create button HTML (to be inserted before citation field)
+                            var buttonHtml =
+                                '<div style="margin-bottom: 10px;">' +
+                                '  <button id="findOnOrcid_' + num + '" class="btn btn-default" type="button" aria-label="' + i18n.findUsingOrcid_ariaLabel + '" title="' + i18n.findUsingOrcid_ariaLabel + '">' + i18n.findUsingOrcid + ' ' + orcidIconSvg + '</button>' +
+                                '</div>';
 
-                                // Create modal HTML with centered positioning
-                                var modalHtml =
-                                    '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="padding-top: 60px;">' +
-                                    '  <div class="modal-dialog modal-lg" role="document" style="margin: 30px auto;">' +
-                                    '    <div class="modal-content">' +
-                                    '      <div class="modal-header">' +
-                                    '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
-                                    '          <span aria-hidden="true">&times;</span>' +
-                                    '        </button>' +
-                                    '        <h4 class="modal-title">' + i18n.findAndImportPublicationFromOrcid + '</h4>' +
-                                    '      </div>' +
-                                    '      <div class="modal-body">' +
-                                    '        <div class="form-group">' +
-                                    '          <label for="' + selectId + '">' + i18n.searchAndSelectPublication + '</label>' +
-                                    '          <select id="' + selectId + '" class="form-control add-resource select2" style="width: 100%;"></select>' +
-                                    '        </div>' +
-                                    '      </div>' +
-                                    '      <div class="modal-footer">' +
-                                    '        <button type="button" class="btn btn-default" data-dismiss="modal">' + i18n.cancel + '</button>' +
-                                    '      </div>' +
-                                    '    </div>' +
-                                    '  </div>' +
-                                    '</div>';
+                            // Create modal HTML with centered positioning
+                            var modalHtml =
+                                '<div id="' + modalId + '" class="modal fade" tabindex="-1" role="dialog" style="padding-top: 60px;">' +
+                                '  <div class="modal-dialog modal-lg" role="document" style="margin: 30px auto;">' +
+                                '    <div class="modal-content">' +
+                                '      <div class="modal-header">' +
+                                '        <button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
+                                '          <span aria-hidden="true">&times;</span>' +
+                                '        </button>' +
+                                '        <h4 class="modal-title">' + i18n.findAndImportPublicationFromOrcid + '</h4>' +
+                                '      </div>' +
+                                '      <div class="modal-body">' +
+                                '        <div class="form-group">' +
+                                '          <label for="' + selectId + '">' + i18n.searchAndSelectPublication + '</label>' +
+                                '          <select id="' + selectId + '" class="form-control add-resource select2" style="width: 100%;"></select>' +
+                                '        </div>' +
+                                '      </div>' +
+                                '      <div class="modal-footer">' +
+                                '        <button type="button" class="btn btn-default" data-dismiss="modal">' + i18n.cancel + '</button>' +
+                                '      </div>' +
+                                '    </div>' +
+                                '  </div>' +
+                                '</div>';
 
-                                // Insert button above citation field
-                                citationField.before(buttonHtml);
+                            // Insert button above citation field
+                            citationField.before(buttonHtml);
 
-                                // Append modal to body (this fixes the z-index issue)
-                                $('body').append(modalHtml);
+                            // Append modal to body (this fixes the z-index issue)
+                            $('body').append(modalHtml);
 
-                                // Initialize select2 early with basic configuration
-                                $("#" + selectId).select2({
-                                    theme: "classic",
-                                    placeholder: i18n.selectPublication,
-                                    allowClear: true,
-                                    width: '100%',
-                                    dropdownParent: $("#" + modalId),
-                                    minimumResultsForSearch: 0  // Always show search box
-                                });
+                            // Initialize select2 early with basic configuration
+                            $("#" + selectId).select2({
+                                theme: "classic",
+                                placeholder: i18n.selectPublication,
+                                allowClear: true,
+                                width: '100%',
+                                dropdownParent: $("#" + modalId),
+                                minimumResultsForSearch: 0  // Always show search box
+                            });
 
-                                // Button click handler
-                                $("#findOnOrcid_" + num).on('click', function(e) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
+                            // Button click handler
+                            $("#findOnOrcid_" + num).on('click', function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
 
-                                    // Find all author ORCIDs
-                                    var authorOrcids = findAuthorOrcids();
+                                // Find all author ORCIDs
+                                var authorOrcids = findAuthorOrcids();
 
-                                    // Show the modal
-                                    $("#" + modalId).modal('show');
+                                // Show the modal
+                                $("#" + modalId).modal('show');
 
-                                    // Show loading indicator
-                                    var loadingMessage = authorOrcids.length === 1
-                                        ? "Loading publications from ORCID profile..."
-                                        : "Loading publications from " + authorOrcids.length + " ORCID profiles...";
-                                    $("#" + selectId).empty().append(new Option(loadingMessage, "")).prop("disabled", true);
+                                // Show loading indicator
+                                var loadingMessage = authorOrcids.length === 1
+                                    ? "Loading publications from ORCID profile..."
+                                    : "Loading publications from " + authorOrcids.length + " ORCID profiles...";
+                                $("#" + selectId).empty().append(new Option(loadingMessage, "")).prop("disabled", true);
 
-                                    // Get current DOI value to pre-select
-                                    var currentDoi = $(doiInput).val();
+                                // Get current PID value to pre-select
+                                var currentPid = $(identifierInput).val();
 
-                                    // Fetch works from all ORCIDs
-                                    fetchOrcidWorks(authorOrcids, selectId, currentDoi);
+                                // Fetch works from all ORCIDs
+                                fetchOrcidWorks(authorOrcids, selectId, currentPid);
 
-                                    return false;
-                                });
+                                return false;
+                            });
 
-                                // Handle selection
-                                $('#' + selectId).on('select2:select', function(e) {
-                                    var data = e.params.data;
+                            // Handle selection
+                            $('#' + selectId).on('select2:select', function (e) {
+                                var data = e.params.data;
 
-                                    // Get current DOI value
-                                    var currentDoi = $(doiInput).val().trim();
+                                // Get current PID value
+                                var currentPid = $(identifierInput).val().trim();
 
-                                    // If selecting the same DOI that's already there and it's not blank, close modal without changes
-                                    if (currentDoi && data.id === currentDoi) {
-                                        $("#" + modalId).modal('hide');
-                                        return;
-                                    }
-
-                                    // Otherwise, update the DOI field (whether it was blank or different)
-                                    $(doiInput).val(data.id);
-
-                                    // Handle managed fields
-                                    for (var key in managedFields) {
-                                        if (key == 'idType') {
-                                            // Set the identifier type to the selected external-id-type
-                                            let selectContainer = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']");
-                                            let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
-                                            let selectedIdentifierType = (data.identifierType || '').toLowerCase();
-                                            let fieldIdentifierType = selectedIdentifierType === 'uri' ? 'url' : selectedIdentifierType;
-                                            let identifierOption = $(selectField).find('option').filter(function() {
-                                                return $(this).text().trim().toLowerCase() === fieldIdentifierType;
-                                            }).first();
-                                            let identifierVal = identifierOption.val();
-
-                                            if (identifierVal !== undefined) {
-                                                $(selectField).val(identifierVal).attr('value', identifierVal);
-                                                selectField.find('option').removeAttr('selected');
-                                                identifierOption.attr('selected', 'selected');
-
-                                                let label = selectContainer.find('label.ui-selectonemenu-label');
-                                                if (label.length > 0) {
-                                                    label.text(fieldIdentifierType);
-                                                    label.removeClass('ui-state-default');
-                                                }
-                                            }
-                                        } else if (key == 'url') {
-                                            // Set the URL to the DOI resolver URL
-                                            let urlField = $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']");
-                                            let urlValue = data.url;
-                                            if(!urlValue) {
-                                                if(data.identifierType === 'doi') {
-                                                    urlValue = 'https://doi.org/' + data.id;
-                                                }
-                                            }
-                                            $(urlField).val(urlValue).attr('value', urlValue);
-                                        } else if (key == 'citation') {
-                                            // Fetch the detailed work information to get BibTeX citation
-                                            let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']");
-
-                                            // Show loading indicator
-                                            $(citationField).val('Loading citation...').attr('value', 'Loading citation...');
-
-                                            // Fetch work details including BibTeX
-                                            fetchWorkDetails(data.orcidId, data.putCode)
-                                                .then(function(workDetails) {
-                                                    var citation;
-
-                                                    // Use BibTeX citation if available
-                                                    if (workDetails && workDetails.citation &&
-                                                        workDetails.citation['citation-type'] === 'bibtex' &&
-                                                        workDetails.citation['citation-value']) {
-                                                        citation = formatCitation(data.workSummary, workDetails.citation['citation-value']);
-                                                    } else {
-                                                        // Fall back to formatted citation from work summary
-                                                        citation = formatCitation(data.workSummary);
-                                                    }
-
-                                                    $(citationField).val(citation).attr('value', citation);
-                                                })
-                                                .catch(function(error) {
-                                                    console.error("Error fetching work details: ", error);
-                                                    // Fall back to basic formatting on error
-                                                    var citation = formatCitation(data.workSummary);
-                                                    $(citationField).val(citation).attr('value', citation);
-                                                });
-                                        }
-                                    }
-
-                                    // Close the modal after selection
+                                // If selecting the same DOI that's already there and it's not blank, close modal without changes
+                                if (currentPid && data.id === currentPid) {
                                     $("#" + modalId).modal('hide');
-                                });
+                                    return;
+                                }
 
-                                // Handle clear
-                                $('#' + selectId).on('select2:clear', function(e) {
-                                    $(doiInput).val('').attr('value', '');
+                                // Otherwise, update the DOI field (whether it was blank or different)
+                                $(identifierInput).val(data.id);
 
-                                    // Clear managed fields
-                                    for (var key in managedFields) {
-                                        if (key == 'idType') {
-                                            // Clear the identifier type select field
-                                            let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
-                                            $(selectField).val('').attr('value', '');
+                                // Handle managed fields
+                                for (var key in managedFields) {
+                                    if (key == 'idType') {
+                                        // Set the identifier type to the selected external-id-type
+                                        let selectContainer = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']");
+                                        let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                                        let selectedIdentifierType = (data.identifierType || '').toLowerCase();
+                                        let fieldIdentifierType = selectedIdentifierType === 'uri' ? 'url' : selectedIdentifierType;
+                                        let identifierOption = $(selectField).find('option').filter(function () {
+                                            return $(this).text().trim().toLowerCase() === fieldIdentifierType;
+                                        }).first();
+                                        let identifierVal = identifierOption.val();
 
-                                            // Clear the selected attribute on all options
+                                        if (identifierVal !== undefined) {
+                                            $(selectField).val(identifierVal).attr('value', identifierVal);
                                             selectField.find('option').removeAttr('selected');
+                                            identifierOption.attr('selected', 'selected');
 
-                                            // Update the visible label to show placeholder/empty state
-                                            let selectContainer = selectField.closest('.ui-selectonemenu');
                                             let label = selectContainer.find('label.ui-selectonemenu-label');
                                             if (label.length > 0) {
-                                                label.text('Select...');
-                                                label.addClass('ui-state-default');
+                                                label.text(fieldIdentifierType);
+                                                label.removeClass('ui-state-default');
                                             }
-                                        } else if (key == 'url') {
-                                            $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
-                                        } else if (key == 'citation') {
-                                            $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
                                         }
-                                    }
-                                });
+                                    } else if (key == 'url') {
+                                        // Set the URL for the selected identifier
+                                        let urlField = $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']");
+                                        let urlValue = data.url;
+                                        if (!urlValue && data.identifierType === 'doi') {
+                                            urlValue = 'https://doi.org/' + data.id;
+                                        }
+                                        $(urlField).val(urlValue).attr('value', urlValue);
+                                    } else if (key == 'citation') {
+                                        let citationField = $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']");
 
-                            } else {
-                                // Add a hint for users when no ORCIDs are available
-                                showOrcidTeaser();
-                            }
+                                        $(citationField).val('Loading citation...').attr('value', 'Loading citation...');
+
+                                        fetchWorkDetails(data.orcidId, data.putCode)
+                                            .then(function (workDetails) {
+                                                return formatCitation(
+                                                    data.workSummary,
+                                                    workDetails,
+                                                    data.identifierType,
+                                                    data.id
+                                                );
+                                            })
+                                            .then(function (citation) {
+                                                $(citationField).val(citation).attr('value', citation);
+                                            })
+                                            .catch(function (error) {
+                                                console.error("Error formatting citation: ", error);
+                                                var citation = formatBasicCitation(data.workSummary);
+                                                $(citationField).val(citation).attr('value', citation);
+                                            });
+                                    }
+                                }
+
+                                // Close the modal after selection
+                                $("#" + modalId).modal('hide');
+                            });
+                            // Handle clear
+                            $('#' + selectId).on('select2:clear', function (e) {
+                                $(identifierInput).val('').attr('value', '');
+
+                                // Clear managed fields
+                                for (var key in managedFields) {
+                                    if (key == 'idType') {
+                                        // Clear the identifier type select field
+                                        let selectField = $(parent).find("[data-cvoc-managed-field='" + managedFields[key] + "']").find("select");
+                                        $(selectField).val('').attr('value', '');
+
+                                        // Clear the selected attribute on all options
+                                        selectField.find('option').removeAttr('selected');
+
+                                        // Update the visible label to show placeholder/empty state
+                                        let selectContainer = selectField.closest('.ui-selectonemenu');
+                                        let label = selectContainer.find('label.ui-selectonemenu-label');
+                                        if (label.length > 0) {
+                                            label.text('Select...');
+                                            label.addClass('ui-state-default');
+                                        }
+                                    } else if (key == 'url') {
+                                        $(parent).find("input[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
+                                    } else if (key == 'citation') {
+                                        $(parent).find("textarea[data-cvoc-managed-field='" + managedFields[key] + "']").val('').attr('value', '');
+                                    }
+                                }
+                            });
+
+                        } else {
+                            // Add a hint for users when no ORCIDs are available
+                            showOrcidTeaser();
                         }
                     }
                 }
             }
-        });
+        }
     });
 }
 
@@ -386,9 +466,9 @@ function updatePidInputs() {
  *
  * @param {string|Array<string>} orcidIds - Single ORCID ID or array of ORCID IDs
  * @param {string} selectId - The ID of the select element to populate
- * @param {string} preselectedDoi - Optional DOI to pre-select in the dropdown
+ * @param {string} preselectedPid - Optional DOI to pre-select in the dropdown
  */
-function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
+function fetchOrcidWorks(orcidIds, selectId, preselectedPid) {
     // Normalize input to always be an array
     var orcidArray = Array.isArray(orcidIds) ? orcidIds : [orcidIds];
 
@@ -399,13 +479,12 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
 
     // Track all AJAX requests
     var requests = [];
-    var allWorks = [];
 
     // Create a request for each ORCID
     orcidArray.forEach(function(orcidId) {
         var request = $.ajax({
             type: "GET",
-            url: orcidBaseUrl + orcidId + "/works",
+            url: window.publications.state.orcidBaseUrl + orcidId + "/works",
             dataType: 'json',
             headers: {
                 'Accept': 'application/json'
@@ -490,14 +569,17 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                             var preferredExternalId = getPreferredExternalId(externalIds);
 
                             if (preferredExternalId) {
-                                var identifierValue = preferredExternalId['external-id-value'];
-                                var identifierType = (preferredExternalId['external-id-type'] || '').toLowerCase();
-                                var urlValue = preferredExternalId['url'];
+                                const identifierValue = preferredExternalId['external-id-value'];
+                                const identifierType = (preferredExternalId['external-id-type'] || '').toLowerCase();
+                                let urlValue;
+                                if(preferredExternalId['external-id-url'] && preferredExternalId['external-id-url']['value']) {
+                                    urlValue = preferredExternalId['external-id-url']['value'];
+                                }
                                 // Only add if we haven't seen this identifier before
                                 if (!identifierMap.has(identifierValue)) {
                                     // Get publication year if available
-                                    var year = "";
-                                    var yearValue = 0;
+                                    let year = "";
+                                    let yearValue = 0;
                                     if (workSummary['publication-date'] &&
                                         workSummary['publication-date']['year'] &&
                                         workSummary['publication-date']['year']['value']) {
@@ -505,7 +587,7 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
                                         year = " (" + yearValue + ")";
                                     }
 
-                                    var option = {
+                                    const option = {
                                         id: identifierValue,
                                         text: workSummary.title.title.value + year,
                                         year: yearValue,
@@ -558,8 +640,8 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedDoi) {
 
             // Pre-select the current DOI if it exists in the options
             var matchingOption;
-            if (preselectedDoi) {
-                var normalizedPreselected = preselectedDoi.trim().toLowerCase();
+            if (preselectedPid) {
+                var normalizedPreselected = preselectedPid.trim().toLowerCase();
                 matchingOption = options.find(function(opt) {
                     return opt.id.toLowerCase() === normalizedPreselected;
                 });
@@ -624,15 +706,13 @@ function formatPublication(publication) {
         orcidInfo = '<div class="publication-orcid text-muted small">From ORCID: ' + publication.orcidId + '</div>';
     }
 
-    var $publication = $(
+    return $(
         '<div class="publication-item">' +
         '<div class="publication-title">' + publication.text + '</div>' +
-        '<div class="publication-doi text-muted small">DOI: ' + publication.id + '</div>' +
+        '<div class="publication-doi text-muted small">' + publication.identifierType + ': ' + publication.id + '</div>' +
         orcidInfo +
         '</div>'
     );
-
-    return $publication;
 }
 
 /**
@@ -684,7 +764,7 @@ function findAuthorOrcids() {
 }
 
 /**
- * Fetches detailed work information from ORCID API, including BibTeX citation.
+ * Fetches detailed work information from ORCID API
  *
  * @param {string} orcidId - The ORCID identifier
  * @param {string} putCode - The put-code for the specific work
@@ -693,7 +773,7 @@ function findAuthorOrcids() {
 function fetchWorkDetails(orcidId, putCode) {
     return $.ajax({
         type: "GET",
-        url: orcidBaseUrl + orcidId + "/work/" + putCode,
+        url: window.publications.state.orcidBaseUrl + orcidId + "/work/" + putCode,
         dataType: 'json',
         headers: {
             'Accept': 'application/json'
@@ -702,53 +782,53 @@ function fetchWorkDetails(orcidId, putCode) {
 }
 
 /**
- * Formats a citation from an ORCID work summary.
- * If BibTeX citation is available, it will be used; otherwise falls back to basic formatting.
+ * Formats a citation from ORCID work data.
+ * For DOI identifiers, tries Cite first. Otherwise, or on failure, uses
+ * ORCID's citation-value if available, then falls back to basic formatting.
  *
  * @param {Object} workSummary - The work summary object from ORCID API
- * @param {string} bibtex - Optional BibTeX citation string
- * @return {string} Formatted citation string
+ * @param {Object} workDetails - The detailed work object from ORCID API
+ * @param {string} identifierType - The selected identifier type
+ * @param {string} identifier - The selected identifier value
+ * @return {Promise<string>} Promise resolving to a formatted citation string
  */
-function formatCitation(workSummary, bibtex) {
-    // If BibTeX citation is available, use it
-    if (bibtex) {
-        return convertBibtexToCitation(bibtex, workSummary);
+function formatCitation(workSummary, workDetails, identifierType, identifier) {
+    var normalizedIdentifierType = (identifierType || '').toLowerCase();
+    var citationValue = workDetails &&
+        workDetails.citation &&
+        workDetails.citation['citation-value'];
+
+    if (normalizedIdentifierType === 'doi' && identifier) {
+        return formatCitationText(identifier)
+            .catch(function(error) {
+                console.warn("DOI-based citation formatting failed, falling back:", error);
+
+                if (citationValue) {
+                    return citationValue;
+                }
+
+                return formatBasicCitation(workSummary);
+            });
     }
-    return formatBasicCitation(workSummary);
+
+    if (citationValue) {
+        return Promise.resolve(citationValue);
+    }
+
+    return Promise.resolve(formatBasicCitation(workSummary));
 }
 
-/**
- * Converts BibTeX citation to formatted citation using Citation.js.
- *
- * @param {string} bibtex - BibTeX citation string
- * @param {Object} workSummary - The work summary object (used as fallback)
- * @return {string} Formatted citation
- */
-function convertBibtexToCitation(bibtex, workSummary) {
-    try {
-        // Check if Citation.js is available
-        if (typeof Cite === 'undefined') {
-            console.warn("Citation.js not loaded, falling back to basic formatting");
-            return formatBasicCitation(workSummary);
-        }
-
-        // Parse BibTeX and format as IEEE style
-        var cite = new Cite(bibtex);
-
-        // Format as IEEE (you can also use 'apa', 'vancouver', 'harvard1', etc.)
-        var formatted = cite.format('bibliography', {
-            format: 'text',
-            template: 'ieee',
-            lang: 'en-US'
+function formatCitationText(identifier) {
+    return window.publications.state.cslStylePromise
+        .then(() => Cite.async(identifier))
+        .then(citation => {
+            const formatted = citation.format('bibliography', {
+                format: 'text',
+                template: window.publications.config.selectedFormat,
+                lang: 'en-US'
+            });
+            return formatted;
         });
-
-        return formatted;
-
-    } catch (error) {
-        console.error("Error converting BibTeX with Citation.js:", error);
-        // Fall back to basic formatting using workSummary
-        return formatBasicCitation(workSummary);
-    }
 }
 
 /**
@@ -776,11 +856,11 @@ function formatBasicCitation(workSummary) {
 }
 
 function getOrcidBaseUrl(element) {
-    if (typeof orcidBaseUrl === 'undefined' || orcidBaseUrl === null) {
+    if (typeof window.publications.state.orcidBaseUrl === 'undefined' || window.publications.state.orcidBaseUrl === null) {
 
-        orcidBaseUrl = $(element).attr('data-cvoc-service-url');
-        if (!orcidBaseUrl) {
-            orcidBaseUrl = "https://orcid.org/v3.0/";
+        window.publications.state.orcidBaseUrl = $(element).attr('data-cvoc-service-url');
+        if (!window.publications.state.orcidBaseUrl) {
+            window.publications.state.orcidBaseUrl = "https://orcid.org/v3.0/";
         }
     }
 }
@@ -788,7 +868,7 @@ function getOrcidBaseUrl(element) {
 function showOrcidTeaser() {
     const teaser = document.createElement('div');
     teaser.style.cssText = "margin-top: 10px; padding: 0; font-size: 0.9em; color: #6c757d; font-weight: normal; text-align: left;";
-    teaser.textContent = i18n.addOrcidForAuthorsHint;
+    teaser.textContent = window.publications.state.i18n.addOrcidForAuthorsHint;
 
     // Find the label for the 'Related Publication' field and append the teaser there.
     const publicationLabel = $('#metadata_publication');
