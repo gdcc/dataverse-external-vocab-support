@@ -19,7 +19,10 @@
     "retrieval-filtering": {
       "@context": {
       	"termName": "https://schema.org/name",
-        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
+        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+        "notices": {"@id":"https://localcontexts.org/notices", "@type": "@json"},
+        "tk_labels": {"@id":"https://localcontexts.org/tk_labels", "@type": "@json"},
+        "bc_labels": {"@id":"https://localcontexts.org/bc_labels", "@type": "@json"}
       },
       "termName": {
         "pattern": "{0}",
