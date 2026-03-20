@@ -2,7 +2,7 @@
   {
     "field-name": "LCProjectUrl",
     "term-uri-field": "LCProjectUrl",
-    "js-url": ["https://qualitativedatarepository.github.io/dataverse-external-vocab-support/packages/local_contexts/local_contexts.js", "https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
+    "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/packages/local_contexts/local_contexts.js", "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "localcontexts",
     "headers": {"X-Api-Key": "your_localcontexts_api_key", "Origin": "https://demo.dataverse.org"},
     "retrieval-uri": "https://sandbox.localcontextshub.org/api/v2/projects/{0}/",
