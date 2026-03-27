@@ -3,7 +3,7 @@
 
 // Some code for getting the username for the API
 // NOTE: Replace with real value!
-var geonamesUsername = "{{ geonames_api_username }}"; // kind of an API key for the Geonames service
+var geonamesUsername = "your_geonames_username"; // kind of an API key for the Geonames service
 
 
 // Note that these selectors should match the Dataverse CVOC configuration
