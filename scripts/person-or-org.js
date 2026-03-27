@@ -3,6 +3,8 @@ var personOrgInputSelector = "input[data-cvoc-protocol='orcid-or-ror'], input[da
 var orcidPrefix = "orcid:";
 var rorPrefix = "ror:";
 var rorBaseUrl = "https://ror.org/";
+//Max chars that displays well for a child field
+var rorMaxLength = 31;
 
 $(document).ready(function() {
     expandAffiliations();
@@ -63,11 +65,9 @@ function updateAffiliationInputs() {
 
         var container = $(personOrgInput).parent().parent().children('div').eq(0);
         var selectId = "personOrgAddSelect_" + num;
-        container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
-        var $select2 = $("#" + selectId);
 
         if (protocol === 'orcid-or-ror') {
-            // Create radio buttons for selection
+            // Create radio buttons for selection above the input
             var radioName = "person-org-choice-" + num;
             var personRadioId = "person-choice-" + num;
             var orgRadioId = "org-choice-" + num;
@@ -81,7 +81,12 @@ function updateAffiliationInputs() {
                     <label class="form-check-label" for="${orgRadioId}">Organization</label>
                 </div>`;
             container.append(radioHtml);
+        }
 
+        container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+        var $select2 = $("#" + selectId);
+
+        if (protocol === 'orcid-or-ror') {
             // Initial setup for person
             setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
 
@@ -117,8 +122,15 @@ function setupSelect2(type, $select2, personOrgInput, orcidSearchUrl, rorSearchU
     }).on('select2:unselect', function(e) {
         $(personOrgInput).val("").trigger('change');
     });
-}
 
+    if (type === 'organization') {
+        $select2.on('select2:open', function(e) {
+            $(".select2-search__field").focus();
+            $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
+            document.getElementById($select2.attr('id') + "_input").select();
+        });
+    }
+}
 
 // --- Helper functions for ORCID/Person ---
 
@@ -223,87 +235,167 @@ function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, 
 
 function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
     return {
-        placeholder: "Search for a person by name or ORCID",
+        theme: "classic",
+        tags: $(inputElement).data("cvoc-allowfreetext"),
+        delay: 500,
+        templateResult: function(item) {
+            // No need to template the searching text
+            if (item.loading) {
+                return item.text;
+            }
+
+            // markMatch bolds the search term if/where it appears in the result
+            var $result = markMatch2(item.text, term);
+            return $result;
+        },
+        templateSelection: function(item) {
+            // For a selection, add HTML to make the ORCID a link
+            var pos = item.text.search(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/);
+            if (pos >= 0) {
+                var orcid = item.text.substr(pos, 19);
+                return $('<span></span>').append(
+                    item.text.replace(orcid, "<a href='" + baseUrl + orcid + "' target='_blank'>" + orcid + "</a>")
+                );
+            }
+            return item.text;
+        },
+        language: {
+            searching: function(params) {
+                return 'Search by name, email, or ORCID…';
+            }
+        },
+        placeholder: $(inputElement).attr("data-cvoc-placeholder") || "Select or enter...",
         minimumInputLength: 3,
+        allowClear: true,
         ajax: {
+            // Use an ajax call to ORCID to retrieve matching results
             url: searchUrl,
-            dataType: 'json',
-            delay: 250,
             data: function(params) {
+                term = params.term;
+                if (!term) {
+                    term = "";
+                }
+                term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1");
                 return {
-                    q: params.term,
-                    start: 0,
-                    rows: 20
+                    q: term,
+                    // Currently we just get the top 10 hits.
+                    rows: 10
                 };
             },
-            processResults: function(data, params) {
-                var results = [];
-                if (data['expanded-results']) {
-                    data['expanded-results'].forEach(function(item) {
-                        var name = item['person-name'] ? item['person-name'].value : '';
-                        var orcid = item['orcid'];
-                        if (name && orcid) {
-                            results.push({
-                                id: orcid,
-                                text: name + " | " + orcid
-                            });
-                        }
-                    });
+            headers: {
+                'Accept': 'application/json'
+            },
+            processResults: function(data, page) {
+                let newItems = data['expanded-result'];
+                if (newItems == null) {
+                    return { results: [] };
                 }
                 return {
-                    results: results
+                    results: data['expanded-result']
+                        // Sort to bring recently used ORCIDs to the top of the list
+                        .sort((a, b) => Number(getValue(orcidPrefix, b['orcid-id']).name != null) - Number(getValue(orcidPrefix, a['orcid-id']).name != null))
+                        .map(function(x) {
+                            return {
+                                text: ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
+                                    "; " +
+                                    x['orcid-id'] +
+                                    ((x.email.length > 0) ? "; " + x.email[0] : ""),
+                                id: x['orcid-id'],
+                                // Since clicking in the selection re-opens the choice list,
+                                // one has to use a right click/open in new tab/window to view the ORCID page
+                                title: 'Open in new tab to view ORCID page'
+                            };
+                        })
                 };
-            },
-            cache: true
-        },
-        templateResult: function(data) {
-            return data.text;
-        },
-        templateSelection: function(data) {
-            return data.text.split(" | ")[0];
+            }
         }
     };
 }
 
 function getOrgSelect2Config(inputElement, searchUrl, baseUrl) {
     return {
-        placeholder: "Search for an organization by name or ROR ID",
+        theme: "classic",
+        tags: $(inputElement).data("cvoc-allowfreetext"),
+        delay: 500,
+        language: {
+            searching: function(params) {
+                return 'Search by name or acronym…';
+            }
+        },
+        placeholder: $(inputElement).attr('data-cvoc-placeholder') || "Select or enter...",
         minimumInputLength: 3,
+        allowClear: true,
         ajax: {
             url: searchUrl,
             dataType: 'json',
-            delay: 250,
             data: function(params) {
-                return {
-                    query: params.term,
-                    page_size: 20
-                };
-            },
-            processResults: function(data, params) {
-                var results = [];
-                if (data['items']) {
-                    data['items'].forEach(function(item) {
-                        var name = item.name;
-                        var ror = item.id.split('/').pop();
-                        if (name && ror) {
-                            results.push({
-                                id: ror,
-                                text: name + " | " + ror
-                            });
-                        }
-                    });
+                term = params.term;
+                if (!term) {
+                    term = "";
+                } else {
+                    term = term.replace(/([+\-&|!(){}[\]^"~*?:\\\/])/g, "\\$1") + "*";
                 }
                 return {
-                    results: results
+                    query: term
+                };
+            },
+            headers: {
+                'Accept': 'application/json'
+            },
+            processResults: function(data, params) {
+                return {
+                    results: (data['items'] || [])
+                        .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
+                        .map(org => {
+                            const displayName = org.names.find(n =>
+                                n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                            )?.value || org.id;
+
+                            const acronyms = org.names
+                                .filter(n => n.types && n.types.includes("acronym"))
+                                .map(n => n.value);
+
+                            return {
+                                ...org,
+                                name: displayName,
+                                acronyms: acronyms
+                            };
+                        })
+                        .sort((a, b) => Number(b.acronyms.some(acr => acr === params.term)) -
+                                       Number(a.acronyms.some(acr => acr === params.term)))
+                        .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorBaseUrl, '')).name != null) -
+                                       Number(getValue(rorPrefix, a['id'].replace(rorBaseUrl, '')).name != null))
+                        .map(function(x) {
+                            return {
+                                text: x.name + ", " + x.id.replace(rorBaseUrl, '') + ', ' + x.acronyms.join(','),
+                                id: x.id.replace(rorBaseUrl, '')
+                            };
+                        })
                 };
             },
             cache: true
         },
-        templateResult: function(data) {
-            return data.text;
+        templateResult: function(item) {
+            if (item.loading) {
+                return item.text;
+            }
+            return markMatch2(item.text, term);
         },
-        templateSelection: function(data) {
-            return data.text.split(" | ")[0];
+        templateSelection: function(item) {
+            var name = item.text;
+            var pos = item.text.search(/, [a-z0-9]{9}/);
+            if (pos >= 0) {
+                name = name.slice(0, pos);
+                var idnum = item.text.slice(pos + 2);
+                var altNames = [];
+                pos = idnum.indexOf(', ');
+                if (pos > 0) {
+                    altNames = idnum.slice(pos + 2).split(',');
+                    idnum = idnum.slice(0, pos);
+                }
+                return getRorDisplayHtml(name, rorBaseUrl + idnum, altNames);
+            }
+            return getRorDisplayHtml(name, null, ['No ROR Entry']);
         }
     };
 }
