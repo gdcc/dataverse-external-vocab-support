@@ -121,8 +121,8 @@ function updatePeopleInputs() {
                         return item.text;
                     }
 
-                    //markMatch bolds the search term if/where it appears in the result
-                    var $result = markMatch(item.text, term);
+                    //markMatch2 bolds the search term if/where it appears in the result
+                    var $result = markMatch2(item.text, term);
                     return $result;
                 },
                 templateSelection: function(item) {
@@ -316,30 +316,4 @@ function updatePeopleInputs() {
             });
         }
     });
-}
-
-//Put the text in a result that matches the term in a span with class select2-rendered__match that can be styled (e.g. bold)
-function markMatch(text, term) {
-    // Find where the match is
-    var match = text.toUpperCase().indexOf(term.toUpperCase());
-    var $result = $('<span></span>');
-    // If there is no match, move on
-    if (match < 0) {
-        return $result.text(text);
-    }
-
-    // Put in whatever text is before the match
-    $result.text(text.substring(0, match));
-
-    // Mark the match
-    var $match = $('<span class="select2-rendered__match"></span>');
-    $match.text(text.substring(match, match + term.length));
-
-    // Append the matching text
-    $result.append($match);
-
-    // Put in whatever is after the match
-    $result.append(text.substring(match + term.length));
-
-    return $result;
 }
