@@ -56,14 +56,36 @@ function updateAffiliationInputs() {
 
         let num = Math.floor(Math.random() * 100000000000);
         $(personOrgInput).attr('data-person-org', num);
-        $(personOrgInput).parent().hide();
 
         var orcidBaseUrl = $(personOrgInput).attr('data-cvoc-service-url') || "https://orcid.org/";
         var orcidSearchUrl = (orcidBaseUrl.startsWith("https://sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/expanded-search";
         var rorSearchUrl = "https://api.ror.org/organizations";
         var protocol = $(personOrgInput).data('cvoc-protocol');
 
-        var container = $(personOrgInput).parent().parent().children('div').eq(0);
+        var $inputWrapper = $(personOrgInput).parent();
+        var parentField = $(personOrgInput).attr('data-cvoc-parent');
+        var parent = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+        let hasParentField = $("[data-cvoc-parentfield='" + parentField + "']").length > 0;
+        let managedFields = {};
+
+        if (hasParentField) {
+            managedFields = JSON.parse($(personOrgInput).attr('data-cvoc-managedfields') || "{}");
+            if (Object.keys(managedFields).length > 0) {
+                // Hide managed fields
+                $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").hide();
+                $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
+                // Hide the actual input wrapper only when managed fields are present
+                $inputWrapper.hide();
+            } else {
+                // No managed fields: hide only the original input
+                $(personOrgInput).hide();
+            }
+        } else {
+            // No parent/managed-field layout: hide only the original input
+            $(personOrgInput).hide();
+        }
+
+        var container = $inputWrapper.parent().children('div').eq(0);
         var selectId = "personOrgAddSelect_" + num;
 
         if (protocol === 'orcid-or-ror') {
@@ -72,25 +94,24 @@ function updateAffiliationInputs() {
             var personRadioId = "person-choice-" + num;
             var orgRadioId = "org-choice-" + num;
             var radioHtml = `
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="${radioName}" id="${personRadioId}" value="person" checked>
-                    <label class="form-check-label" for="${personRadioId}">Person</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="${radioName}" id="${orgRadioId}" value="organization">
-                    <label class="form-check-label" for="${orgRadioId}">Organization</label>
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;">
+                  <div class="radio-inline">
+                    <label><input type="radio" name="..." style="font-weight: 100;"> Person</label>
+                  </div>
+                  <div class="radio-inline">
+                    <label><input type="radio" name="..." style="font-weight: 100;"> Organization</label>
+                  </div>
                 </div>`;
             container.append(radioHtml);
+            container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+        } else if (protocol === 'ror') {
+            $(personOrgInput).after('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
         }
 
-        container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
         var $select2 = $("#" + selectId);
 
         if (protocol === 'orcid-or-ror') {
-            // Initial setup for person
             setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
-
-            // Add event listener for radio buttons
             $('input[name="' + radioName + '"]').on('change', function() {
                 setupSelect2($(this).val(), $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
             });
@@ -118,12 +139,29 @@ function setupSelect2(type, $select2, personOrgInput, orcidSearchUrl, rorSearchU
             ? orcidBaseUrl + data.id
             : rorBaseUrl + data.id;
         $(personOrgInput).val(url).trigger('change');
-        storeValue((type === 'person' ? orcidPrefix : rorPrefix), data.id, data.text.split(' | ')[0]);
+
+        if (type === 'person') {
+            // ORCID behavior should mirror people.js
+            if (data.id != data.text) {
+                $("input[data-person='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
+            } else {
+                $("input[data-person='" + $(personOrgInput).attr('data-person-org') + "']").val(data.id).attr('value', data.id);
+            }
+            storeValue(orcidPrefix, data.id, data.text.split(";")[0]);
+        } else {
+            storeValue(rorPrefix, data.id, data.text.split(' | ')[0]);
+        }
     }).on('select2:unselect', function(e) {
         $(personOrgInput).val("").trigger('change');
     });
 
-    if (type === 'organization') {
+    if (type === 'person') {
+        $select2.on('select2:open', function(e) {
+            $(".select2-search__field").focus();
+            $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
+            document.getElementById($select2.attr('id') + "_input").select();
+        });
+    } else if (type === 'organization') {
         $select2.on('select2:open', function(e) {
             $(".select2-search__field").focus();
             $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
@@ -160,18 +198,6 @@ function expandPerson(element, id, orcidBaseUrl) {
     });
 }
 
-function showAsPlainText(element) {
-    var text = element.textContent.trim();
-    if (text.startsWith("https://orcid.org/")) {
-        text = text.substring(18);
-    } else if (text.startsWith("https://ror.org/")) {
-        text = text.substring(16);
-    }
-    $(element).text(text);
-}
-
-// --- Helper functions for ROR/Organization ---
-
 function expandOrganization(element, id, rorBaseUrl) {
     var rorRetrievalUrl = (rorBaseUrl.startsWith("https://sandbox.ror.org") ? "https://api.sandbox.ror.org/organizations/" : "https://api.ror.org/organizations/") + id;
     $.ajax({
@@ -184,7 +210,7 @@ function expandOrganization(element, id, rorBaseUrl) {
             // Find the display name (type: "ror_display" or "label")
             const displayName = org.names.find(n =>
                 n.types && (n.types.includes("ror_display") || n.types.includes("label"))
-            )?.value || ror.id;
+            )?.value || org.id;
 
             // Find all acronyms
             const acronyms = org.names
@@ -193,7 +219,19 @@ function expandOrganization(element, id, rorBaseUrl) {
 
             var city = org.locations[0].geonames_details.name;
             var country = org.locations[0].geonames_details.country_name;
-            $(element).html(getRorDisplayHtml(displayName, rorBaseUrl + id, acronyms, city, country, false, true));
+            var displayInfo = getRorDisplayContext(element);
+            $(element).html(getRorDisplayHtml(
+                displayName,
+                rorBaseUrl + id,
+                acronyms,
+                city,
+                country,
+                displayInfo.truncate,
+                displayInfo.useParens
+            ));
+            if (displayInfo.useParens) {
+                $(element).attr('style','margin-left: 0.25em;');
+            }
         },
         error: function() {
             showAsPlainText(element);
@@ -201,13 +239,54 @@ function expandOrganization(element, id, rorBaseUrl) {
     });
 }
 
+function showAsPlainText(element) {
+    var text = element.textContent.trim();
+    var displayInfo = getRorDisplayContext(element);
+
+    if (text.startsWith("https://orcid.org/")) {
+        text = text.substring(18);
+    } else if (text.startsWith("https://ror.org/")) {
+        text = text.substring(16);
+    }
+
+    if (displayInfo.truncate && text.length >= rorMaxLength) {
+        text = text.substring(0, rorMaxLength) + "…";
+    }
+
+    if (displayInfo.useParens) {
+        text = '(' + text + ')';
+        $(element).attr('style','margin-left: 0.25em;');
+    }
+
+    $(element).text(text);
+}
+
+function getRorDisplayContext(element) {
+    let useParens = true;
+    let truncate = false;
+    let prev = $(element)[0].previousSibling;
+
+    if (prev != null && prev.tagName != 'BR') {
+        let val = prev.nodeValue;
+        if (val !== null) {
+            let index = val.indexOf('(');
+            if (index != -1) {
+                $(element)[0].previousSibling.data = val.substring(0, index);
+            }
+        }
+    } else {
+        useParens = false;
+        truncate = true;
+    }
+
+    return { useParens, truncate };
+}
+
 function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, addParens = false) {
     if (typeof (altNames) == 'undefined') {
         altNames = [];
     }
     if (truncate && (name.length >= rorMaxLength)) {
-        // show the first characters of a long name
-        // return item.text.substring(0,25) + "…";
         altNames.unshift(name);
         name = name.substring(0, rorMaxLength) + "…";
     }
@@ -215,7 +294,7 @@ function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, 
         name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
     }
     if (addParens) {
-        name = '(' + name + ')';
+        name = '<span>(' + name + ')</span>';
     }
     var titleParts = [].concat(altNames);
     var locationParts = [];
@@ -244,7 +323,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                 return item.text;
             }
 
-            // markMatch bolds the search term if/where it appears in the result
+            // markMatch2 bolds the search term if/where it appears in the result
             var $result = markMatch2(item.text, term);
             return $result;
         },
