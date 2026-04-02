@@ -748,7 +748,7 @@ function extractOrcidIdFromUrl(orcidUrlOrId) {
  */
 function findAuthorOrcids() {
     var orcidIds = [];
-    var orcidInputs = $('input[data-cvoc-protocol="orcid"][data-cvoc-parent="author"]');
+    var orcidInputs = $('input[data-cvoc-protocol^="orcid"][data-cvoc-parent="author"]');
 
     orcidInputs.each(function() {
         var value = $(this).val();
@@ -866,7 +866,12 @@ function getOrcidBaseUrl(element) {
 }
 
 function showOrcidTeaser() {
+    if (document.getElementById('orcid-teaser')) {
+        return;
+    }
+
     const teaser = document.createElement('div');
+    teaser.id = 'orcid-teaser';
     teaser.style.cssText = "margin-top: 10px; padding: 0; font-size: 0.9em; color: #6c757d; font-weight: normal; text-align: left;";
     teaser.textContent = window.publications.state.i18n.addOrcidForAuthorsHint;
 
