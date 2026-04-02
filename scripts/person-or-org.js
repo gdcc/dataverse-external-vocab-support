@@ -48,7 +48,7 @@ function expandAffiliations() {
  * Set up input fields to allow selecting either a person (ORCID) or an organization (ROR).
  */
 function updateAffiliationInputs() {
-    $(personOrgInputSelector).each(function() {
+    $(personOrgInputSelector).each(function () {
         var personOrgInput = this;
         if (personOrgInput.hasAttribute('data-person-org')) {
             return;
@@ -89,21 +89,42 @@ function updateAffiliationInputs() {
         var selectId = "personOrgAddSelect_" + num;
 
         if (protocol === 'orcid-or-ror') {
-            // Create radio buttons for selection above the input
+            // Create a vertical control stack that can stretch to the same height
+            // as the neighboring child field in managed-field layouts.
             var radioName = "person-org-choice-" + num;
             var personRadioId = "person-choice-" + num;
             var orgRadioId = "org-choice-" + num;
+
             var radioHtml = `
-                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;">
-                  <div class="radio-inline">
-                    <label><input type="radio" name="..." style="font-weight: 100;"> Person</label>
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                  <div class="radio-inline" style="margin-left: 0; margin-right: 0;">
+                    <label for="${personRadioId}" style="font-weight: 100; margin-bottom: 0;">
+                      <input type="radio" id="${personRadioId}" name="${radioName}" value="person" checked> Person
+                    </label>
                   </div>
-                  <div class="radio-inline">
-                    <label><input type="radio" name="..." style="font-weight: 100;"> Organization</label>
+                  <div class="radio-inline" style="margin-left: 0; margin-right: 0;">
+                    <label for="${orgRadioId}" style="font-weight: 100; margin-bottom: 0;">
+                      <input type="radio" id="${orgRadioId}" name="${radioName}" value="organization"> Organization
+                    </label>
                   </div>
-                </div>`;
+               </div>`;
+
             container.append(radioHtml);
             container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+            // Make the first two direct child divs in the managed-field parent the same height.
+            // This helps the combined radio/select area line up with the adjacent child field.
+            setTimeout(function() {
+                var $parentDiv = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+                var $directDivs = $parentDiv.children('div');
+                if ($directDivs.length >= 2) {
+                    var firstHeight = $directDivs.eq(0).outerHeight();
+                    var secondHeight = $directDivs.eq(1).outerHeight();
+                    var maxHeight = Math.max(firstHeight, secondHeight) + 1;
+
+                    $directDivs.eq(0).css('height', maxHeight + 'px');
+                    $directDivs.eq(1).css('height', maxHeight + 'px');
+                }
+            }, 0);
         } else if (protocol === 'ror') {
             $(personOrgInput).after('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
         }
@@ -112,13 +133,136 @@ function updateAffiliationInputs() {
 
         if (protocol === 'orcid-or-ror') {
             setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
-            $('input[name="' + radioName + '"]').on('change', function() {
+            $('input[name="' + radioName + '"]').on('change', function () {
                 setupSelect2($(this).val(), $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
             });
         } else if (protocol === 'orcid') {
             setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
         } else if (protocol === 'ror') {
             setupSelect2('organization', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+        }
+
+
+        // Pre-populate the select if the hidden input already has a value.
+        // This mirrors the behavior in the original ORCID and ROR scripts.
+        var existingValue = ($(personOrgInput).val() || '').trim();
+        //Managed case for orcids - if there are managed fields and no value for the main (id) field, get the value from the personName field
+        if (!existingValue && protocol.startsWith('orcid') && Object.keys(managedFields).length > 0) {
+            existingValue = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val();
+        }
+
+        function populateExistingPerson(id, selectElement, baseUrl) {
+            $.ajax({
+                type: "GET",
+                url: baseUrl.replace("https://", "https://pub.") + "v3.0/" + id + "/person",
+                dataType: 'json',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (person) {
+                    var name = ((person.name && person.name['family-name']) ? person.name['family-name'].value + ", " : "") +
+                        (person.name && person.name['given-names'] ? person.name['given-names'].value : id);
+                    var text = name + "; " + id;
+                    if (person.emails && person.emails.email && person.emails.email.length > 0) {
+                        text = text + "; " + person.emails.email[0].email;
+                    }
+                    var newOption = new Option(text, id, true, true);
+                    newOption.title = 'Open in new tab to view ORCID page';
+                    selectElement.append(newOption).trigger('change');
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    if (jqXHR.status != 404) {
+                        console.error("The following error occurred: " + textStatus, errorThrown);
+                    }
+                }
+            });
+        }
+
+        function populateExistingOrganization(id, selectElement, baseUrl) {
+            var rorRetrievalUrl = (rorBaseUrl.startsWith("https://sandbox.ror.org") ? "https://api.sandbox.ror.org/organizations/" : "https://api.ror.org/organizations/") + id;
+
+            $.ajax({
+                type: "GET",
+                url: rorRetrievalUrl,
+                dataType: 'json',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (ror) {
+                    const displayName = ror.names.find(n =>
+                        n.types && (n.types.includes("ror_display") || n.types.includes("label"))
+                    )?.value || ror.id;
+
+                    const acronyms = ror.names
+                        .filter(n => n.types && n.types.includes("acronym"))
+                        .map(n => n.value);
+
+                    var text = displayName + ", " + ror.id.replace(baseUrl, '') + ', ' + acronyms.join(',');
+                    var newOption = new Option(text, id, true, true);
+                    selectElement.append(newOption).trigger('change');
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    if (jqXHR.status != 404) {
+                        console.error("The following error occurred: " + textStatus, errorThrown);
+                    }
+                }
+            });
+        }
+
+        if (existingValue) {
+            if (protocol === 'orcid-or-ror') {
+                var isOrcid = existingValue.startsWith(orcidBaseUrl);
+
+                var isRor = existingValue.startsWith(rorBaseUrl);
+
+                if (isOrcid) {
+                    $('input[name="' + radioName + '"][value="person"]').prop('checked', true);
+                    setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+                    var orcidId = existingValue.replace(orcidBaseUrl, '');
+                    populateExistingPerson(orcidId, $select2, orcidBaseUrl);
+                } else if (isRor) {
+                    setupSelect2('organization', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+                    var rorId = existingValue.replace(rorBaseUrl, '');
+                    populateExistingOrganization(rorId, $select2, rorBaseUrl);
+                } else {
+                    // Plain text
+                    $('input[name="' + radioName + '"][value="person"]').prop('checked', false);
+                    $('input[name="' + radioName + '"][value="organization"]').prop('checked', false);
+                    if (Object.keys(managedFields).length > 0) {
+                        //Handle managed fields
+                        if (existingValue.length > 0) {
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+                            $(personOrgInput).parent().show();
+                        }
+                    }
+
+                    var newOption = new Option(existingValue, existingValue, true, true);
+                    $select2.append(newOption).trigger('change');
+                }
+            } else if (protocol === 'orcid') {
+                if (existingValue.startsWith(orcidBaseUrl)) {
+                    var orcidIdOnly = existingValue.replace(orcidBaseUrl, '');
+                    populateExistingPerson(orcidIdOnly, $select2, orcidBaseUrl);
+                } else {
+                    if (Object.keys(managedFields).length > 0) {
+                        //Handle managed fields
+                        if (existingValue.length > 0) {
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+                            $(personOrgInput).parent().show();
+                        }
+                    }
+                    var newOption = new Option(existingValue, existingValue, true, true);
+                    $select2.append(newOption).trigger('change');
+                }
+            } else if (protocol === 'ror') {
+                if (existingValue.startsWith(rorBaseUrl)) {
+                    var rorIdOnly = existingValue.replace(rorBaseUrl, '');
+                    populateExistingOrganization(rorIdOnly, $select2, rorBaseUrl);
+                } else {
+                    var newOption = new Option(existingValue, existingValue, true, true);
+                    $select2.append(newOption).trigger('change');
+                }
+            }
         }
     });
 }
