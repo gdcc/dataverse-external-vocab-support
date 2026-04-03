@@ -1,3 +1,9 @@
+if (typeof globalThis.Cite === 'undefined') {
+    if (typeof require === 'function') {
+        globalThis.Cite = require('citation-js');
+    }
+}
+
 window.publications = window.publications || {};
 window.publications.config = window.publications.config || {
     publicationSelector: "span[data-cvoc-protocol='publication']",
@@ -20,7 +26,7 @@ $(document).ready(function() {
             window.publications.state.cslStylePromise = fetch('https://raw.githubusercontent.com/citation-style-language/styles/master/' + selectedFormat + '.csl')
                 .then(r => r.text())
                 .then(styleXml => {
-                    Cite.plugins.config.get('@csl').templates.add(selectedFormat, styleXml);
+                    globalThis.Cite.plugins.config.get('@csl').templates.add(selectedFormat, styleXml);
                     return styleXml;
                 });
         }
@@ -927,7 +933,7 @@ function formatCitation(workSummary, workDetails, identifierType, identifier) {
 
 function formatCitationText(identifier) {
     return window.publications.state.cslStylePromise
-        .then(() => Cite.async(identifier))
+        .then(() => globalThis.Cite.async(identifier))
         .then(citation => {
             const formatted = citation.format('bibliography', {
                 format: 'text',
