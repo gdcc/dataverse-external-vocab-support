@@ -37,10 +37,6 @@ function getPidUrl(identifierType, identifier, explicitUrl) {
     var normalizedIdentifierType = (identifierType || '').toLowerCase();
     var trimmedIdentifier = (identifier || '').trim();
 
-    if (explicitUrl) {
-        return explicitUrl;
-    }
-
     if (!trimmedIdentifier) {
         return '';
     }
@@ -51,6 +47,14 @@ function getPidUrl(identifierType, identifier, explicitUrl) {
 
     if (normalizedIdentifierType === 'uri' || normalizedIdentifierType === 'url') {
         return trimmedIdentifier;
+    }
+
+    if(identifier.startsWith('http')) {
+        return identifier;
+    }
+
+    if (explicitUrl) {
+        return explicitUrl;
     }
 
     return '';
@@ -99,47 +103,39 @@ function expandPublications() {
                 citationText = identifier;
             }
 
-            var citationContent = $('<div/>').css({
-                'margin-left': '2em',
-                'margin-right': '2em',
-                'background-color': '#e3f2fd',
-                'padding': '0.75em',
-                'border-radius': '0.5em',
-                'display': 'block'
-            }).text(citationText);
-
-            if (pidUrl) {
-                citationContent.append(
-                    $('<a/>')
-                        .attr('href', pidUrl)
-                        .attr('target', '_blank')
-                        .attr('rel', 'noopener noreferrer')
-                        .text(' [PID]')
-                );
-            }
-
-            if (urlValue && normalizeUrlForComparison(urlValue) !== normalizeUrlForComparison(pidUrl)) {
-                citationContent.append(
-                    $('<a/>')
-                        .attr('href', urlValue)
-                        .attr('target', '_blank')
-                        .attr('rel', 'noopener noreferrer')
-                        .text(' [URL]')
-                );
-            }
+            var citationContent = buildPublicationCitationBlock(citationText, pidUrl, urlValue);
 
             var displayElement = $('<div/>');
 
             if (relationType) {
-                relationTypeElement.parent().contents().filter(function() {
-                    return this.nodeType === 3;
-                }).wrap('<span style="display:none;"></span>');
+                function clearTextNodesUntilBr(startNode, direction) {
+                    var node = startNode;
+                    while (node) {
+                        if (node.nodeType === 1 && node.tagName === 'BR') {
+                            break;
+                        }
 
-                displayElement.append($('<div/>').css({
-                    'font-style': 'italic',
-                    'margin-bottom': '0.5em'
-                }).text(relationType));
+                        if (node.nodeType === 3 && node.textContent.trim() !== '') {
+                            var hiddenSpan = document.createElement('span');
+                            hiddenSpan.style.display = 'none';
+                            hiddenSpan.textContent = node.textContent;
+                            node.parentNode.replaceChild(hiddenSpan, node);
+                        }
 
+                        node = direction === 'previous' ? node.previousSibling : node.nextSibling;
+                    }
+                }
+
+                if (relationTypeElement.length > 0) {
+                clearTextNodesUntilBr(relationTypeElement[0].previousSibling, 'previous');
+                 // clearTextNodesUntilBr(relationTypeElement[0].nextSibling, 'next');
+            }
+                displayElement.append(
+                    $('<div/>').css({
+                        'font-style': 'italic',
+                        'margin-bottom': '0.5em'
+                    }).text(relationType)
+                );
                 displayElement.append($('<div/>').css('margin-left', '2em').append(citationContent));
             } else {
                 displayElement.append(citationContent);
@@ -149,6 +145,117 @@ function expandPublications() {
             displayElement.insertBefore($(publicationIdentifierElement));
         }
     });
+
+    formatFirstPublicationRow();
+}
+
+// --------------------------------------------------------------------------
+
+function formatFirstPublicationRow() {
+    var row = $('#publication');
+    if (row.length === 0 || row.hasClass('expanded')) {
+        return;
+    }
+
+    row.addClass('expanded');
+
+    var cell = row.find('td').first();
+    var rawHtml = cell.html() || '';
+
+    // Capture relation type from the visible text prefix, if present
+    var relationType = '';
+    var relationMatch = rawHtml.match(/^\s*([^:]+):\s*(.*)$/);
+    var citationHtml = rawHtml;
+    if (relationMatch) {
+        relationType = relationMatch[1].trim();
+        citationHtml = relationMatch[2].trim();
+    }
+
+    var temp = $('<div/>').html(citationHtml);
+
+    var pidUrl = '';
+    var otherUrl = '';
+    var pidTypeNames = ['doi', 'issn', 'eissn', 'isbn', 'uri', 'url', 'pmid', 'handle', 'ark', 'arxiv', 'bibcode', 'cstr', 'ean13', 'lissn', 'lsid', 'purl', 'upc', 'urn'];
+
+    temp.find('a').each(function() {
+        var href = ($(this).attr('href') || '').trim();
+        if (!href || !/^https?:\/\//i.test(href)) {
+            return;
+        }
+
+        var isPidUrl = pidTypeNames.some(function(pidType) {
+            return href.toLowerCase().indexOf(pidType) >= 0;
+        });
+
+        if (isPidUrl && !pidUrl) {
+            pidUrl = href.replace(/[.,;]+$/, '');
+        } else if (!isPidUrl && !otherUrl) {
+            otherUrl = href.replace(/[.,;]+$/, '');
+        }
+    });
+
+    // Remove the embedded link block, but keep the surrounding citation text
+    citationHtml = citationHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '');
+
+    var citationText = $('<div/>').html(citationHtml).text()
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+    var displayElement = $('<div/>');
+
+    if (relationType) {
+        displayElement.append(
+            $('<div/>').css({
+                'font-style': 'italic',
+                'margin-bottom': '0.5em'
+            }).text(relationType)
+        );
+    }
+
+    displayElement.append(
+        $('<div/>').css('margin-left', '2em').append(
+            buildPublicationCitationBlock(citationText, pidUrl, otherUrl)
+        )
+    );
+
+    cell.empty().append(displayElement);
+}
+
+function buildPublicationCitationBlock(citationText, pidUrl, urlValue) {
+    var citationContent = $('<div/>').css({
+        'margin-left': '2em',
+        'margin-right': '2em',
+        'background-color': '#e3f2fd',
+        'padding': '0.75em',
+        'border-radius': '0.5em',
+        'display': 'block'
+    }).text(citationText);
+
+    if (pidUrl) {
+        citationContent
+            .append(' ')
+            .append(
+                $('<a/>')
+                    .attr('href', pidUrl)
+                    .attr('target', '_blank')
+                    .attr('rel', 'noopener noreferrer')
+                    .text('[PID]')
+            );
+    }
+
+    if (urlValue && normalizeUrlForComparison(urlValue) !== normalizeUrlForComparison(pidUrl)) {
+        citationContent
+            .append(' ')
+            .append(
+                $('<a/>')
+                    .attr('href', urlValue)
+                    .attr('target', '_blank')
+                    .attr('rel', 'noopener noreferrer')
+                    .text('[URL]')
+            );
+    }
+
+    return citationContent;
 }
 
 // --------------------------------------------------------------------------
