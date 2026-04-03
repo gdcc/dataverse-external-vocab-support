@@ -132,14 +132,14 @@ function updateAffiliationInputs() {
         var $select2 = $("#" + selectId);
 
         if (protocol === 'orcid-or-ror') {
-            setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+            setupSelect2('person', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
             $('input[name="' + radioName + '"]').on('change', function () {
-                setupSelect2($(this).val(), $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+                setupSelect2($(this).val(), $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
             });
         } else if (protocol === 'orcid') {
-            setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+            setupSelect2('person', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
         } else if (protocol === 'ror') {
-            setupSelect2('organization', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+            setupSelect2('organization', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
         }
 
 
@@ -267,7 +267,7 @@ function updateAffiliationInputs() {
     });
 }
 
-function setupSelect2(type, $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl) {
+function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl) {
     if ($select2.data('select2')) {
         $select2.select2('destroy');
         $select2.empty();
@@ -284,16 +284,64 @@ function setupSelect2(type, $select2, personOrgInput, orcidSearchUrl, rorSearchU
             : rorBaseUrl + data.id;
         $(personOrgInput).val(url).trigger('change');
 
-        if (type === 'person') {
-            // ORCID behavior should mirror people.js
-            if (data.id != data.text) {
-                $("input[data-person='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
-            } else {
-                $("input[data-person='" + $(personOrgInput).attr('data-person-org') + "']").val(data.id).attr('value', data.id);
-            }
+        var hasPlainText = data.text === data.id;
+        var isOrcid = (type === 'person');
+        var isRor = (type === 'organization');
+
+        if (hasPlainText) {
+            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(data.id).attr('value', data.id);
+        } else if (isOrcid) {
+            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
             storeValue(orcidPrefix, data.id, data.text.split(";")[0]);
-        } else {
+        } else if (isRor) {
+            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(rorBaseUrl + data.id).attr('value', rorBaseUrl + data.id);
             storeValue(rorPrefix, data.id, data.text.split(' | ')[0]);
+        }
+
+        if (Object.keys(managedFields).length > 0) {
+            var parentField = $(personOrgInput).attr('data-cvoc-parent');
+            var parent = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+
+
+            var managedFieldKeys = Object.keys(managedFields);
+
+            for (var i = 0; i < managedFieldKeys.length; i++) {
+                var key = managedFieldKeys[i];
+                var selector = "[data-cvoc-managed-field='" + managedFields[key] + "']";
+
+                if (key === 'personName') {
+                    var displayName = '';
+                    if (type === 'person') {
+                        displayName = data.text.split(";", 1)[0];
+                    } else {
+                        displayName = data.text.split(" | ", 1)[0];
+                    }
+                    $(parent).find("input" + selector).val(displayName).attr('value', displayName);
+                } else if (key === 'idType') {
+                    var $selectField = $(parent).find(selector).find("select");
+                    var desiredValue = '';
+                    if (isOrcid) {
+                        var orcidVal = $selectField.find('option:contains("ORCID")').val();
+                        desiredValue = orcidVal || '';
+                    } else if (type === 'organization') {
+                        var rorVal = $selectField.find('option:contains("ROR")').val();
+                        desiredValue = rorVal || '';
+                    }
+                    $selectField.val(desiredValue).attr('value', desiredValue);
+                } else {
+                    $(parent).find(selector).val('').attr('value', '');
+                }
+            }
+
+            if (hasPlainText) {
+                let idField = $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']");
+                idField.val('');
+                $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").parent().show();
+                $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+            } else {
+                $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").parent().hide();
+                $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
+            }
         }
     }).on('select2:unselect', function(e) {
         $(personOrgInput).val("").trigger('change');
