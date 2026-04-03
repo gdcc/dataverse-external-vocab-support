@@ -320,16 +320,17 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                 } else if (key === 'idType') {
                     var $selectField = $(parent).find(selector).find("select");
                     var desiredValue = '';
-                    if (isOrcid) {
+
+                    if (isOrcid && !hasPlainText) {
                         var orcidVal = $selectField.find('option:contains("ORCID")').val();
                         desiredValue = orcidVal || '';
-                    } else if (type === 'organization') {
+                    } else if (type === 'organization' && !hasPlainText) {
                         var rorVal = $selectField.find('option:contains("ROR")').val();
                         desiredValue = rorVal || '';
                     }
                     $selectField.val(desiredValue).attr('value', desiredValue);
                 } else {
-                    $(parent).find(selector).val('').attr('value', '');
+                    $(parent).find(selector).val('').trigger('change').attr('value', '');
                 }
             }
 
