@@ -20,4 +20,4 @@ The metadatablock contains one field allowing Dataverse to store the URL of an a
 - To configure the associated external vocabulary script, follow the general instructions for configuring external vocabulary scripts provided in the main [README.md](../../README.md) of this repository.
   Use the [lc-cvoc-conf.json](./lc-cvoc-conf.json) file for production environments or [lc-sandbox-cvoc.json](./lc-sandbox-cvoc-conf.json) for testing environments.
   Edit the "cvoc-url" and "header" entries to reference your local Dataverse installation rather than "https://demo.dataverse.org" in the example files.
-  Add the same API key you configure for the (dataverse.localcontexts.api-key)[https://guides.dataverse.org/en/latest/installation/config.html#dataverse-localcontexts-api-key] as the "X-Api-Key" in the "headers" entry.
+  Add the same API key you configure for the [dataverse.localcontexts.api-key](https://guides.dataverse.org/en/latest/installation/config.html#dataverse-localcontexts-api-key) as the "X-Api-Key" in the "headers" entry.
