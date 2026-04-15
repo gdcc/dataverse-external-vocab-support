@@ -4,7 +4,8 @@
     "term-uri-field": "LCProjectUrl",
     "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/packages/local_contexts/local_contexts.js", "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
     "protocol": "localcontexts",
-    "retrieval-uri": "https://sandbox.localcontextshub.org/api/v1/projects/{0}",
+    "headers": {"X-Api-Key": "your_localcontexts_api_key", "Origin": "https://demo.dataverse.org"},
+    "retrieval-uri": "https://sandbox.localcontextshub.org/api/v2/projects/{0}/",
     "allow-free-text": false,
     "cvoc-url": "https://demo.dataverse.org/",
     "prefix":"https://sandbox.localcontextshub.org/projects/",
@@ -17,13 +18,33 @@
     },
     "retrieval-filtering": {
       "@context": {
-        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
+      	"termName": "https://schema.org/name",
+        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+        "notices": {"@id":"https://localcontexts.org/notices", "@type": "@json"},
+        "tk_labels": {"@id":"https://localcontexts.org/tk_labels", "@type": "@json"},
+        "bc_labels": {"@id":"https://localcontexts.org/bc_labels", "@type": "@json"}
+      },
+      "termName": {
+        "pattern": "{0}",
+        "params": ["/unique_id"]
       },
       "@id": {
         "pattern": "{0}",
         "params": [
           "@id"
         ]
+      },
+      "notices": {
+     	  "pattern": "{0}",
+     	  "params": ["/notice"]
+      },
+      "tk_labels": {
+     	 "pattern": "{0}",
+        "params": ["/tk_labels"]
+      },
+      "bc_labels": {
+     	 "pattern": "{0}",
+        "params": ["/bc_labels"]
       }
     }
   }
