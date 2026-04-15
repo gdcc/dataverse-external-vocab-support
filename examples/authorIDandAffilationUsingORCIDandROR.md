@@ -1,8 +1,8 @@
 ## Dataverse Author Field Example
 
-This example manages the author field (the name, idType, Identifier, and affiliation child fields), providing (ORCID)[https://orcid/org] and (ROR)[https://ror.org] lookup while also allowing free text entries (for entities that don't have these identifiers) and manual entry of alternate identifiers for authors.
+This example manages the author field (the name, idType, Identifier, and affiliation child fields), providing [ORCID](https://orcid/org) and [ROR](https://ror.org) lookup while also allowing free text entries (for entities that don't have these identifiers) and manual entry of alternate identifiers for authors.
 
-This example requires the changes that were added to Dataverse in (PR #10712)[https://github.com/IQSS/dataverse/pull/10712] as part of v6.4.
+This example requires the changes that were added to Dataverse in [PR #10712](https://github.com/IQSS/dataverse/pull/10712) as part of v6.4.
 
 This example requires several files:
 

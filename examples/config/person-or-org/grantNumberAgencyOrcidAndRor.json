@@ -11,7 +11,7 @@
     "managed-fields": {},
     "languages": "en",
     "vocabs": {
-      "rors": {
+      "ror": {
         "uriSpace": "https://ror.org/",
         "retrieval-uri": "https://api.ror.org/v2/organizations/{0}",
         "prefix": "https://ror.org/",

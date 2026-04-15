@@ -1,7 +1,7 @@
 # Person or Org support for Dataverse
 
-This dreictory contains configurations that allow support lookup of people (via ORCID), or organizations (via ROR), or both (with user selecting "Person" or "Organization" when adding an entry).
-The configurations support multiple fields. The choice or ORCID, ROR, or both is made by setting the protocol (orcid, ror, orcid-or-ror) in the configuration JSON. Any of these choices should work for any of the fields for which a configuration is supplied.
+This directory contains configurations that allow support lookup of people (via ORCID), or organizations (via ROR), or both (with user selecting "Person" or "Organization" when adding an entry).
+The configurations support multiple fields. The choice of ORCID, ROR, or both is made by setting the protocol (orcid, ror, orcid-or-ror) in the configuration JSON. Any of these choices should work for any of the fields for which a configuration is supplied.
 
 ## Dataverse Compatibility note:
 
@@ -35,7 +35,7 @@ Production:
 - The required files are:
 
   - examples/config/person-or-org/authorsOrcidOrRorAndRorAffiliation.json : the configuration file that needs to be uploaded in the :CVocConf setting
-  - scripts/people-or-org.js : the Javascript file that provides ORCID and ROR support,
+  - scripts/person-or-org.js : the Javascript file that provides ORCID and ROR support,
   - scripts/cvocutil.js : a Javascript file with common methods used by both scripts,
 
   (These scripts also use jquery and select2 which are already included in Dataverse).

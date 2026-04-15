@@ -7,14 +7,14 @@ var rorBaseUrl = "https://ror.org/";
 var rorMaxLength = 31;
 
 $(document).ready(function() {
-    expandAffiliations();
-    updateAffiliationInputs();
+    expandPersonOrOrgDisplays();
+    updatePersonOrOrgInputs();
 });
 
 /**
  * Expand existing identifiers (ORCID or ROR) into a human-readable format.
  */
-function expandAffiliations() {
+function expandPersonOrOrgDisplays() {
     $(personOrgSelector).each(function() {
         var element = this;
         if ($(element).hasClass('expanded')) {
@@ -23,12 +23,15 @@ function expandAffiliations() {
         $(element).addClass('expanded');
 
         var id = element.textContent.trim();
+        // Needed to pick up use of sandbox.orcid.org
         var orcidBaseUrl = $(element).attr('data-cvoc-service-url') || "https://orcid.org/";
+        // ROR doesn't have a sandbox
+        var currentRorBaseUrl = rorBaseUrl;
 
         if (id.startsWith(orcidBaseUrl)) {
             id = id.substring(orcidBaseUrl.length);
-        } else if (id.startsWith(rorBaseUrl)) {
-            id = id.substring(rorBaseUrl.length);
+        } else if (id.startsWith(currentRorBaseUrl)) {
+            id = id.substring(currentRorBaseUrl.length);
         }
 
         if (id.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/)) {
@@ -47,7 +50,7 @@ function expandAffiliations() {
 /**
  * Set up input fields to allow selecting either a person (ORCID) or an organization (ROR).
  */
-function updateAffiliationInputs() {
+function updatePersonOrOrgInputs() {
     $(personOrgInputSelector).each(function () {
         var personOrgInput = this;
         if (personOrgInput.hasAttribute('data-person-org')) {
@@ -58,7 +61,7 @@ function updateAffiliationInputs() {
         $(personOrgInput).attr('data-person-org', num);
 
         var orcidBaseUrl = $(personOrgInput).attr('data-cvoc-service-url') || "https://orcid.org/";
-        var orcidSearchUrl = (orcidBaseUrl.startsWith("https://sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/expanded-search";
+        var orcidSearchUrl = (orcidBaseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/expanded-search";
         var rorSearchUrl = "https://api.ror.org/organizations";
         var protocol = $(personOrgInput).data('cvoc-protocol');
 
@@ -152,9 +155,10 @@ function updateAffiliationInputs() {
         }
 
         function populateExistingPerson(id, selectElement, baseUrl) {
+            var personRetrievalUrl = (baseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
             $.ajax({
                 type: "GET",
-                url: baseUrl.replace("https://", "https://pub.") + "v3.0/" + id + "/person",
+                url: personRetrievalUrl,
                 dataType: 'json',
                 headers: {
                     'Accept': 'application/json'
@@ -217,11 +221,11 @@ function updateAffiliationInputs() {
 
                 if (isOrcid) {
                     $('input[name="' + radioName + '"][value="person"]').prop('checked', true);
-                    setupSelect2('person', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+                    setupSelect2('person', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
                     var orcidId = existingValue.replace(orcidBaseUrl, '');
                     populateExistingPerson(orcidId, $select2, orcidBaseUrl);
                 } else if (isRor) {
-                    setupSelect2('organization', $select2, personOrgInput, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+                    setupSelect2('organization', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
                     var rorId = existingValue.replace(rorBaseUrl, '');
                     populateExistingOrganization(rorId, $select2, rorBaseUrl);
                 } else {
@@ -275,18 +279,18 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
 
     var config = (type === 'person')
         ? getPersonSelect2Config(personOrgInput, orcidSearchUrl, orcidBaseUrl)
-        : getOrgSelect2Config(personOrgInput, rorSearchUrl, rorBaseUrl);
+        : getOrgSelect2Config(personOrgInput, rorSearchUrl);
 
     $select2.select2(config).on('select2:select', function(e) {
         var data = e.params.data;
-        var url = (type === 'person')
-            ? orcidBaseUrl + data.id
-            : rorBaseUrl + data.id;
-        $(personOrgInput).val(url).trigger('change');
-
         var hasPlainText = data.text === data.id;
         var isOrcid = (type === 'person');
         var isRor = (type === 'organization');
+
+        var url = isOrcid
+            ? orcidBaseUrl + data.id
+            : rorBaseUrl + data.id;
+        $(personOrgInput).val(url).trigger('change');
 
         if (hasPlainText) {
             $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(data.id).attr('value', data.id);
@@ -311,7 +315,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
 
                 if (key === 'personName') {
                     var displayName = '';
-                    if (type === 'person') {
+                    if (isOrcid) {
                         displayName = data.text.split(";", 1)[0];
                     } else {
                         displayName = data.text.split(" | ", 1)[0];
@@ -324,7 +328,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                     if (isOrcid && !hasPlainText) {
                         var orcidVal = $selectField.find('option:contains("ORCID")').val();
                         desiredValue = orcidVal || '';
-                    } else if (type === 'organization' && !hasPlainText) {
+                    } else if (isRor && !hasPlainText) {
                         var rorVal = $selectField.find('option:contains("ROR")').val();
                         desiredValue = rorVal || '';
                     }
@@ -366,7 +370,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
 // --- Helper functions for ORCID/Person ---
 
 function expandPerson(element, id, orcidBaseUrl) {
-    var orcidRetrievalUrl = (orcidBaseUrl.startsWith("https://sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
+    var orcidRetrievalUrl = (orcidBaseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
     $.ajax({
         type: "GET",
         url: orcidRetrievalUrl,
@@ -374,8 +378,9 @@ function expandPerson(element, id, orcidBaseUrl) {
         headers: { 'Accept': 'application/json' },
         success: function(person) {
             //If found, construct the HTML for display
-
-            var name = ((person.name['family-name']) ? person.name['family-name'].value + ", " : "") + person.name['given-names'].value;
+            var familyName = (person.name && person.name['family-name']) ? person.name['family-name'].value : "";
+            var givenNames = (person.name && person.name['given-names']) ? person.name['given-names'].value : "";
+            var name = (familyName ? familyName + ", " : "") + (givenNames || id);
             var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
             $(element).hide();
             let sibs = $(element).siblings("[data-cvoc-index='" + $(element).attr('data-cvoc-index') + "']");
@@ -435,11 +440,12 @@ function expandOrganization(element, id, rorBaseUrl) {
 function showAsPlainText(element) {
     var text = element.textContent.trim();
     var displayInfo = getRorDisplayContext(element);
+    var orcidBaseUrl = $(element).attr('data-cvoc-service-url') || "https://orcid.org/";
 
-    if (text.startsWith("https://orcid.org/")) {
-        text = text.substring(18);
-    } else if (text.startsWith("https://ror.org/")) {
-        text = text.substring(16);
+    if (text.startsWith(orcidBaseUrl)) {
+        text = text.substring(orcidBaseUrl.length);
+    } else if (text.startsWith(rorBaseUrl)) {
+        text = text.substring(rorBaseUrl.length);
     }
 
     if (displayInfo.truncate && text.length >= rorMaxLength) {
@@ -517,8 +523,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
             }
 
             // markMatch2 bolds the search term if/where it appears in the result
-            var $result = markMatch2(item.text, term);
-            return $result;
+            return markMatch2(item.text, term);
         },
         templateSelection: function(item) {
             // For a selection, add HTML to make the ORCID a link
@@ -584,7 +589,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
     };
 }
 
-function getOrgSelect2Config(inputElement, searchUrl, baseUrl) {
+function getOrgSelect2Config(inputElement, searchUrl) {
     return {
         theme: "classic",
         tags: $(inputElement).data("cvoc-allowfreetext"),
