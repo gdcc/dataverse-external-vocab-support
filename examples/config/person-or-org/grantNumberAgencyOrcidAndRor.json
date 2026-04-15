@@ -3,10 +3,10 @@
     "field-name": "grantNumber",
     "term-uri-field": "grantNumberAgency",
     "js-url": [
-      "https://gdcc.github.io/dataverse-external-vocab-support/scripts/orcidandror.js",
+      "https://gdcc.github.io/dataverse-external-vocab-support/scripts/person-or-org.js",
       "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"
     ],
-    "protocol": "orcid-and-ror",
+    "protocol": "orcid-or-ror",
     "allow-free-text": true,
     "managed-fields": {},
     "languages": "en",

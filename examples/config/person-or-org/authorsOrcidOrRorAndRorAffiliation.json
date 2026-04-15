@@ -1,0 +1,141 @@
+[
+  {
+    "field-name": "authorAffiliation",
+    "term-uri-field": "authorAffiliation",
+    "js-url": [
+      "/cvoc/js/person-or-org.js",
+      "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"
+    ],
+    "protocol": "ror",
+    "retrieval-uri": "https://api.ror.org/organizations/{0}",
+    "allow-free-text": true,
+    "prefix": "https://ror.org/",
+    "managed-fields": {},
+    "languages": "en",
+    "vocabs": {
+      "rors": {
+        "uriSpace": "https://ror.org/"
+      }
+    },
+    "retrieval-filtering": {
+      "@context": {
+        "termName": "https://schema.org/name",
+        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+        "lang": "@language",
+        "content": "@value"
+      },
+      "scheme": {
+        "pattern": "http://www.grid.ac/ontology/"
+      },
+      "termName": {
+        "pattern": "{0}",
+        "params": [
+          "/names/types=ror_display/value"
+        ]
+      },
+      "@type": {
+        "pattern": "https://schema.org/Organization"
+      }
+    }
+  },
+  {
+    "field-name": "author",
+    "term-uri-field": "authorIdentifier",
+    "cvoc-url": "https://orcid.org/",
+    "js-url": [
+      "/cvoc/js/person-or-org.js",
+      "https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"
+    ],
+    "protocol": "orcid-or-ror",
+    "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
+    "allow-free-text": true,
+    "prefix": "https://orcid.org/",
+    "managed-fields": {
+      "personName": "authorName",
+      "idType": "authorIdentifierScheme"
+    },
+    "languages": "en",
+    "vocabs": {
+      "ror": {
+        "uriSpace": "https://ror.org/",
+        "retrieval-uri": "https://api.ror.org/v2/organizations/{0}",
+        "prefix": "https://ror.org/",
+        "retrieval-filtering": {
+          "@context": {
+            "termName": "https://schema.org/name",
+            "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+            "lang": "@language",
+            "content": "@value"
+          },
+          "scheme": {
+            "pattern": "http://www.grid.ac/ontology/"
+          },
+          "termName": {
+            "pattern": "{0}",
+            "params": [
+              "/names/types=ror_display/value"
+            ]
+          },
+          "@type": {
+            "pattern": "https://schema.org/Organization"
+          }
+        }
+      },
+      "orcid": {
+        "uriSpace": "https://orcid.org/",
+        "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
+        "prefix": "https://orcid.org/",
+        "retrieval-filtering": {
+          "@context": {
+            "personName": "https://schema.org/name",
+            "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
+          },
+          "personName": {
+            "pattern": "{0}, {1}",
+            "params": [
+              "/name/family-name/value",
+              "/name/given-names/value"
+            ]
+          },
+          "@id": {
+            "pattern": "{0}",
+            "params": [
+              "@id"
+            ]
+          },
+          "scheme": {
+            "pattern": "ORCID"
+          },
+          "@type": {
+            "pattern": "https://schema.org/Person"
+          }
+        }
+      }
+    },
+    "retrieval-filtering": {
+      "@context": {
+        "personName": "https://schema.org/name",
+        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme"
+      },
+      "personName": {
+        "pattern": "{0}, {1}",
+        "params": [
+          "/name/family-name/value",
+          "/name/given-names/value"
+        ]
+      },
+      "@id": {
+        "pattern": "{0}",
+        "params": [
+          "@id"
+        ]
+      },
+      "scheme": {
+        "pattern": "ORCID"
+      },
+      "@type": {
+        "pattern": "https://schema.org/Person"
+      }
+    }
+  }
+]
