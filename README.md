@@ -46,6 +46,11 @@ The following scripts/config files are being used in production (or testing) at 
 
 * **Integration with [https://localcontexts.org](https://localcontexts.org)** (on [https://demo.dataverse.org](https://demo.dataverse.org) using the LocalContexts Sandbox) - see [https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts](https://github.com/gdcc/dataverse-external-vocab-support/tree/main/packages/local_contexts)
 
+New and (almost) in production is
+
+* **Geonames for names of geographical locations** - see [examples/geonames.md](examples/geonames.md)
+
+
 ## Deployment
 
 In general there are four steps to add interaction with a vocabulary or PID service to Dataverse:
