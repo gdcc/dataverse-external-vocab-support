@@ -675,6 +675,11 @@ function fetchOrcidWorks(orcidIds, selectId, preselectedPid) {
 
                 result.works.forEach(function(workGroup) {
                     workGroup['work-summary'].forEach(function(workSummary) {
+                        // Filter out works of type Dataset
+                        if (workSummary.type && workSummary.type.toLowerCase() === 'data-set') {
+                            return;
+                        }
+
                         if (workSummary['external-ids'] &&
                             workSummary['external-ids']['external-id']) {
 
