@@ -6,7 +6,7 @@ var rorBaseUrl = "https://ror.org/";
 //Max chars that displays well for a child field
 var rorMaxLength = 31;
 
-$(document).ready(function() {
+$(document).ready(function () {
     expandPersonOrOrgDisplays();
     updatePersonOrOrgInputs();
 });
@@ -15,7 +15,7 @@ $(document).ready(function() {
  * Expand existing identifiers (ORCID or ROR) into a human-readable format.
  */
 function expandPersonOrOrgDisplays() {
-    $(personOrgSelector).each(function() {
+    $(personOrgSelector).each(function () {
         var element = this;
         if ($(element).hasClass('expanded')) {
             return;
@@ -116,7 +116,7 @@ function updatePersonOrOrgInputs() {
             container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
             // Make the first two direct child divs in the managed-field parent the same height.
             // This helps the combined radio/select area line up with the adjacent child field.
-            setTimeout(function() {
+            setTimeout(function () {
                 var $parentDiv = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
                 var $directDivs = $parentDiv.children('div');
                 if ($directDivs.length >= 2) {
@@ -281,7 +281,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         ? getPersonSelect2Config(personOrgInput, orcidSearchUrl, orcidBaseUrl)
         : getOrgSelect2Config(personOrgInput, rorSearchUrl);
 
-    $select2.select2(config).on('select2:select', function(e) {
+    $select2.select2(config).on('select2:select', function (e) {
         var data = e.params.data;
         var hasPlainText = data.text === data.id;
         var isOrcid = (type === 'person');
@@ -348,18 +348,18 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                 $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
             }
         }
-    }).on('select2:unselect', function(e) {
+    }).on('select2:unselect', function (e) {
         $(personOrgInput).val("").trigger('change');
     });
 
     if (type === 'person') {
-        $select2.on('select2:open', function(e) {
+        $select2.on('select2:open', function (e) {
             $(".select2-search__field").focus();
             $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
             document.getElementById($select2.attr('id') + "_input").select();
         });
     } else if (type === 'organization') {
-        $select2.on('select2:open', function(e) {
+        $select2.on('select2:open', function (e) {
             $(".select2-search__field").focus();
             $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
             document.getElementById($select2.attr('id') + "_input").select();
@@ -375,25 +375,83 @@ function expandPerson(element, id, orcidBaseUrl) {
         type: "GET",
         url: orcidRetrievalUrl,
         dataType: 'json',
-        headers: { 'Accept': 'application/json' },
-        success: function(person) {
+        headers: {'Accept': 'application/json'},
+        success: function (person) {
             //If found, construct the HTML for display
             var familyName = (person.name && person.name['family-name']) ? person.name['family-name'].value : "";
             var givenNames = (person.name && person.name['given-names']) ? person.name['given-names'].value : "";
             var name = (familyName ? familyName + ", " : "") + (givenNames || id);
-            var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
-            $(element).hide();
-            let sibs = $(element).siblings("[data-cvoc-index='" + $(element).attr('data-cvoc-index') + "']");
-            if (sibs.length == 0) {
-                displayElement.prependTo($(element).parent());
-            } else {
-                displayElement.insertBefore(sibs.eq(0));
-            }
+
+            checkOrcidWorkMatch(id, orcidBaseUrl).then(function (authenticated) {
+                const scriptUrl = Array.from(document.scripts)
+                    .map(s => s.src)
+                    .find(src => src && src.includes("person-or-org.js"));
+                //Use authenticated or unauthenticated ORCID icon/syntax
+                const orcidIconUrl = scriptUrl
+                    ? scriptUrl.replace("/js/person-or-org.js", (authenticated ? "/img/ORCID-iD_icon_16x16-preview.webp" : "/img/ORCID-iD_icon_unauth_16x16-preview.webp"))
+                    : "";
+                var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html(
+                    '<img alt="ORCID logo" src="' + orcidIconUrl + '" width="16" height="16" />'));
+                if (!authenticated) {
+                    displayElement.append(' (unauthenticated) ');
+                }
+                $(element).hide();
+                let sibs = $(element).siblings("[data-cvoc-index='" + $(element).attr('data-cvoc-index') + "']");
+                if (sibs.length == 0) {
+                    displayElement.prependTo($(element).parent());
+                } else {
+                    displayElement.insertBefore(sibs.eq(0));
+                }
+            });
         },
-        error: function() {
+        error: function () {
             showAsPlainText(element);
         }
     });
+}
+
+/**
+ * Checks if the current dataset is in the works of the author's ORCID profile.
+ *
+ * @param {string} orcidId - The ORCID identifier
+ * @param {string} orcidBaseUrl - The ORCID base URL
+ * @return {Promise<boolean>} Promise that resolves to true if a match is found, false otherwise
+ */
+function checkOrcidWorkMatch(orcidId, orcidBaseUrl) {
+    var datasetPid = $('meta[name="DC.identifier"]').attr('content');
+    if (!datasetPid) {
+        return Promise.resolve(false);
+    }
+    // Normalize datasetPid for comparison (remove doi: prefix if present)
+    var normalizedDatasetPid = datasetPid.replace(/^doi:/i, '').toLowerCase();
+
+    var orcidWorksUrl = (orcidBaseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + orcidId + "/works";
+
+    return $.ajax({
+        type: "GET",
+        url: orcidWorksUrl,
+        dataType: 'json',
+        headers: {
+            'Accept': 'application/json'
+        }
+    }).then(
+        function (data) {
+            var works = data.group || [];
+            var matchFound = works.some(function (group) {
+                return (group['work-summary'] || []).some(function (summary) {
+                    var externalIds = (summary['external-ids'] && summary['external-ids']['external-id']) || [];
+                    return externalIds.some(function (extId) {
+                        var val = (extId['external-id-value'] || '').toLowerCase();
+                        return val === normalizedDatasetPid;
+                    });
+                });
+            });
+            return matchFound;
+        },
+        function () {
+            return false;
+        }
+    );
 }
 
 function expandOrganization(element, id, rorBaseUrl) {
@@ -402,8 +460,8 @@ function expandOrganization(element, id, rorBaseUrl) {
         type: "GET",
         url: rorRetrievalUrl,
         dataType: 'json',
-        headers: { 'Accept': 'application/json' },
-        success: function(org) {
+        headers: {'Accept': 'application/json'},
+        success: function (org) {
             // If found, construct the HTML for display
             // Find the display name (type: "ror_display" or "label")
             const displayName = org.names.find(n =>
@@ -428,10 +486,10 @@ function expandOrganization(element, id, rorBaseUrl) {
                 displayInfo.useParens
             ));
             if (displayInfo.useParens) {
-                $(element).attr('style','margin-left: 0.25em;');
+                $(element).attr('style', 'margin-left: 0.25em;');
             }
         },
-        error: function() {
+        error: function () {
             showAsPlainText(element);
         }
     });
@@ -454,7 +512,7 @@ function showAsPlainText(element) {
 
     if (displayInfo.useParens) {
         text = '(' + text + ')';
-        $(element).attr('style','margin-left: 0.25em;');
+        $(element).attr('style', 'margin-left: 0.25em;');
     }
 
     $(element).text(text);
@@ -478,7 +536,7 @@ function getRorDisplayContext(element) {
         truncate = true;
     }
 
-    return { useParens, truncate };
+    return {useParens, truncate};
 }
 
 function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, addParens = false) {
@@ -516,7 +574,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
         theme: "classic",
         tags: $(inputElement).data("cvoc-allowfreetext"),
         delay: 500,
-        templateResult: function(item) {
+        templateResult: function (item) {
             // No need to template the searching text
             if (item.loading) {
                 return item.text;
@@ -525,7 +583,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
             // markMatch2 bolds the search term if/where it appears in the result
             return markMatch2(item.text, term);
         },
-        templateSelection: function(item) {
+        templateSelection: function (item) {
             // For a selection, add HTML to make the ORCID a link
             var pos = item.text.search(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/);
             if (pos >= 0) {
@@ -537,7 +595,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
             return item.text;
         },
         language: {
-            searching: function(params) {
+            searching: function (params) {
                 return 'Search by name, email, or ORCID…';
             }
         },
@@ -547,7 +605,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
         ajax: {
             // Use an ajax call to ORCID to retrieve matching results
             url: searchUrl,
-            data: function(params) {
+            data: function (params) {
                 term = params.term;
                 if (!term) {
                     term = "";
@@ -562,16 +620,16 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
             headers: {
                 'Accept': 'application/json'
             },
-            processResults: function(data, page) {
+            processResults: function (data, page) {
                 let newItems = data['expanded-result'];
                 if (newItems == null) {
-                    return { results: [] };
+                    return {results: []};
                 }
                 return {
                     results: data['expanded-result']
                         // Sort to bring recently used ORCIDs to the top of the list
                         .sort((a, b) => Number(getValue(orcidPrefix, b['orcid-id']).name != null) - Number(getValue(orcidPrefix, a['orcid-id']).name != null))
-                        .map(function(x) {
+                        .map(function (x) {
                             return {
                                 text: ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
                                     "; " +
@@ -595,7 +653,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
         tags: $(inputElement).data("cvoc-allowfreetext"),
         delay: 500,
         language: {
-            searching: function(params) {
+            searching: function (params) {
                 return 'Search by name or acronym…';
             }
         },
@@ -605,7 +663,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
         ajax: {
             url: searchUrl,
             dataType: 'json',
-            data: function(params) {
+            data: function (params) {
                 term = params.term;
                 if (!term) {
                     term = "";
@@ -619,7 +677,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
             headers: {
                 'Accept': 'application/json'
             },
-            processResults: function(data, params) {
+            processResults: function (data, params) {
                 return {
                     results: (data['items'] || [])
                         .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active'))
@@ -639,10 +697,10 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                             };
                         })
                         .sort((a, b) => Number(b.acronyms.some(acr => acr === params.term)) -
-                                       Number(a.acronyms.some(acr => acr === params.term)))
+                            Number(a.acronyms.some(acr => acr === params.term)))
                         .sort((a, b) => Number(getValue(rorPrefix, b['id'].replace(rorBaseUrl, '')).name != null) -
-                                       Number(getValue(rorPrefix, a['id'].replace(rorBaseUrl, '')).name != null))
-                        .map(function(x) {
+                            Number(getValue(rorPrefix, a['id'].replace(rorBaseUrl, '')).name != null))
+                        .map(function (x) {
                             return {
                                 text: x.name + ", " + x.id.replace(rorBaseUrl, '') + ', ' + x.acronyms.join(','),
                                 id: x.id.replace(rorBaseUrl, '')
@@ -652,13 +710,13 @@ function getOrgSelect2Config(inputElement, searchUrl) {
             },
             cache: true
         },
-        templateResult: function(item) {
+        templateResult: function (item) {
             if (item.loading) {
                 return item.text;
             }
             return markMatch2(item.text, term);
         },
-        templateSelection: function(item) {
+        templateSelection: function (item) {
             var name = item.text;
             var pos = item.text.search(/, [a-z0-9]{9}/);
             if (pos >= 0) {
