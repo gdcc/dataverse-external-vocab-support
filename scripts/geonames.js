@@ -51,11 +51,10 @@ function expandPlaces() {
         if (!$(placeElement).hasClass('expanded')) {
             // Mark it as processed
             $(placeElement).addClass('expanded');
-            // extract the ID
-            var id = placeElement.textContent;
-            if (id.startsWith("https://sws.geonames.org/")) {
-                id = id.substring(25);
-            }
+            // extract and normalize the ID string
+            var id = placeElement.textContent.trim()
+                .replace(/^https:\/\/sws\.geonames\.org\//, '')
+                .replace(/\/$/, '');
             // check if id is a number  
             if (id.match(/^\d+$/) !== null) {
 
@@ -74,16 +73,10 @@ function expandPlaces() {
                         var name = getFormattedPlacename(place);
                         // Note there is no logo for geonames service so we just use the geonames site icon
                         var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', 'https://sws.geonames.org/' + id)
-                                            .attr('target', '_blank').attr('rel', 'noopener')
-                                            .html('<img alt="Geoname logo?" src="https://www.geonames.org/geonames.ico" width="16" height="16" style="margin-left:4px;margin-right:4px;" />'));
+                            .attr('target', '_blank').attr('rel', 'noopener')
+                            .html('<img alt="Geoname logo?" src="https://www.geonames.org/geonames.ico" width="16" height="16" style="margin-left:4px;margin-right:4px;" />'));
                         $(placeElement).hide();
-                        let sibs = $(placeElement).siblings("[data-cvoc-index='" + $(placeElement).attr('data-cvoc-index') + "']");
-                        if (sibs.length == 0) {
-                            displayElement.prependTo($(placeElement).parent());
-                        } else {
-                            displayElement.insertBefore(sibs.eq(0));
-                        }
-                        // NOTE: Not sure why it is not just displayElement.insertBefore($(placeElement));
+                        displayElement.insertBefore($(placeElement));
 
                         //Store the most recent IDs - could cache results, but currently using this just to prioritized recently used Geonames IDs in search results
                         storeValue(placePrefix, id, name);
@@ -170,7 +163,16 @@ function updatePlaceInputs() {
                     var numberMatch = item.text.match(/[0-9]+$/);
                     if (numberMatch) {
                         var id = numberMatch[0];
-                        return $('<span></span>').append(item.text.replace(id, "<a href='https://sws.geonames.org/" + id + "' target='_blank'>" + id + "</a>"));
+                        var textBeforeId = item.text.substring(0, item.text.length - id.length);
+                        var $selection = $('<span></span>');
+                        $selection.text(textBeforeId);
+                        $('<a></a>')
+                            .attr('href', 'https://sws.geonames.org/' + encodeURIComponent(id))
+                            .attr('target', '_blank')
+                            .attr('rel', 'noopener')
+                            .text(id)
+                            .appendTo($selection);
+                        return $selection;
                     }
                     return item.text;
                 },
@@ -200,7 +202,7 @@ function updatePlaceInputs() {
                         }
                         var query = {
                             q: '*',
-                            name_startsWith: term, 
+                            name_startsWith: term,
                             username: geonamesUsername,
                             // Currently we just get the top 10 hits. We could get, for example, the top 50, sort as below to put recently used IDs at the top, and then limit to 10
                             maxRows: 10
@@ -219,11 +221,15 @@ function updatePlaceInputs() {
                         return {
                             results: data['geonames']
                                 //Sort to bring recently used IDS to the top of the list
-                                .sort((a, b) => Number(getValue(placePrefix, b['geonameId']).name != null) - Number(getValue(placePrefix, a['geonameId']).name != null))
+                                .sort((a, b) => {
+                                    var cachedB = getValue(placePrefix, b['geonameId']) || {};
+                                    var cachedA = getValue(placePrefix, a['geonameId']) || {};
+                                    return Number(cachedB.name != null) - Number(cachedA.name != null);
+                                })
                                 .map(
                                     function(x) {
                                         return {
-                                            text: getFormattedPlacename(x) + "; " + x['geonameId'],    
+                                            text: getFormattedPlacename(x) + "; " + x['geonameId'],
                                             id: x['geonameId'],
                                             //Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the Geonames page
                                             //Using title to provide that hint as a popup
@@ -264,7 +270,7 @@ function updatePlaceInputs() {
                     success: function(place, status) {
                         // extract the name from the JSON response
                         var name = getFormattedPlacename(place);
-                        
+
                         var text = name + "; " + id;
                         var newOption = new Option(text, id, true, true);
                         newOption.title = 'Open in new tab to view geonames page';
