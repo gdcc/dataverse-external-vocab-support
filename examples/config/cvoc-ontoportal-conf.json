@@ -12,23 +12,23 @@
     "vocabs": {
         "INRAETHES": {
             "vocabularyUri": "https://data.agroportal.eu/ontologies/INRAETHES",
-            "uriSpace": "http"
+            "uriSpace": "http://opendata.inrae.fr/thesaurusINRAE/"
         },
         "ANAEETHES": {
             "vocabularyUri": "https://data.agroportal.eu/ontologies/ANAEETHES",
-            "uriSpace": "http"
+            "uriSpace": "http://opendata.inra.fr/anaeeThes/"
         },
         "AGROVOC": {
             "vocabularyUri": "https://data.agroportal.eu/ontologies/AGROVOC",
-            "uriSpace": "http"
+            "uriSpace": "http://aims.fao.org/aos/agrovoc/"
         },
         "NCBITAXON": {
             "vocabularyUri": "https://data.agroportal.eu/ontologies/NCBITAXON",
-            "uriSpace": "http"
+            "uriSpace": "http://purl.bioontology.org/ontology/NCBITAXON/"
         },
         "TRANSFORMON": {
             "vocabularyUri": "https://data.agroportal.eu/ontologies/TRANSFORMON",
-            "uriSpace": "http"
+            "uriSpace": "http://opendata.inrae.fr/PO2/Ontology/TransformON/"
         }
     },
     "managed-fields": {
