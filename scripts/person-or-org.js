@@ -391,17 +391,17 @@ function expandPerson(element, id, orcidBaseUrl) {
                     ? scriptUrl.replace("/js/person-or-org.js", (authenticated ? "/img/ORCID-iD_icon_16x16-preview.webp" : "/img/ORCID-iD_icon_unauth_16x16-preview.webp"))
                     : "";
                 var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html(
-                    '<img alt="ORCID logo" src="' + orcidIconUrl + '" width="16" height="16" />'));
+                    '<img alt="ORCID logo" src="' + orcidIconUrl + '" width="16" height="16" />').attr('title', 'Click to see this ORCID profile'));
                 if (!authenticated) {
-                    displayElement.append(' (unauthenticated) ');
+                    displayElement.append($('<span/>').text(' (unauthenticated) ').attr('title', 'This dataset is not listed in this person\'s ORCID record'));
                 }
                 $(element).hide();
                 let sibs = $(element).siblings("[data-cvoc-index='" + $(element).attr('data-cvoc-index') + "']");
-                if (sibs.length == 0) {
-                    displayElement.prependTo($(element).parent());
-                } else {
-                    displayElement.insertBefore(sibs.eq(0));
+                let target = element;
+                if (sibs.length > 0 && $(sibs.eq(0)).index() < $(element).index()) {
+                    target = sibs.eq(0);
                 }
+                displayElement.insertBefore(target);
             });
         },
         error: function () {

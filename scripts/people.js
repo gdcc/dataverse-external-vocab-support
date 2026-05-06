@@ -40,11 +40,11 @@ function expandPeople() {
                         var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
                         $(personElement).hide();
                         let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
-                        if (sibs.length == 0) {
-                            displayElement.prependTo($(personElement).parent());
-                        } else {
-                            displayElement.insertBefore(sibs.eq(0));
+                        let target = personElement;
+                        if (sibs.length > 0 && $(sibs.eq(0)).index() < $(personElement).index()) {
+                            target = sibs.eq(0);
                         }
+                        displayElement.insertBefore(target);
                         //Store the most recent ORCIDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
                         storeValue(orcidPrefix, id, name);
                     },
