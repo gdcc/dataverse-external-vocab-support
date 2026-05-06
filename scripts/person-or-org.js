@@ -91,7 +91,25 @@ function updatePersonOrOrgInputs() {
         var container = $inputWrapper.parent().children('div').eq(0);
         var selectId = "personOrgAddSelect_" + num;
 
+        var existingValue = ($(personOrgInput).val() || '').trim();
+        if (!existingValue && protocol.startsWith('orcid') && Object.keys(managedFields).length > 0) {
+            existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
+        }
+        var idOnly = existingValue;
+        if (idOnly.startsWith(orcidBaseUrl)) {
+            idOnly = idOnly.substring(orcidBaseUrl.length);
+        } else if (idOnly.startsWith(rorBaseUrl)) {
+            idOnly = idOnly.substring(rorBaseUrl.length);
+        } else if (idOnly.startsWith("orcid:")) {
+            idOnly = idOnly.substring(6);
+        } else if (idOnly.startsWith("ror:")) {
+            idOnly = idOnly.substring(4);
+        }
+        var isOrcidValue = idOnly.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/);
+        var isRorValue = idOnly.match(/^0[a-z0-9]{6}[0-9]{2}$/);
+
         if (protocol === 'orcid-or-ror') {
+            var initialType = isRorValue ? 'organization' : 'person';
             // Create a vertical control stack that can stretch to the same height
             // as the neighboring child field in managed-field layouts.
             var radioName = "person-org-choice-" + num;
@@ -102,12 +120,12 @@ function updatePersonOrOrgInputs() {
                 <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
                   <div class="radio-inline" style="margin-left: 0; margin-right: 0;">
                     <label for="${personRadioId}" style="font-weight: 100; margin-bottom: 0;">
-                      <input type="radio" id="${personRadioId}" name="${radioName}" value="person" checked> Person
+                      <input type="radio" id="${personRadioId}" name="${radioName}" value="person" ${initialType === 'person' ? 'checked' : ''}> Person
                     </label>
                   </div>
                   <div class="radio-inline" style="margin-left: 0; margin-right: 0;">
                     <label for="${orgRadioId}" style="font-weight: 100; margin-bottom: 0;">
-                      <input type="radio" id="${orgRadioId}" name="${radioName}" value="organization"> Organization
+                      <input type="radio" id="${orgRadioId}" name="${radioName}" value="organization" ${initialType === 'organization' ? 'checked' : ''}> Organization
                     </label>
                   </div>
                </div>`;
@@ -135,7 +153,7 @@ function updatePersonOrOrgInputs() {
         var $select2 = $("#" + selectId);
 
         if (protocol === 'orcid-or-ror') {
-            setupSelect2('person', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+            setupSelect2(initialType, $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
             $('input[name="' + radioName + '"]').on('change', function () {
                 setupSelect2($(this).val(), $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
             });
@@ -148,11 +166,6 @@ function updatePersonOrOrgInputs() {
 
         // Pre-populate the select if the hidden input already has a value.
         // This mirrors the behavior in the original ORCID and ROR scripts.
-        var existingValue = ($(personOrgInput).val() || '').trim();
-        //Managed case for orcids - if there are managed fields and no value for the main (id) field, get the value from the personName field
-        if (!existingValue && protocol.startsWith('orcid') && Object.keys(managedFields).length > 0) {
-            existingValue = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val();
-        }
 
         function populateExistingPerson(id, selectElement, baseUrl) {
             var personRetrievalUrl = (baseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
@@ -215,18 +228,15 @@ function updatePersonOrOrgInputs() {
 
         if (existingValue) {
             if (protocol === 'orcid-or-ror') {
-                var isOrcid = existingValue.startsWith(orcidBaseUrl);
-
-                var isRor = existingValue.startsWith(rorBaseUrl);
-
-                if (isOrcid) {
+                if (isOrcidValue) {
                     $('input[name="' + radioName + '"][value="person"]').prop('checked', true);
                     setupSelect2('person', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
-                    var orcidId = existingValue.replace(orcidBaseUrl, '');
+                    var orcidId = existingValue.replace(orcidBaseUrl, '').replace('orcid:', '');
                     populateExistingPerson(orcidId, $select2, orcidBaseUrl);
-                } else if (isRor) {
+                } else if (isRorValue) {
+                    $('input[name="' + radioName + '"][value="organization"]').prop('checked', true);
                     setupSelect2('organization', $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
-                    var rorId = existingValue.replace(rorBaseUrl, '');
+                    var rorId = existingValue.replace(rorBaseUrl, '').replace('ror:', '');
                     populateExistingOrganization(rorId, $select2, rorBaseUrl);
                 } else {
                     // Plain text
@@ -244,8 +254,8 @@ function updatePersonOrOrgInputs() {
                     $select2.append(newOption).trigger('change');
                 }
             } else if (protocol === 'orcid') {
-                if (existingValue.startsWith(orcidBaseUrl)) {
-                    var orcidIdOnly = existingValue.replace(orcidBaseUrl, '');
+                if (isOrcidValue) {
+                    var orcidIdOnly = existingValue.replace(orcidBaseUrl, '').replace('orcid:', '');
                     populateExistingPerson(orcidIdOnly, $select2, orcidBaseUrl);
                 } else {
                     if (Object.keys(managedFields).length > 0) {
@@ -259,8 +269,8 @@ function updatePersonOrOrgInputs() {
                     $select2.append(newOption).trigger('change');
                 }
             } else if (protocol === 'ror') {
-                if (existingValue.startsWith(rorBaseUrl)) {
-                    var rorIdOnly = existingValue.replace(rorBaseUrl, '');
+                if (isRorValue) {
+                    var rorIdOnly = existingValue.replace(rorBaseUrl, '').replace('ror:', '');
                     populateExistingOrganization(rorIdOnly, $select2, rorBaseUrl);
                 } else {
                     var newOption = new Option(existingValue, existingValue, true, true);
