@@ -146,8 +146,12 @@ function updatePersonOrOrgInputs() {
                     $directDivs.eq(1).css('height', maxHeight + 'px');
                 }
             }, 0);
-        } else if (protocol === 'ror') {
-            $(personOrgInput).after('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+        } else if (protocol === 'ror' || protocol === 'orcid') {
+            if (Object.keys(managedFields).length > 0) {
+                container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+            } else {
+                $(personOrgInput).after('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
+            }
         }
 
         var $select2 = $("#" + selectId);
@@ -167,6 +171,31 @@ function updatePersonOrOrgInputs() {
         // Pre-populate the select if the hidden input already has a value.
         // This mirrors the behavior in the original ORCID and ROR scripts.
 
+        function showMismatchWarning(selectElement, dvValue, serviceValue, $nameField) {
+            $(selectElement).parent().find(".mismatch-warning").remove();
+
+            var warningHtml = `
+                <div class="mismatch-warning" style="margin-top: 5px; color: #8a6d3b; background-color: #fcf8e3; border: 1px solid #faebcc; padding: 5px; border-radius: 4px; font-size: 0.9em;">
+                    <span class="glyphicon glyphicon-warning-sign"></span>
+                    Name in Dataverse ("${dvValue}") does not match the record ("${serviceValue}").
+                    <button type="button" class="btn btn-xs btn-warning update-name-btn" style="margin-left: 10px;">Update</button>
+                </div>`;
+
+            var $warning = $(warningHtml);
+            var $container = $(selectElement).next('.select2-container');
+            if ($container.length === 0) {
+                $container = $(selectElement);
+            }
+            $container.after($warning);
+
+            $warning.find(".update-name-btn").on('click', function () {
+                $nameField.val(serviceValue).attr('value', serviceValue).trigger('change');
+                $warning.fadeOut(function () {
+                    $(this).remove();
+                });
+            });
+        }
+
         function populateExistingPerson(id, selectElement, baseUrl) {
             var personRetrievalUrl = (baseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
             $.ajax({
@@ -177,8 +206,9 @@ function updatePersonOrOrgInputs() {
                     'Accept': 'application/json'
                 },
                 success: function (person) {
-                    var name = ((person.name && person.name['family-name']) ? person.name['family-name'].value + ", " : "") +
-                        (person.name && person.name['given-names'] ? person.name['given-names'].value : id);
+                    var familyName = (person.name && person.name['family-name']) ? person.name['family-name'].value : "";
+                    var givenNames = (person.name && person.name['given-names']) ? person.name['given-names'].value : "";
+                    var name = (familyName ? familyName + ", " : "") + (givenNames || id);
                     var text = name + "; " + id;
                     if (person.emails && person.emails.email && person.emails.email.length > 0) {
                         text = text + "; " + person.emails.email[0].email;
@@ -186,6 +216,14 @@ function updatePersonOrOrgInputs() {
                     var newOption = new Option(text, id, true, true);
                     newOption.title = 'Open in new tab to view ORCID page';
                     selectElement.append(newOption).trigger('change');
+
+                    if (managedFields.personName) {
+                        var $nameField = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']");
+                        var currentValue = $nameField.val();
+                        if (currentValue && currentValue !== name) {
+                            showMismatchWarning(selectElement, currentValue, name, $nameField);
+                        }
+                    }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     if (jqXHR.status != 404) {
@@ -217,6 +255,14 @@ function updatePersonOrOrgInputs() {
                     var text = displayName + ", " + ror.id.replace(baseUrl, '') + ', ' + acronyms.join(',');
                     var newOption = new Option(text, id, true, true);
                     selectElement.append(newOption).trigger('change');
+
+                    if (managedFields.personName) {
+                        var $nameField = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']");
+                        var currentValue = $nameField.val();
+                        if (currentValue && currentValue !== displayName) {
+                            showMismatchWarning(selectElement, currentValue, displayName, $nameField);
+                        }
+                    }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     if (jqXHR.status != 404) {
@@ -292,6 +338,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         : getOrgSelect2Config(personOrgInput, rorSearchUrl);
 
     $select2.select2(config).on('select2:select', function (e) {
+        $(this).parent().find(".mismatch-warning").remove();
         var data = e.params.data;
         var hasPlainText = data.text === data.id;
         var isOrcid = (type === 'person');
@@ -358,7 +405,8 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                 $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
             }
         }
-    }).on('select2:unselect', function (e) {
+    }).on('select2:unselect select2:clear', function (e) {
+        $(this).parent().find(".mismatch-warning").remove();
         $(personOrgInput).val("").trigger('change');
     });
 
