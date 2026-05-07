@@ -8,7 +8,25 @@ var rorMaxLength = 31;
 
 window.personOrg = {
     state: {
-        i18n: null,
+        i18n: {
+            person: "Person",
+            organization: "Organization",
+            mismatchWarning: "Name in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
+            update: "Update",
+            unauthenticated: " (unauthenticated) ",
+            unauthenticatedTooltip: "This dataset is not listed in this person's ORCID record",
+            orcidProfileTooltip: "Click to see this ORCID profile",
+            rorProfileTooltip: "Click to see this ROR profile",
+            orcidLogoAlt: "ORCID logo",
+            rorLogoAlt: "ROR logo",
+            openOrcidPage: "Open in new tab to view ORCID page",
+            openRorPage: "Open in new tab to view ROR page",
+            placeholder: "Select or enter...",
+            searching: "Search by name, email, or ORCID…",
+            searchingRor: "Search by organization name…",
+            noRorEntry: "No ROR Entry"
+        },
+        loadedLang: null,
         i18nPromise: null
     }
 };
@@ -35,7 +53,7 @@ $(document).ready(function () {
 function loadI18n(lang, scriptPath) {
     var state = window.personOrg.state;
 
-    if (state.i18n) {
+    if (state.loadedLang === lang && state.i18n) {
         return Promise.resolve(state.i18n);
     }
 
@@ -44,20 +62,7 @@ function loadI18n(lang, scriptPath) {
     }
 
     function getDefaultI18n() {
-        return {
-            person: "Person",
-            organization: "Organization",
-            mismatchWarning: "Name in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
-            update: "Update",
-            unauthenticated: " (unauthenticated) ",
-            unauthenticatedTooltip: "This dataset is not listed in this person's ORCID record",
-            orcidProfileTooltip: "Click to see this ORCID profile",
-            rorProfileTooltip: "Click to see this ROR profile",
-            orcidLogoAlt: "ORCID logo",
-            rorLogoAlt: "ROR logo",
-            openOrcidPage: "Open in new tab to view ORCID page",
-            openRorPage: "Open in new tab to view ROR page"
-        };
+        return window.personOrg.state.i18n;
     }
 
     function fetchI18n(targetLang) {
@@ -90,6 +95,7 @@ function loadI18n(lang, scriptPath) {
     state.i18nPromise = fetchI18n(lang || 'en')
         .then(function (data) {
             state.i18n = data;
+            state.loadedLang = lang || 'en';
             return data;
         })
         .finally(function () {
@@ -174,6 +180,28 @@ function matchManagedFieldHeights(personOrgInput) {
             $directDivs.eq(1).css('height', maxHeight + 'px');
         }
     }, 0);
+}
+
+/**
+ * Shows or hides the managed identifier type and identifier fields.
+ */
+function updateManagedFieldVisibility(personOrgInput, managedFields, isIdentifier) {
+    if (!managedFields || Object.keys(managedFields).length === 0) {
+        return;
+    }
+    var parentField = $(personOrgInput).attr('data-cvoc-parent');
+    var parent = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+    var $idFieldParent = $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").parent();
+    var $idTypeParent = $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent();
+
+    if (isIdentifier) {
+        $idFieldParent.hide();
+        $idTypeParent.hide();
+    } else {
+        $idFieldParent.show();
+        $idTypeParent.show();
+    }
+    matchManagedFieldHeights(personOrgInput);
 }
 
 /**
@@ -454,6 +482,7 @@ function updatePersonOrOrgInputs() {
 }
 
 function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl) {
+    $select2.off('.personOrg');
     if ($select2.data('select2')) {
         $select2.select2('destroy');
         $select2.empty();
@@ -465,7 +494,17 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         ? getPersonSelect2Config(personOrgInput, orcidSearchUrl, orcidBaseUrl)
         : getOrgSelect2Config(personOrgInput, rorSearchUrl);
 
-    $select2.select2(config).on('select2:select', function (e) {
+    $select2.select2(config).on('select2:opening.personOrg', function (e) {
+        var $this = $(this);
+        $this.data('selection-made', false);
+        // Capture current selection for revert on Esc
+        var data = $this.select2('data');
+        if (data && data.length > 0) {
+            $this.data('revert-val', {id: data[0].id, text: data[0].text, type: type});
+        }
+    }).on('select2:select.personOrg', function (e) {
+        $(this).data('selection-made', true);
+        $(this).data('revert-val', null);
         $(this).parent().find(".mismatch-warning").remove();
         matchManagedFieldHeights(personOrgInput);
         var data = e.params.data;
@@ -473,19 +512,24 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         var isOrcid = (type === 'person');
         var isRor = (type === 'organization');
 
-        var url = isOrcid
-            ? orcidBaseUrl + data.id
-            : rorBaseUrl + data.id;
+        var url = "";
+        if (!hasPlainText) {
+            url = isOrcid ? orcidBaseUrl + data.id : rorBaseUrl + data.id;
+        } else if (Object.keys(managedFields).length === 0) {
+            url = data.id;
+        }
         $(personOrgInput).val(url).trigger('change');
 
-        if (hasPlainText) {
-            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(data.id).attr('value', data.id);
-        } else if (isOrcid) {
-            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
-            storeValue(orcidPrefix, data.id, data.text.split(";")[0]);
-        } else if (isRor) {
-            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(rorBaseUrl + data.id).attr('value', rorBaseUrl + data.id);
-            storeValue(rorPrefix, data.id, data.text.split(' | ')[0]);
+        if (!hasPlainText) {
+            if (isOrcid) {
+                $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(orcidBaseUrl + data.id).attr('value', orcidBaseUrl + data.id);
+                storeValue(orcidPrefix, data.id, data.text.split(";")[0]);
+            } else if (isRor) {
+                $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(rorBaseUrl + data.id).attr('value', rorBaseUrl + data.id);
+                storeValue(rorPrefix, data.id, data.text.split(' | ')[0]);
+            }
+        } else {
+            $("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").val(url).attr('value', url);
         }
 
         if (Object.keys(managedFields).length > 0) {
@@ -518,46 +562,142 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                         var rorVal = $selectField.find('option:contains("ROR")').val();
                         desiredValue = rorVal || '';
                     }
-                    $selectField.val(desiredValue).attr('value', desiredValue);
+                    $selectField.val(desiredValue).attr('value', desiredValue).trigger('change');
                 } else {
                     $(parent).find(selector).val('').trigger('change').attr('value', '');
                 }
             }
 
-            if (hasPlainText) {
-                let idField = $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']");
-                idField.val('');
-                $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").parent().show();
-                $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
-            } else {
-                $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").parent().hide();
-                $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
+            updateManagedFieldVisibility(personOrgInput, managedFields, !hasPlainText);
+        }
+    }).on('select2:unselect.personOrg select2:clear.personOrg', function (e) {
+        var $this = $(this);
+        // Capture for revert before clearing if not already captured
+        if (!$this.data('revert-val')) {
+            var data = $this.select2('data');
+            if (data && data.length > 0) {
+                $this.data('revert-val', {id: data[0].id, text: data[0].text, type: type});
             }
         }
-    }).on('select2:unselect select2:clear', function (e) {
-        $(this).parent().find(".mismatch-warning").remove();
-        matchManagedFieldHeights(personOrgInput);
+        $this.parent().find(".mismatch-warning").remove();
         $(personOrgInput).val("").trigger('change');
+
+        // Ensure a radio button is selected if in orcid-or-ror mode
+        var $radios = $this.parent().find('input[type="radio"]');
+        if ($radios.length > 0 && $radios.filter(':checked').length === 0) {
+            $radios.filter('[value="person"]').prop('checked', true);
+        }
+
+        if (Object.keys(managedFields).length > 0) {
+            var parentField = $(personOrgInput).attr('data-cvoc-parent');
+            var parent = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+
+            // Clear managed fields
+            var managedFieldKeys = Object.keys(managedFields);
+            for (var i = 0; i < managedFieldKeys.length; i++) {
+                var key = managedFieldKeys[i];
+                var selector = "[data-cvoc-managed-field='" + managedFields[key] + "']";
+                if (key === 'personName') {
+                    $(parent).find("input" + selector).val('').attr('value', '');
+                } else if (key === 'idType') {
+                    $(parent).find(selector).find("select").val('').attr('value', '').trigger('change');
+                } else {
+                    $(parent).find(selector).val('').attr('value', '');
+                }
+            }
+
+            // Hide ID fields while cleared/searching
+            updateManagedFieldVisibility(personOrgInput, managedFields, true);
+        } else {
+            matchManagedFieldHeights(personOrgInput);
+        }
     });
 
-    if (type === 'person') {
-        $select2.on('select2:open', function (e) {
-            $(".select2-search__field").focus();
-            $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
-            document.getElementById($select2.attr('id') + "_input").select();
+    $select2.on('select2:open.personOrg', function (e) {
+        var $this = $(this);
+        if (Object.keys(managedFields).length > 0) {
+            updateManagedFieldVisibility(personOrgInput, managedFields, true);
+        }
+
+        // Ensure a radio button is selected if in orcid-or-ror mode
+        var $radios = $this.parent().find('input[type="radio"]');
+        if ($radios.length > 0 && $radios.filter(':checked').length === 0) {
+            $radios.filter('[value="person"]').prop('checked', true);
+        }
+
+        var $searchField = $(".select2-search__field");
+        $searchField.on('keydown.revert', function (e) {
+            if (e.which === 27) { // Escape
+                $this.data('esc-pressed', true);
+            }
         });
-    } else if (type === 'organization') {
-        $select2.on('select2:open', function (e) {
-            $(".select2-search__field").focus();
-            $(".select2-search__field").attr("id", $select2.attr('id') + "_input");
-            document.getElementById($select2.attr('id') + "_input").select();
-        });
-    }
+
+        $searchField.focus();
+        $searchField.attr("id", $select2.attr('id') + "_input");
+        var inputEl = document.getElementById($select2.attr('id') + "_input");
+        if (inputEl) {
+            inputEl.select();
+        }
+    }).on('select2:close.personOrg', function (e) {
+        var $this = $(this);
+        var escPressed = $this.data('esc-pressed');
+        var selectionMade = $this.data('selection-made');
+        var revert = $this.data('revert-val');
+        $this.data('esc-pressed', false);
+        $(".select2-search__field").off('keydown.revert');
+
+        if (escPressed && !selectionMade && revert && !$this.val()) {
+            if (revert.type && revert.type !== type) {
+                // Switch radio back and re-setup Select2 for the original type
+                $this.parent().find('input[type="radio"][value="' + revert.type + '"]').prop('checked', true);
+                setupSelect2(revert.type, $this, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
+            }
+
+            // Restore original value if we escaped while empty
+            var newOption = new Option(revert.text, revert.id, true, true);
+            $this.append(newOption).trigger('change');
+
+            // Trigger select2:select to restore hidden fields and visibility
+            $this.trigger({
+                type: 'select2:select',
+                params: {
+                    data: {
+                        id: revert.id,
+                        text: revert.text
+                    }
+                }
+            });
+
+            // If it was a plain string, uncheck the radio buttons
+            if (revert.id === revert.text) {
+                var $radios = $this.parent().find('input[type="radio"]');
+                $radios.prop('checked', false);
+            }
+        }
+        $this.data('revert-val', null);
+
+        if (Object.keys(managedFields).length > 0) {
+            var val = ($(this).val() || '').trim();
+            // Check if current value is an identifier (ORCID or ROR)
+            var isIdentifier = val && (
+                val.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/) || // ORCID
+                val.match(/^0[a-z0-9]{6}[0-9]{2}$/) ||              // ROR
+                val.includes('orcid.org') || val.includes('ror.org') ||
+                val.startsWith('orcid:') || val.startsWith('ror:')
+            );
+
+            // If it's a plain string or restored string, show the ID fields.
+            // If it's empty or an identifier, keep them hidden (empty case follows default layout).
+            var isPlainText = val && !isIdentifier;
+            updateManagedFieldVisibility(personOrgInput, managedFields, !isPlainText);
+        }
+    });
 }
 
 // --- Helper functions for ORCID/Person ---
 
 function expandPerson(element, id, orcidBaseUrl) {
+    var i18n = window.personOrg.state.i18n;
     var orcidRetrievalUrl = (orcidBaseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + id + "/person";
     $.ajax({
         type: "GET",
@@ -728,7 +868,11 @@ function getRorDisplayContext(element) {
 }
 
 function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, addParens = false) {
-    var i18n = window.personOrg.state.i18n;
+    var i18n = window.personOrg.state.i18n || {
+        rorLogoAlt: "ROR logo",
+        rorProfileTooltip: "Click to see this ROR profile",
+        noRorEntry: "No ROR Entry"
+    };
     if (typeof (altNames) == 'undefined') {
         altNames = [];
     }

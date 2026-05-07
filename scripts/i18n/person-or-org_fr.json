@@ -13,5 +13,6 @@
   "openRorPage": "Ouvrir dans un nouvel onglet pour voir la page ROR",
   "placeholder": "Sélectionner ou saisir...",
   "searching": "Rechercher par nom, e-mail ou ORCID…",
-  "searchingRor": "Rechercher par nom d'organisation…"
+  "searchingRor": "Rechercher par nom d'organisation…",
+  "noRorEntry": "Aucune entrée ROR"
 }
