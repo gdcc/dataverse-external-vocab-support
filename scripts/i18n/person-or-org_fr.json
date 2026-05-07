@@ -1,0 +1,17 @@
+{
+  "person": "Personne",
+  "organization": "Organisation",
+  "mismatchWarning": "Le nom dans Dataverse (\"{0}\") ne correspond pas à l'enregistrement {1} (\"{2}\").",
+  "update": "Mettre à jour",
+  "unauthenticated": " (non authentifié) ",
+  "unauthenticatedTooltip": "Ce jeu de données n'est pas répertorié dans le dossier ORCID de cette personne",
+  "orcidProfileTooltip": "Cliquez pour voir ce profil ORCID",
+  "rorProfileTooltip": "Cliquez pour voir ce profil ROR",
+  "orcidLogoAlt": "Logo ORCID",
+  "rorLogoAlt": "Logo ROR",
+  "openOrcidPage": "Ouvrir dans un nouvel onglet pour voir la page ORCID",
+  "openRorPage": "Ouvrir dans un nouvel onglet pour voir la page ROR",
+  "placeholder": "Sélectionner ou saisir...",
+  "searching": "Rechercher par nom, e-mail ou ORCID…",
+  "searchingRor": "Rechercher par nom d'organisation…"
+}

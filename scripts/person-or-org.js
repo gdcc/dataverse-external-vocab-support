@@ -6,10 +6,110 @@ var rorBaseUrl = "https://ror.org/";
 //Max chars that displays well for a child field
 var rorMaxLength = 31;
 
+window.personOrg = {
+    state: {
+        i18n: null,
+        i18nPromise: null
+    }
+};
+
 $(document).ready(function () {
-    expandPersonOrOrgDisplays();
-    updatePersonOrOrgInputs();
+    var lang = $('html').attr('lang') || 'en';
+    var scriptSrc = Array.from(document.scripts)
+        .map(s => s.src)
+        .find(src => src && src.includes("person-or-org.js"));
+
+    loadI18n(lang, scriptSrc).then(function () {
+        expandPersonOrOrgDisplays();
+        updatePersonOrOrgInputs();
+    });
 });
+
+/**
+ * Asynchronously loads the internationalization properties for the current locale.
+ * Defaults to 'en' if the locale is not found.
+ * @param {string} lang - The language code (e.g., 'en', 'fr').
+ * @param {string} scriptPath - The path to the current script.
+ * @returns {Promise<Object>} A promise that resolves with the i18n object.
+ */
+function loadI18n(lang, scriptPath) {
+    var state = window.personOrg.state;
+
+    if (state.i18n) {
+        return Promise.resolve(state.i18n);
+    }
+
+    if (state.i18nPromise) {
+        return state.i18nPromise;
+    }
+
+    function getDefaultI18n() {
+        return {
+            person: "Person",
+            organization: "Organization",
+            mismatchWarning: "Name in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
+            update: "Update",
+            unauthenticated: " (unauthenticated) ",
+            unauthenticatedTooltip: "This dataset is not listed in this person's ORCID record",
+            orcidProfileTooltip: "Click to see this ORCID profile",
+            rorProfileTooltip: "Click to see this ROR profile",
+            orcidLogoAlt: "ORCID logo",
+            rorLogoAlt: "ROR logo",
+            openOrcidPage: "Open in new tab to view ORCID page",
+            openRorPage: "Open in new tab to view ROR page"
+        };
+    }
+
+    function fetchI18n(targetLang) {
+        var langFile = scriptPath.substring(0, scriptPath.lastIndexOf('/')) + '/i18n/person-or-org_' + targetLang + '.json';
+
+        return fetch(langFile)
+            .then(function (response) {
+                if (response.ok) {
+                    return response.json();
+                }
+
+                if (targetLang !== 'en') {
+                    console.warn("Language file not found for: " + targetLang + ". Falling back to 'en'.");
+                    return fetchI18n('en');
+                }
+
+                throw new Error('Default language file "person-or-org_en.json" not found.');
+            })
+            .catch(function (error) {
+                console.error('Failed to load i18n file:', error);
+
+                if (targetLang !== 'en') {
+                    return fetchI18n('en');
+                }
+
+                return getDefaultI18n();
+            });
+    }
+
+    state.i18nPromise = fetchI18n(lang || 'en')
+        .then(function (data) {
+            state.i18n = data;
+            return data;
+        })
+        .finally(function () {
+            state.i18nPromise = null;
+        });
+
+    return state.i18nPromise;
+}
+
+/**
+ * Simple string formatter. Replaces {0}, {1}, etc. with arguments.
+ * @param {string} str - The string to format.
+ * @returns {string} The formatted string.
+ */
+function formatString(str) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return str.replace(/{(\d+)}/g, function (match, number) {
+        return typeof args[number] != 'undefined' ? args[number] : match;
+    });
+}
 
 /**
  * Expand existing identifiers (ORCID or ROR) into a human-readable format.
@@ -45,6 +145,35 @@ function expandPersonOrOrgDisplays() {
             showAsPlainText(element);
         }
     });
+}
+
+/**
+ * Adjusts the heights of the first two child divs in a managed-field parent to be equal.
+ * This is used to ensure the CVOC selector area aligns with adjacent fields.
+ */
+function matchManagedFieldHeights(personOrgInput) {
+    var parentField = $(personOrgInput).attr('data-cvoc-parent');
+    if (!parentField) {
+        return;
+    }
+
+    // Small delay to ensure DOM is updated before measuring
+    setTimeout(function () {
+        var $parentDiv = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
+        var $directDivs = $parentDiv.children('div');
+        if ($directDivs.length >= 2) {
+            // Reset to natural height to measure
+            $directDivs.eq(0).css('height', 'auto');
+            $directDivs.eq(1).css('height', 'auto');
+
+            var firstHeight = $directDivs.eq(0).outerHeight();
+            var secondHeight = $directDivs.eq(1).outerHeight();
+            var maxHeight = Math.max(firstHeight, secondHeight) + 1;
+
+            $directDivs.eq(0).css('height', maxHeight + 'px');
+            $directDivs.eq(1).css('height', maxHeight + 'px');
+        }
+    }, 0);
 }
 
 /**
@@ -108,6 +237,8 @@ function updatePersonOrOrgInputs() {
         var isOrcidValue = idOnly.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/);
         var isRorValue = idOnly.match(/^0[a-z0-9]{6}[0-9]{2}$/);
 
+        var i18n = window.personOrg.state.i18n;
+
         if (protocol === 'orcid-or-ror') {
             var initialType = isRorValue ? 'organization' : 'person';
             // Create a vertical control stack that can stretch to the same height
@@ -120,38 +251,28 @@ function updatePersonOrOrgInputs() {
                 <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
                   <div class="radio-inline" style="margin-left: 0; margin-right: 0;">
                     <label for="${personRadioId}" style="font-weight: 100; margin-bottom: 0;">
-                      <input type="radio" id="${personRadioId}" name="${radioName}" value="person" ${initialType === 'person' ? 'checked' : ''}> Person
+                      <input type="radio" id="${personRadioId}" name="${radioName}" value="person" ${initialType === 'person' ? 'checked' : ''}> ${i18n.person}
                     </label>
                   </div>
                   <div class="radio-inline" style="margin-left: 0; margin-right: 0;">
                     <label for="${orgRadioId}" style="font-weight: 100; margin-bottom: 0;">
-                      <input type="radio" id="${orgRadioId}" name="${radioName}" value="organization" ${initialType === 'organization' ? 'checked' : ''}> Organization
+                      <input type="radio" id="${orgRadioId}" name="${radioName}" value="organization" ${initialType === 'organization' ? 'checked' : ''}> ${i18n.organization}
                     </label>
                   </div>
                </div>`;
 
             container.append(radioHtml);
             container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
-            // Make the first two direct child divs in the managed-field parent the same height.
-            // This helps the combined radio/select area line up with the adjacent child field.
-            setTimeout(function () {
-                var $parentDiv = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
-                var $directDivs = $parentDiv.children('div');
-                if ($directDivs.length >= 2) {
-                    var firstHeight = $directDivs.eq(0).outerHeight();
-                    var secondHeight = $directDivs.eq(1).outerHeight();
-                    var maxHeight = Math.max(firstHeight, secondHeight) + 1;
-
-                    $directDivs.eq(0).css('height', maxHeight + 'px');
-                    $directDivs.eq(1).css('height', maxHeight + 'px');
-                }
-            }, 0);
         } else if (protocol === 'ror' || protocol === 'orcid') {
             if (Object.keys(managedFields).length > 0) {
                 container.append('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
             } else {
                 $(personOrgInput).after('<select id=' + selectId + ' class="form-control add-resource select2" tabindex="0">');
             }
+        }
+
+        if (Object.keys(managedFields).length > 0) {
+            matchManagedFieldHeights(personOrgInput);
         }
 
         var $select2 = $("#" + selectId);
@@ -171,14 +292,17 @@ function updatePersonOrOrgInputs() {
         // Pre-populate the select if the hidden input already has a value.
         // This mirrors the behavior in the original ORCID and ROR scripts.
 
-        function showMismatchWarning(selectElement, dvValue, serviceValue, $nameField) {
+        function showMismatchWarning(selectElement, dvValue, serviceValue, $nameField, type) {
             $(selectElement).parent().find(".mismatch-warning").remove();
+            var i18n = window.personOrg.state.i18n;
+            var typeLabel = (type === 'organization' ? 'ROR' : 'ORCID');
+            var warningText = formatString(i18n.mismatchWarning, dvValue, typeLabel, serviceValue);
 
             var warningHtml = `
                 <div class="mismatch-warning" style="margin-top: 5px; color: #8a6d3b; background-color: #fcf8e3; border: 1px solid #faebcc; padding: 5px; border-radius: 4px; font-size: 0.9em;">
                     <span class="glyphicon glyphicon-warning-sign"></span>
-                    Name in Dataverse ("${dvValue}") does not match the record ("${serviceValue}").
-                    <button type="button" class="btn btn-xs btn-warning update-name-btn" style="margin-left: 10px;">Update</button>
+                    ${warningText}
+                    <button type="button" class="btn btn-xs btn-warning update-name-btn" style="margin-left: 10px;">${i18n.update}</button>
                 </div>`;
 
             var $warning = $(warningHtml);
@@ -187,11 +311,13 @@ function updatePersonOrOrgInputs() {
                 $container = $(selectElement);
             }
             $container.after($warning);
+            matchManagedFieldHeights(personOrgInput);
 
             $warning.find(".update-name-btn").on('click', function () {
                 $nameField.val(serviceValue).attr('value', serviceValue).trigger('change');
                 $warning.fadeOut(function () {
                     $(this).remove();
+                    matchManagedFieldHeights(personOrgInput);
                 });
             });
         }
@@ -214,14 +340,14 @@ function updatePersonOrOrgInputs() {
                         text = text + "; " + person.emails.email[0].email;
                     }
                     var newOption = new Option(text, id, true, true);
-                    newOption.title = 'Open in new tab to view ORCID page';
+                    newOption.title = i18n.openOrcidPage;
                     selectElement.append(newOption).trigger('change');
 
                     if (managedFields.personName) {
                         var $nameField = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']");
                         var currentValue = $nameField.val();
                         if (currentValue && currentValue !== name) {
-                            showMismatchWarning(selectElement, currentValue, name, $nameField);
+                            showMismatchWarning(selectElement, currentValue, name, $nameField, 'person');
                         }
                     }
                 },
@@ -260,7 +386,7 @@ function updatePersonOrOrgInputs() {
                         var $nameField = $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']");
                         var currentValue = $nameField.val();
                         if (currentValue && currentValue !== displayName) {
-                            showMismatchWarning(selectElement, currentValue, displayName, $nameField);
+                            showMismatchWarning(selectElement, currentValue, displayName, $nameField, 'organization');
                         }
                     }
                 },
@@ -332,6 +458,8 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         $select2.select2('destroy');
         $select2.empty();
     }
+    $select2.parent().find(".mismatch-warning").remove();
+    matchManagedFieldHeights(personOrgInput);
 
     var config = (type === 'person')
         ? getPersonSelect2Config(personOrgInput, orcidSearchUrl, orcidBaseUrl)
@@ -339,6 +467,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
 
     $select2.select2(config).on('select2:select', function (e) {
         $(this).parent().find(".mismatch-warning").remove();
+        matchManagedFieldHeights(personOrgInput);
         var data = e.params.data;
         var hasPlainText = data.text === data.id;
         var isOrcid = (type === 'person');
@@ -407,6 +536,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         }
     }).on('select2:unselect select2:clear', function (e) {
         $(this).parent().find(".mismatch-warning").remove();
+        matchManagedFieldHeights(personOrgInput);
         $(personOrgInput).val("").trigger('change');
     });
 
@@ -449,9 +579,9 @@ function expandPerson(element, id, orcidBaseUrl) {
                     ? scriptUrl.replace("/js/person-or-org.js", (authenticated ? "/img/ORCID-iD_icon_16x16-preview.webp" : "/img/ORCID-iD_icon_unauth_16x16-preview.webp"))
                     : "";
                 var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html(
-                    '<img alt="ORCID logo" src="' + orcidIconUrl + '" width="16" height="16" />').attr('title', 'Click to see this ORCID profile'));
+                    '<img alt="' + i18n.orcidLogoAlt + '" src="' + orcidIconUrl + '" width="16" height="16" />').attr('title', i18n.orcidProfileTooltip));
                 if (!authenticated) {
-                    displayElement.append($('<span/>').text(' (unauthenticated) ').attr('title', 'This dataset is not listed in this person\'s ORCID record'));
+                    displayElement.append($('<span/>').text(i18n.unauthenticated).attr('title', i18n.unauthenticatedTooltip));
                 }
                 $(element).hide();
                 let sibs = $(element).siblings("[data-cvoc-index='" + $(element).attr('data-cvoc-index') + "']");
@@ -598,6 +728,7 @@ function getRorDisplayContext(element) {
 }
 
 function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, addParens = false) {
+    var i18n = window.personOrg.state.i18n;
     if (typeof (altNames) == 'undefined') {
         altNames = [];
     }
@@ -606,7 +737,7 @@ function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, 
         name = name.substring(0, rorMaxLength) + "…";
     }
     if (url != null) {
-        name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="ROR logo" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror"/></a>';
+        name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="' + i18n.rorLogoAlt + '" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror" title="' + i18n.rorProfileTooltip + '"/></a>';
     }
     if (addParens) {
         name = '<span>(' + name + ')</span>';
@@ -628,6 +759,7 @@ function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, 
 // --- Select2 configuration helpers ---
 
 function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
+    var i18n = window.personOrg.state.i18n;
     return {
         theme: "classic",
         tags: $(inputElement).data("cvoc-allowfreetext"),
@@ -654,10 +786,10 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
         },
         language: {
             searching: function (params) {
-                return 'Search by name, email, or ORCID…';
+                return i18n.searching;
             }
         },
-        placeholder: $(inputElement).attr("data-cvoc-placeholder") || "Select or enter...",
+        placeholder: $(inputElement).attr("data-cvoc-placeholder") || i18n.placeholder,
         minimumInputLength: 3,
         allowClear: true,
         ajax: {
@@ -696,7 +828,7 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                                 id: x['orcid-id'],
                                 // Since clicking in the selection re-opens the choice list,
                                 // one has to use a right click/open in new tab/window to view the ORCID page
-                                title: 'Open in new tab to view ORCID page'
+                                title: i18n.openOrcidPage
                             };
                         })
                 };
@@ -706,16 +838,17 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
 }
 
 function getOrgSelect2Config(inputElement, searchUrl) {
+    var i18n = window.personOrg.state.i18n;
     return {
         theme: "classic",
         tags: $(inputElement).data("cvoc-allowfreetext"),
         delay: 500,
         language: {
             searching: function (params) {
-                return 'Search by name or acronym…';
+                return i18n.searchingRor;
             }
         },
-        placeholder: $(inputElement).attr('data-cvoc-placeholder') || "Select or enter...",
+        placeholder: $(inputElement).attr('data-cvoc-placeholder') || i18n.placeholder,
         minimumInputLength: 3,
         allowClear: true,
         ajax: {
@@ -788,7 +921,7 @@ function getOrgSelect2Config(inputElement, searchUrl) {
                 }
                 return getRorDisplayHtml(name, rorBaseUrl + idnum, altNames);
             }
-            return getRorDisplayHtml(name, null, ['No ROR Entry']);
+            return getRorDisplayHtml(name, null, [i18n.noRorEntry]);
         }
     };
 }
