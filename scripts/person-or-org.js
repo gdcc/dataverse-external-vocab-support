@@ -232,6 +232,29 @@ function updateManagedFieldVisibility(personOrgInput, managedFields, isIdentifie
     matchManagedFieldHeights(personOrgInput);
 }
 
+function addSelect2ClearKeyboardSupport(selectId) {
+    // Add a tab stop and key handling to allow the clear button to be selected via tab/enter.
+    const observer = new MutationObserver(function () {
+        var $button = $('#' + selectId).parent().find('.select2-selection__clear');
+        $button.attr("tabindex", "0");
+        $button.off('keydown.personOrgClear').on('keydown.personOrgClear', function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var $select = $('#' + selectId);
+                $select.val(null).trigger('change');
+                $select.trigger('select2:clear');
+            }
+        });
+    });
+
+    observer.observe($('#' + selectId).parent()[0], {
+        childList: true,
+        subtree: true
+    });
+}
+
 /**
  * Set up input fields to allow selecting either a person (ORCID) or an organization (ROR).
  */
@@ -345,6 +368,7 @@ function updatePersonOrOrgInputs() {
         }
 
         var $select2 = $("#" + selectId);
+        addSelect2ClearKeyboardSupport(selectId);
 
         if (protocol === 'orcid-or-ror') {
             setupSelect2(initialType, $select2, personOrgInput, managedFields, orcidSearchUrl, rorSearchUrl, orcidBaseUrl, rorBaseUrl);
