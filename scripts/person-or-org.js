@@ -12,6 +12,7 @@ window.personOrg = {
             person: "Person",
             organization: "Organization",
             mismatchWarning: "Name in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
+            emailMismatchWarning: "Email in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
             update: "Update",
             unauthenticated: " (unauthenticated) ",
             unauthenticatedTooltip: "This dataset is not listed in this person's ORCID record",
@@ -117,6 +118,14 @@ function formatString(str) {
     });
 }
 
+function extractEmailFromText(text) {
+    if (!text) {
+        return "";
+    }
+    var match = text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+    return match ? match[0] : "";
+}
+
 /**
  * Expand existing identifiers (ORCID or ROR) into a human-readable format.
  */
@@ -191,15 +200,34 @@ function updateManagedFieldVisibility(personOrgInput, managedFields, isIdentifie
     }
     var parentField = $(personOrgInput).attr('data-cvoc-parent');
     var parent = $(personOrgInput).closest("[data-cvoc-parentfield='" + parentField + "']");
-    var $idFieldParent = $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']").parent();
-    var $idTypeParent = $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent();
+    var $idField = $(parent).find("input[data-person-org='" + $(personOrgInput).attr('data-person-org') + "']");
+    var $idFieldParent = $idField.parent();
+    var $idTypeParent = managedFields.idType
+        ? $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent()
+        : $();
 
     if (isIdentifier) {
-        $idFieldParent.hide();
-        $idTypeParent.hide();
+        if (managedFields.personName) {
+            $idFieldParent.hide();
+        } else {
+            $idField.hide();
+        }
+        if ($idTypeParent.length) {
+            $idTypeParent.hide();
+        }
     } else {
-        $idFieldParent.show();
-        $idTypeParent.show();
+        if (managedFields.personName) {
+            $idFieldParent.show();
+        } else {
+            $idField.show();
+        }
+        if ($idTypeParent.length) {
+            $idTypeParent.show();
+        }
+    }
+
+    if (managedFields.email) {
+        $(parent).find("input[data-cvoc-managed-field='" + managedFields.email + "']").show();
     }
     matchManagedFieldHeights(personOrgInput);
 }
@@ -232,10 +260,18 @@ function updatePersonOrOrgInputs() {
             managedFields = JSON.parse($(personOrgInput).attr('data-cvoc-managedfields') || "{}");
             if (Object.keys(managedFields).length > 0) {
                 // Hide managed fields
-                $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").hide();
-                $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
-                // Hide the actual input wrapper only when managed fields are present
-                $inputWrapper.hide();
+
+                if (managedFields.idType) {
+                    $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().hide();
+                }
+                if (managedFields.personName) {
+                    $(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").hide();
+                    // Hide the actual input wrapper only when managed fields are present
+                    $inputWrapper.hide();
+                } else {
+                    // Hide only the original input so the wrapper remains available for the custom controls.
+                    $(personOrgInput).hide();
+                }
             } else {
                 // No managed fields: hide only the original input
                 $(personOrgInput).hide();
@@ -245,11 +281,16 @@ function updatePersonOrOrgInputs() {
             $(personOrgInput).hide();
         }
 
-        var container = $inputWrapper.parent().children('div').eq(0);
+        var container = $inputWrapper;
+        if (managedFields.personName) {
+            // Keep original placement for personName-managed layouts (e.g., author),
+            // where the control lives in the first child wrapper while the name input wrapper is hidden.
+            container = $inputWrapper.parent().children('div').eq(0);
+        }
         var selectId = "personOrgAddSelect_" + num;
 
         var existingValue = ($(personOrgInput).val() || '').trim();
-        if (!existingValue && protocol.startsWith('orcid') && Object.keys(managedFields).length > 0) {
+        if (!existingValue && protocol.startsWith('orcid') && managedFields.personName) {
             existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
         }
         var idOnly = existingValue;
@@ -320,29 +361,37 @@ function updatePersonOrOrgInputs() {
         // Pre-populate the select if the hidden input already has a value.
         // This mirrors the behavior in the original ORCID and ROR scripts.
 
-        function showMismatchWarning(selectElement, dvValue, serviceValue, $nameField, type) {
+        function showMismatchWarning(selectElement, dvValue, serviceValue, $field, type, fieldType) {
             $(selectElement).parent().find(".mismatch-warning").remove();
             var i18n = window.personOrg.state.i18n;
             var typeLabel = (type === 'organization' ? 'ROR' : 'ORCID');
-            var warningText = formatString(i18n.mismatchWarning, dvValue, typeLabel, serviceValue);
+            var warningTemplate = (fieldType === 'email' && i18n.emailMismatchWarning)
+                ? i18n.emailMismatchWarning
+                : i18n.mismatchWarning;
+            var warningText = formatString(warningTemplate, dvValue, typeLabel, serviceValue);
 
             var warningHtml = `
                 <div class="mismatch-warning" style="margin-top: 5px; color: #8a6d3b; background-color: #fcf8e3; border: 1px solid #faebcc; padding: 5px; border-radius: 4px; font-size: 0.9em;">
                     <span class="glyphicon glyphicon-warning-sign"></span>
                     ${warningText}
-                    <button type="button" class="btn btn-xs btn-warning update-name-btn" style="margin-left: 10px;">${i18n.update}</button>
+                    <button type="button" class="btn btn-xs btn-warning update-field-btn" style="margin-left: 10px;">${i18n.update}</button>
                 </div>`;
 
             var $warning = $(warningHtml);
-            var $container = $(selectElement).next('.select2-container');
-            if ($container.length === 0) {
-                $container = $(selectElement);
+            var $container;
+            if (fieldType === 'email' && $field && $field.length > 0) {
+                $container = $field;
+            } else {
+                $container = $(selectElement).next('.select2-container');
+                if ($container.length === 0) {
+                    $container = $(selectElement);
+                }
             }
             $container.after($warning);
             matchManagedFieldHeights(personOrgInput);
 
-            $warning.find(".update-name-btn").on('click', function () {
-                $nameField.val(serviceValue).attr('value', serviceValue).trigger('change');
+            $warning.find(".update-field-btn").on('click', function () {
+                $field.val(serviceValue).attr('value', serviceValue).trigger('change');
                 $warning.fadeOut(function () {
                     $(this).remove();
                     matchManagedFieldHeights(personOrgInput);
@@ -368,6 +417,9 @@ function updatePersonOrOrgInputs() {
                         text = text + "; " + person.emails.email[0].email;
                     }
                     var newOption = new Option(text, id, true, true);
+                    if (person.emails && person.emails.email && person.emails.email.length > 0) {
+                        newOption.dataset.email = person.emails.email[0].email;
+                    }
                     newOption.title = i18n.openOrcidPage;
                     selectElement.append(newOption).trigger('change');
 
@@ -376,6 +428,17 @@ function updatePersonOrOrgInputs() {
                         var currentValue = $nameField.val();
                         if (currentValue && currentValue !== name) {
                             showMismatchWarning(selectElement, currentValue, name, $nameField, 'person');
+                        }
+                    }
+
+                    if (managedFields.email) {
+                        var serviceEmail = (person.emails && person.emails.email && person.emails.email.length > 0)
+                            ? person.emails.email[0].email
+                            : "";
+                        var $emailField = $(parent).find("input[data-cvoc-managed-field='" + managedFields.email + "']");
+                        var currentEmail = $emailField.val();
+                        if (currentEmail && serviceEmail && currentEmail !== serviceEmail) {
+                            showMismatchWarning(selectElement, currentEmail, serviceEmail, $emailField, 'person', 'email');
                         }
                     }
                 },
@@ -515,7 +578,7 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
         var url = "";
         if (!hasPlainText) {
             url = isOrcid ? orcidBaseUrl + data.id : rorBaseUrl + data.id;
-        } else if (Object.keys(managedFields).length === 0) {
+        } else if (Object.keys(managedFields).length === 0 || !managedFields.personName) {
             url = data.id;
         }
         $(personOrgInput).val(url).trigger('change');
@@ -563,12 +626,21 @@ function setupSelect2(type, $select2, personOrgInput, managedFields, orcidSearch
                         desiredValue = rorVal || '';
                     }
                     $selectField.val(desiredValue).attr('value', desiredValue).trigger('change');
+                } else if (key === 'email') {
+                    var managedEmail = '';
+                    if (!hasPlainText && isOrcid) {
+                        managedEmail = data.email || (data.element && data.element.dataset ? data.element.dataset.email : '') || extractEmailFromText(data.text);
+                    }
+                    if (managedEmail) {
+                        $(parent).find("input" + selector).val(managedEmail).attr('value', managedEmail).trigger('change');
+                    }
                 } else {
                     $(parent).find(selector).val('').trigger('change').attr('value', '');
                 }
             }
 
-            updateManagedFieldVisibility(personOrgInput, managedFields, !hasPlainText);
+            var shouldHideIdentifierField = !hasPlainText || !managedFields.personName;
+            updateManagedFieldVisibility(personOrgInput, managedFields, shouldHideIdentifierField);
         }
     }).on('select2:unselect.personOrg select2:clear.personOrg', function (e) {
         var $this = $(this);
@@ -964,12 +1036,14 @@ function getPersonSelect2Config(inputElement, searchUrl, baseUrl) {
                         // Sort to bring recently used ORCIDs to the top of the list
                         .sort((a, b) => Number(getValue(orcidPrefix, b['orcid-id']).name != null) - Number(getValue(orcidPrefix, a['orcid-id']).name != null))
                         .map(function (x) {
+                            var email = (x.email && x.email.length > 0) ? x.email[0] : "";
                             return {
                                 text: ((x['family-names']) ? x['family-names'] + ", " : "") + x['given-names'] +
                                     "; " +
                                     x['orcid-id'] +
-                                    ((x.email.length > 0) ? "; " + x.email[0] : ""),
+                                    (email ? "; " + email : ""),
                                 id: x['orcid-id'],
+                                email: email,
                                 // Since clicking in the selection re-opens the choice list,
                                 // one has to use a right click/open in new tab/window to view the ORCID page
                                 title: i18n.openOrcidPage

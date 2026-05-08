@@ -2,6 +2,7 @@
   "person": "Personne",
   "organization": "Organisation",
   "mismatchWarning": "Le nom dans Dataverse (\"{0}\") ne correspond pas à l'enregistrement {1} (\"{2}\").",
+  "emailMismatchWarning": "L'e-mail dans Dataverse (\"{0}\") ne correspond pas à l'enregistrement {1} (\"{2}\").",
   "update": "Mettre à jour",
   "unauthenticated": " (non authentifié) ",
   "unauthenticatedTooltip": "Ce jeu de données n'est pas répertorié dans le dossier ORCID de cette personne",

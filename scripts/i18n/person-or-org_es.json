@@ -2,6 +2,7 @@
   "person": "Persona",
   "organization": "Organización",
   "mismatchWarning": "El nombre en Dataverse (\"{0}\") no coincide con el registro de {1} (\"{2}\").",
+  "emailMismatchWarning": "El correo electrónico en Dataverse (\"{0}\") no coincide con el registro de {1} (\"{2}\").",
   "update": "Actualizar",
   "unauthenticated": " (no autenticado) ",
   "unauthenticatedTooltip": "Este conjunto de datos no figura en el registro ORCID de esta persona",

@@ -2,6 +2,7 @@
   "person": "Person",
   "organization": "Organization",
   "mismatchWarning": "Name in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
+  "emailMismatchWarning": "Email in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
   "update": "Update",
   "unauthenticated": " (unauthenticated) ",
   "unauthenticatedTooltip": "This dataset is not listed in this person's ORCID record",
