@@ -1,0 +1,19 @@
+{
+  "person": "Persona",
+  "organization": "Organización",
+  "mismatchWarning": "El nombre en Dataverse (\"{0}\") no coincide con el registro de {1} (\"{2}\").",
+  "emailMismatchWarning": "El correo electrónico en Dataverse (\"{0}\") no coincide con el registro de {1} (\"{2}\").",
+  "update": "Actualizar",
+  "unauthenticated": " (no autenticado) ",
+  "unauthenticatedTooltip": "Este conjunto de datos no figura en el registro ORCID de esta persona",
+  "orcidProfileTooltip": "Haga clic para ver este perfil de ORCID",
+  "rorProfileTooltip": "Haga clic para ver este perfil de ROR",
+  "orcidLogoAlt": "Logotipo de ORCID",
+  "rorLogoAlt": "Logotipo de ROR",
+  "openOrcidPage": "Abrir en una nueva pestaña para ver la página de ORCID",
+  "openRorPage": "Abrir en una nueva pestaña para ver la página de ROR",
+  "placeholder": "Seleccionar o ingresar...",
+  "searching": "Buscar por nombre, correo electrónico u ORCID…",
+  "searchingRor": "Buscar por nombre de organización…",
+  "noRorEntry": "Sin entrada ROR"
+}

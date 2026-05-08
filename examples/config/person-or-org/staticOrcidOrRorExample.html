@@ -4,17 +4,16 @@
       <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
       <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet">
 
-      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/ror.js?version=6.3-qdr-dev"></script>
-      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/people.js?version=6.3-qdr-dev"></script>
+      <script src="https://gdcc.github.io/dataverse-external-vocab-support/scripts/person-or-org.js?version=6.10.1"></script>
 
-      <script src="https://qualitativedatarepository.github.io/dataverse-external-vocab-support/scripts/cvocutils.js?version=6.3-qdr-dev"></script>
+      <script src="https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js?version=6.10.1"></script>
 
       <!--link type="text/css" rel="stylesheet" href="/jakarta.faces.resource/css/structure.css.xhtml?version=6.3-qdr-dev"-->
-      <link type="text/css" rel="stylesheet" href="staticOrcidAndRorExample.css?version=6.3-qdr-dev">
+      <link type="text/css" rel="stylesheet" href="staticOrcidOrRorExample.css?version=6.10.1">
    </head>
    <body>
       <h1>Quick Static ORCID/ROR Demonstrator</h1>
-      <h3>This static HTML page demonstrates how the scripts in this repository are designed to attach to specific fields via 
+      <h3>This static HTML page demonstrates how the person-or-org.js script in this repository can attach to specific fields via
       the use of data-cvoc-* attributes embedded in the page. Once you've viewed the page and tried it out, take a look at the 
       page source to see the added attributes. With Dataverse, these attributes are automatically generated based 
       on the :CVocConf setting. For other repositories - if you can add these attributes to your page, you can use the scripts as well.
@@ -50,7 +49,24 @@
             role="textbox"
 
             data-cvoc-protocol="ror"
-            data-cvoc-vocabs='{"ror":{"uriSpace":"https://ror.org/"}}'
+            data-cvoc-vocabs='{"rors":{"uriSpace":"https://ror.org/"}}'
+            data-cvoc-allowfreetext="true"
+            lang=""
+            data-cvoc-headers="{}"
+            data-cvoc-managedfields="{}"
+            data-cvoc-filter=""
+            data-cvoc-service-url="" />
+      </div>
+      <div>
+         <label for="d3">Person or Organization</label>
+         <input
+            id="d3"
+            name="d3"
+            type="text"
+            value=""
+            role="textbox"
+            data-cvoc-protocol="orcid-or-ror"
+            data-cvoc-vocabs='{"orcid":{"uriSpace":"https://orcid.org/"},"ror":{"uriSpace":"https://ror.org/"}}'
             data-cvoc-allowfreetext="true"
             lang=""
             data-cvoc-headers="{}"
@@ -96,6 +112,24 @@
                   data-cvoc-managedfields="{}"
                   data-cvoc-service-url=""
                   lang="">Not QDR</span>
+            </div>
+            <div>
+               <span>Person or Org 1: </span>
+               <span
+                  data-cvoc-protocol="orcid-or-ror"
+                  data-cvoc-index="2"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">https://orcid.org/0000-0002-1825-0097</span>
+               &nbsp;
+               <span
+                  data-cvoc-protocol="orcid-or-ror"
+                  data-cvoc-index="3"
+                  data-cvoc-headers="{}"
+                  data-cvoc-managedfields="{}"
+                  data-cvoc-service-url=""
+                  lang="">https://ror.org/03p748521</span>
             </div>
          </div>
       </div>

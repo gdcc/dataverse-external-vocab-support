@@ -4,11 +4,124 @@
     "type": "array",
     "title": "The schema for the :CVocConf setting in Dataverse",
     "description": "The root schema comprises the entire JSON document.",
-    "default": 
-    [
+    
+    "definitions": {
+        "retrieval-uri": {
+            "$id": "#/definitions/retrieval-uri",
+            "type": "string",
+            "title": "The retrieval-uri",
+            "description": "Dataverse will use the retrieveal-uri internally to retrieve and cached information about a specific term URI when it is first used. Dataverse will call the URL, substituting the term URI for parameter {0}. If there is no error, the response will be filterd according to the retrieval-filtering schema to populate an internal database table and to populate metadata export formats. It's possible to use `managed-fields` field names or `term-uri-field` field name as parameters. Also you can specify if the value must be url encoded with `encodeUrl:`. Can be overridden at the vocabulary level.",
+            "default": "",
+            "examples": [
+                "https://demo.skosmos.org/rest/v1/data?uri={0}",
+                "https://pub.orcid.org/v3.0/{0}/person",
+                "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURI}"
+            ]
+        },
         
-    ],
-
+        "prefix": {
+            "$id": "#/definitions/prefix",
+            "type": "string",
+            "title": "The URL prefix",
+            "description": "For services that represent a term/controlled value differently for internal use and for web access, such as ORCID, this parameter defines the prefix that should be added to the internal representation from the service to create the external form of the term identifier/URI. Can be overridden at the vocabulary level.",
+            "default": "",
+            "examples": [
+                "https://orcid.org/"
+            ]
+        },
+        
+        "retrieval-filtering": {
+            "$id": "#/definitions/retrieval-filtering",
+            "type": "object",
+            "title": "Internal Retrieval Filtering Configuration",
+            "description": "Dataverse caches information retrieved from a server (defined by the retrieval-url parameter) to store information about a term uri. The configuration information defined here is used to filter the raw server response to store only relevant information in a well-defined format. If filtering fails, Dataverse will not sore information about the given term uri.",
+            "default": {},
+            "examples": [
+                {
+                    "@context": {
+                        "termName": "https://schema.org/name"
+                    },
+                    "@id": {
+                        "pattern": "{0}",
+                        "params": ["@id"]
+                    }
+                }
+            ],
+            "required": ["@context", "@id"],
+            "properties": {
+                "@context": {
+                    "$id": "#/definitions/retrieval-filtering/context",
+                    "type": "object",
+                    "title": "@context",
+                    "description": "A json-ld context element that will be added to the filtered response. Dataverse expects to be able to interpret the filtered value as json-ld (e.g. to include in the OAI-ORE metadata export). Adding an @context can simplify filtering but is not required if the filtered response is already json-ld.",
+                    "default": {},
+                    "examples": [
+                        {
+                            "termName": "https://schema.org/name"
+                        }
+                    ],
+                    "patternProperties": {
+                        ".*": {
+                            "$id": "#/definitions/retrieval-filtering/context/entry",
+                            "type": "string",
+                            "title": "A context entry",
+                            "description": "Context entries should conform to the json-ld specification. They map a given string label (the property name)to a formal URI or json-ld keyword value. Example property names include termName, vocabularyName, vocabularyUri",
+                            "default": "",
+                            "examples": ["https://schema.org/name"]
+                        }
+                    }
+                },
+                "patternProperties": {
+                    ".*": {
+                        "$id": "#/definitions/retrieval-filtering/element",
+                        "type": "object",
+                        "title": "Element definition",
+                        "description": "Elements in the filtered response are defined in terms of a pattern and parameters that are substituted into the pattern (see examples). One of the elements of the filtered response must be an @id whose value is the term URI itself. Element values are assumed to be primitive values (e.g. for a term or vocab uri) or an array of objects containing @lang, @value elements representing the value in multiple languages (.e.g. for a term name).",
+                        "default": {
+                            "pattern": "{0}",
+                            "params": ["@id"]
+                        },
+                        "required": ["pattern"],
+                        "properties": {
+                            "pattern": {
+                                "$id": "#/definitions/retrieval-filtering/element/pattern",
+                                "type": "string",
+                                "title": "Element Pattern",
+                                "description": "A combination of text and numbered substitution fragments denoted by {} that are used to generate the element value.",
+                                "default": "",
+                                "examples": ["{0}"]
+                            },
+                            "params": {
+                                "$id": "#/definitions/retrieval-filtering/element/params",
+                                "type": "array",
+                                "title": "Element parameters",
+                                "description": "Parameters can be keywords such as @id for the term uri or path indicators. Path indicators are used to find elements within the raw reponse that should be copied into the filtered response for this element. Path indicators may include an '=<value>' for any path segment that is used to find a specific element within an array.",
+                                "default": [],
+                                "examples": [
+                                    ["@id"],
+                                    ["/graph/type=skos:ConceptScheme/prefLabel"],
+                                    ["/graph/uri=@id/prefLabel"]
+                                ]
+                            },
+                            "indexIn": {
+                                "$id": "#/definitions/retrieval-filtering/element/index-in",
+                                "type": "string",
+                                "title": "Element indexIn",
+                                "description": "indexIn can be the `term-uri-field` or one `managed-fields`",
+                                "default": "",
+                                "examples": [
+                                    "cvocDemoTermURI",
+                                    "cvocDemoVocabulary"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    
+    "default": [],
     "examples": 
     [
         [
@@ -27,7 +140,18 @@
                     "unesco": 
                     {
                         "vocabularyUri": "http://skos.um.es/unescothes/CS000",
-                        "uriSpace": "http://skos.um.es/unescothes/"
+                        "uriSpace": "http://skos.um.es/unescothes/",
+                        "retrieval-uri": "https://demo.skosmos.org/rest/v1/data?uri={0}",
+                        "prefix": "http://skos.um.es/unescothes/",
+                        "retrieval-filtering": {
+                            "@context": {
+                                "termName": "https://schema.org/name"
+                            },
+                            "@id": {
+                                "pattern": "{0}",
+                                "params": ["@id"]
+                            }
+                        }
                     }
                 },
 
@@ -155,8 +279,8 @@
     {
         "$id": "#/fieldconfig",
         "type": "object",
-        "title": "Field to Service Mapping",
-        "description": "Defines the mapping of a given dataset field type, defined in a Dataverse metadatablock to a given remove vocabulary service",
+        "title": "Field Configuration",
+        "description": "Configuration for a single field",
         "required": 
         [
             "field-name",
@@ -190,7 +314,7 @@
                 "$id": "#/fieldconfig/properties/term-uri-field",
                 "type": "string",
                 "title": "The term-uri-field name",
-                "description": "FOr a primitive field, the same name as the field-name. For a compound field, this is the name of the child field where the term URI should be stored",
+                "description": "For a primitive field, the same name as the field-name. For a compound field, this is the name of the child field where the term URI should be stored",
                 "examples": 
                 [
                     "cvocDemoTermURI"
@@ -248,15 +372,7 @@
 
             "prefix": 
             {
-                "$id": "#/fieldconfig/properties/prefix",
-                "type": "string",
-                "title": "The URL prefix",
-                "description": "For services that represent a term/controlled value differently for internal use and for web access, such as ORCID, this parameter defines the prefix that should be added to the internal representation from the service to create the external form of the term identifier/URI",
-                "default": "",
-                "examples": 
-                [
-                    "https://orcid.org/"
-                ]
+                "$ref": "#/definitions/prefix"
             },
 
             "protocol": 
@@ -275,17 +391,7 @@
 
             "retrieval-uri": 
             {
-                "$id": "#/fieldconfig/properties/retrieval-uri",
-                "type": "string",
-                "title": "The retrieval-uri",
-                "description": "Dataverse will use the retrieveal-uri internally to retrieve and cached information about a specific term URI when it is first used. Dataverse will call the URL, substituting the term URI for parameter {0}. If there is no error, the response will be filterd according to the retrieval-filtering schema to populate an internal database table and to populate metadata export formats. It's possible to use `managed-fields` field names or `term-uri-field` field name as parameters. Also you can specify if the value must be url encoded with `encodeUrl:`.",
-                "default": "",
-                "examples": 
-                [
-                    "https://demo.skosmos.org/rest/v1/data?uri={0}",
-                    "https://pub.orcid.org/v3.0/{0}/person",
-                    "https://data.agroportal.lirmm.fr/ontologies/{keywordVocabulary}/classes/{encodeUrl:keywordTermURI}"
-                ]
+                "$ref": "#/definitions/retrieval-uri"
             },
 
             "term-parent-uri": 
@@ -340,7 +446,18 @@
                         "unesco": 
                         {
                             "vocabularyUri": "http://skos.um.es/unescothes/CS000",
-                            "uriSpace": "http://skos.um.es/unescothes/"
+                            "uriSpace": "http://skos.um.es/unescothes/",
+                            "retrieval-uri": "https://demo.skosmos.org/rest/v1/data?uri={0}",
+                            "prefix": "http://skos.um.es/unescothes/",
+                            "retrieval-filtering": {
+                                "@context": {
+                                    "termName": "https://schema.org/name"
+                                },
+                                "@id": {
+                                    "pattern": "{0}",
+                                    "params": ["@id"]
+                                }
+                            }
                         }
                     }
                 ],
@@ -352,7 +469,7 @@
                         "$id": "#/fieldconfig/properties/vocabs/vocabulary",
                         "type": "object",
                         "title": "The vocabulary definition",
-                        "description": "Vocabularies are defined by two properties.",
+                        "description": "Vocabularies are defined by two properties (vocabularyUri, uriSpace) and optional vocabulary-specific overrides for retrieval-uri, prefix, and retrieval-filtering.",
                         "default": 
                         {
                             
@@ -362,7 +479,9 @@
                         [
                             {
                                 "vocabularyUri": "http://skos.um.es/unescothes/CS000",
-                                "uriSpace": "http://skos.um.es/unescothes/"
+                                "uriSpace": "http://skos.um.es/unescothes/",
+                                "retrieval-uri": "https://demo.skosmos.org/rest/v1/data?uri={0}",
+                                "prefix": "http://skos.um.es/unescothes/"
                             }
                         ],
 
@@ -397,6 +516,20 @@
                                 [
                                     "http://skos.um.es/unescothes/"
                                 ]
+                            },
+                            "retrieval-uri": 
+                            {
+                                "$ref": "#/definitions/retrieval-uri"
+                            },
+
+                            "prefix": 
+                            {
+                                "$ref": "#/definitions/prefix"
+                            },
+
+                            "retrieval-filtering": 
+                            {
+                                "$ref": "#/definitions/retrieval-filtering"
                             }
                         }
                     }
@@ -442,192 +575,7 @@
 
             "retrieval-filtering": 
             {
-                "$id": "#/fieldconfig/properties/retrieval-filtering",
-                "type": "object",
-                "title": "Internal Retrieval Filtering Configuration",
-                "description": "Dataverse caches information retrieved from a server (defined by the retrieval-url parameter) to store information about a term uri. The configuration information defined here is used to filter the raw server response to store only relevant information in a well-defined format. If filtering fails, Dataverse will not sore information about the given term uri.",
-                "default": 
-                {
-                    
-                },
-
-                "examples": 
-                [
-                    {
-                        "@context": 
-                        {
-                            "termName": "https://schema.org/name",
-                            "vocabularyName": "https://dataverse.org/schema/vocabularyName",
-                            "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
-                            "lang": "@language",
-                            "value": "@value"
-                        },
-
-                        "@id": 
-                        {
-                            "pattern": "{0}",
-                            "params": 
-                            [
-                                "@id"
-                            ]
-                        },
-
-                        "termName": 
-                        {
-                            "pattern": "{0}",
-                            "params": 
-                            [
-                                "/graph/uri=@id/prefLabel"
-                            ]
-                        },
-
-                        "vocabularyName": 
-                        {
-                            "pattern": "{0}",
-                            "params": 
-                            [
-                                "/graph/type=skos:ConceptScheme/prefLabel"
-                            ]
-                        },
-
-                        "vocabularyUri": 
-                        {
-                            "pattern": "{0}",
-                            "params": 
-                            [
-                                "/graph/type=skos:ConceptScheme/uri"
-                            ]
-                        }
-                    }
-                ],
-
-                "required": 
-                [
-                    "@context",
-                    "@id"
-                ],
-
-                "properties": 
-                {
-                    "@context": 
-                    {
-                        "$id": "#/fieldconfig/properties/retrieval-filtering/context",
-                        "type": "object",
-                        "title": "@context",
-                        "description": "A json-ld context element that will be added to the filtered response. Dataverse expects to be able to interpret the filtered value as json-ld (e.g. to include in the OAI-ORE metadata export). Adding an @context can simplify filtering but is not required if the filtered response is already json-ld.",
-                        "default": 
-                        {
-                            
-                        },
-
-                        "examples": 
-                        [
-                            {
-                                "termName": "https://schema.org/name",
-                                "vocabularyName": "https://dataverse.org/schema/vocabularyName",
-                                "vocabularyUri": "https://dataverse.org/schema/vocabularyUri",
-                                "lang": "@language",
-                                "value": "@value"
-                            }
-                        ],
-
-                        "patternProperties": 
-                        {
-                            ".*": 
-                            {
-                                "$id": "#/fieldconfig/properties/retrieval-filtering/context/entry",
-                                "type": "string",
-                                "title": "A context entry",
-                                "description": "Context entries should conform to the json-ld specification. They map a given string label (the property name)to a formal URI or json-ld keyword value. Example property names include termName, vocabularyName, vocabularyUri",
-                                "default": "",
-                                "examples": 
-                                [
-                                    "https://schema.org/name"
-                                ]
-                            }
-                        }
-                    },
-
-                    "patternProperties": 
-                    {
-                        ".*": 
-                        {
-                            "$id": "#/fieldconfig/properties/retrieval-filtering/element",
-                            "type": "object",
-                            "title": "Element definition",
-                            "description": "Elements in the filtered response are defined in terms of a pattern and parameters that are substituted into the pattern (see examples). One of the elements of the filtered response must be an @id whose value is the term URI itself. Element values are assumed to be primitive values (e.g. for a term or vocab uri) or an array of objects containing @lang, @value elements representing the value in multiple languages (.e.g. for a term name).",
-                            "default": 
-                            {
-                                "pattern": "{0}",
-                                "params": 
-                                [
-                                    "@id"
-                                ]
-                            },
-
-                            "required": 
-                            [
-                                "pattern"
-                            ],
-
-                            "properties": 
-                            {
-                                "pattern": 
-                                {
-                                    "$id": "#/fieldconfig/properties/retrieval-filtering/element/pattern",
-                                    "type": "string",
-                                    "title": "Element Pattern",
-                                    "description": "A combination of text and numbered substitution fragments denoted by {} that are used to generate the element value.",
-                                    "default": "",
-                                    "examples": 
-                                    [
-                                        "{0}"
-                                    ]
-                                },
-
-                                "params": 
-                                {
-                                    "$id": "#/fieldconfig/properties/retrieval-filtering/properties/%40id/properties/params",
-                                    "type": "array",
-                                    "title": "Element parameters",
-                                    "description": "Parameters can be keywords such as @id for the term uri or path indicators. Path indicators are used to find elements within the raw reponse that should be copied into the filtered response for this element. Path indicators may include an '=<value>' for any path segment that is used to find a specific element within an array.  ",
-                                    "default": 
-                                    [
-                                        
-                                    ],
-
-                                    "examples": 
-                                    [
-                                        [
-                                            "@id"
-                                        ],
-
-                                        [
-                                            "/graph/type=skos:ConceptScheme/prefLabel"
-                                        ],
-
-                                        [
-                                            "/graph/uri=@id/prefLabel"
-                                        ]
-                                    ]
-                                },
-
-                                "indexIn": {
-                                    "$id": "#/fieldconfig/properties/retrieval-filtering/element/index-in",
-                                    "type": "string",
-                                    "title": "Element indexIn",
-                                    "description": "indexIn can be the `term-uri-field` or one `managed-fields`",
-                                    "default": "",
-                                    "examples":
-                                    [
-                                        "cvocDemoTermURI",
-                                        "cvocDemoVocabulary"
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
+                "$ref": "#/definitions/retrieval-filtering"
             }
         },
 

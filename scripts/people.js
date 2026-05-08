@@ -40,11 +40,11 @@ function expandPeople() {
                         var displayElement = $('<span/>').text(name).append($('<a/>').attr('href', orcidBaseUrl + id).attr('target', '_blank').attr('rel', 'noopener').html('<img alt="ORCID logo" src="https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png" width="16" height="16" />'));
                         $(personElement).hide();
                         let sibs = $(personElement).siblings("[data-cvoc-index='" + $(personElement).attr('data-cvoc-index') + "']");
-                        if (sibs.length == 0) {
-                            displayElement.prependTo($(personElement).parent());
-                        } else {
-                            displayElement.insertBefore(sibs.eq(0));
+                        let target = personElement;
+                        if (sibs.length > 0 && $(sibs.eq(0)).index() < $(personElement).index()) {
+                            target = sibs.eq(0);
                         }
+                        displayElement.insertBefore(target);
                         //Store the most recent ORCIDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
                         storeValue(orcidPrefix, id, name);
                     },
@@ -121,8 +121,8 @@ function updatePeopleInputs() {
                         return item.text;
                     }
 
-                    //markMatch bolds the search term if/where it appears in the result
-                    var $result = markMatch(item.text, term);
+                    //markMatch2 bolds the search term if/where it appears in the result
+                    var $result = markMatch2(item.text, term);
                     return $result;
                 },
                 templateSelection: function(item) {
@@ -316,30 +316,4 @@ function updatePeopleInputs() {
             });
         }
     });
-}
-
-//Put the text in a result that matches the term in a span with class select2-rendered__match that can be styled (e.g. bold)
-function markMatch(text, term) {
-    // Find where the match is
-    var match = text.toUpperCase().indexOf(term.toUpperCase());
-    var $result = $('<span></span>');
-    // If there is no match, move on
-    if (match < 0) {
-        return $result.text(text);
-    }
-
-    // Put in whatever text is before the match
-    $result.text(text.substring(0, match));
-
-    // Mark the match
-    var $match = $('<span class="select2-rendered__match"></span>');
-    $match.text(text.substring(match, match + term.length));
-
-    // Append the matching text
-    $result.append($match);
-
-    // Put in whatever is after the match
-    $result.append(text.substring(match + term.length));
-
-    return $result;
 }

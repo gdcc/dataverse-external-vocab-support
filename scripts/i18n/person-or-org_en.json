@@ -1,0 +1,19 @@
+{
+  "person": "Person",
+  "organization": "Organization",
+  "mismatchWarning": "Name in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
+  "emailMismatchWarning": "Email in Dataverse (\"{0}\") does not match the {1} record (\"{2}\").",
+  "update": "Update",
+  "unauthenticated": " (unauthenticated) ",
+  "unauthenticatedTooltip": "This dataset is not listed in this person's ORCID record",
+  "orcidProfileTooltip": "Click to see this ORCID profile",
+  "rorProfileTooltip": "Click to see this ROR profile",
+  "orcidLogoAlt": "ORCID logo",
+  "rorLogoAlt": "ROR logo",
+  "openOrcidPage": "Open in new tab to view ORCID page",
+  "openRorPage": "Open in new tab to view ROR page",
+  "placeholder": "Select or enter...",
+  "searching": "Search by name, email, or ORCID…",
+  "searchingRor": "Search by organization name…",
+  "noRorEntry": "No ROR Entry"
+}
