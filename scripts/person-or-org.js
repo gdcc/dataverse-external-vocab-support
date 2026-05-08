@@ -535,6 +535,9 @@ function updatePersonOrOrgInputs() {
                             $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
                             $(personOrgInput).parent().show();
                         }
+                        if (managedFields.personName) {
+                            existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
+                        }
                     }
 
                     var newOption = new Option(existingValue, existingValue, true, true);
@@ -551,6 +554,9 @@ function updatePersonOrOrgInputs() {
                             $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
                             $(personOrgInput).parent().show();
                         }
+                        if (managedFields.personName) {
+                            existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
+                        }
                     }
                     var newOption = new Option(existingValue, existingValue, true, true);
                     $select2.append(newOption).trigger('change');
@@ -560,6 +566,16 @@ function updatePersonOrOrgInputs() {
                     var rorIdOnly = existingValue.replace(rorBaseUrl, '').replace('ror:', '');
                     populateExistingOrganization(rorIdOnly, $select2, rorBaseUrl);
                 } else {
+                    if (Object.keys(managedFields).length > 0) {
+                        //Handle managed fields
+                        if (existingValue.length > 0) {
+                            $(parent).find("[data-cvoc-managed-field='" + managedFields.idType + "']").parent().show();
+                            $(personOrgInput).parent().show();
+                        }
+                        if (managedFields.personName) {
+                            existingValue = ($(parent).find("input[data-cvoc-managed-field='" + managedFields.personName + "']").val() || '').trim();
+                        }
+                    }
                     var newOption = new Option(existingValue, existingValue, true, true);
                     $select2.append(newOption).trigger('change');
                 }
@@ -910,7 +926,7 @@ function expandOrganization(element, id, rorBaseUrl) {
                 displayInfo.useParens
             ));
             if (displayInfo.useParens) {
-                $(element).attr('style', 'margin-left: 0.25em;');
+                $(element).attr('style', 'margin-left: 0.25em;margin-right: 0.25em;');
             }
         },
         error: function () {
@@ -936,10 +952,15 @@ function showAsPlainText(element) {
 
     if (displayInfo.useParens) {
         text = '(' + text + ')';
-        $(element).attr('style', 'margin-left: 0.25em;');
+        $(element).attr('style', 'margin-left: 0.25em;margin-right: 0.25em;');
     }
 
     $(element).text(text);
+    $(element).show();
+    let index = $(element).attr('data-cvoc-index');
+    if (index !== undefined) {
+        $(element).siblings("[data-cvoc-index='" + index + "']").show().removeClass('hidden').removeAttr('hidden');
+    }
 }
 
 function getRorDisplayContext(element) {
