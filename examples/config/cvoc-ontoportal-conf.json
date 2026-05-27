@@ -1,34 +1,34 @@
 [{
     "field-name": "keyword",
     "term-uri-field": "keywordTermURI",
-    "cvoc-url": "https://data.agroportal.lirmm.fr/",
+    "cvoc-url": "https://data.agroportal.eu/",
     "js-url": "https://gdcc.github.io/dataverse-external-vocab-support/scripts/ontoportal.js",
     "headers": {"Authorization": "apikey token=<your_apikey>"},
     "protocol": "ontoportal",
-    "retrieval-uri": "https://data.agroportal.lirmm.fr/ontologies/{encodeUrl:keywordVocabulary}/classes/{encodeUrl:keywordTermURI}?lang=en,fr",
+    "retrieval-uri": "https://data.agroportal.eu/ontologies/{encodeUrl:keywordVocabulary}/classes/{encodeUrl:keywordTermURI}?lang=en,fr",
     "term-parent-uri": "",
     "allow-free-text": true,
     "languages":"en,fr",
     "vocabs": {
         "INRAETHES": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/INRAETHES",
-            "uriSpace": "http"
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/INRAETHES",
+            "uriSpace": "http://opendata.inrae.fr/thesaurusINRAE/"
         },
         "ANAEETHES": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/ANAEETHES",
-            "uriSpace": "http"
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/ANAEETHES",
+            "uriSpace": "http://opendata.inra.fr/anaeeThes/"
         },
         "AGROVOC": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/AGROVOC",
-            "uriSpace": "http"
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/AGROVOC",
+            "uriSpace": "http://aims.fao.org/aos/agrovoc/"
         },
         "NCBITAXON": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/NCBITAXON",
-            "uriSpace": "http"
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/NCBITAXON",
+            "uriSpace": "http://purl.bioontology.org/ontology/NCBITAXON/"
         },
         "TRANSFORMON": {
-            "vocabularyUri": "https://data.agroportal.lirmm.fr/ontologies/TRANSFORMON",
-            "uriSpace": "http"
+            "vocabularyUri": "https://data.agroportal.eu/ontologies/TRANSFORMON",
+            "uriSpace": "http://opendata.inrae.fr/PO2/Ontology/TransformON/"
         }
     },
     "managed-fields": {
