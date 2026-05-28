@@ -1,0 +1,12 @@
+{
+  "findUsingOrcid": "Rechercher avec ORCID",
+  "findAndImportPublicationFromOrcid": "Rechercher et importer une publication depuis ORCID",
+  "searchAndSelectPublication": "Rechercher et sélectionner une publication :",
+  "cancel": "Annuler",
+  "loadingPublicationsOne": "Chargement des publications depuis le profil ORCID...",
+  "loadingPublicationsMany": "Chargement des publications depuis {0} profils ORCID...",
+  "selectPublication": "Sélectionner une publication",
+  "findUsingOrcid_ariaLabel": "Simplifier l’ajout de publications en les important depuis les profils ORCID des auteurs",
+  "addOrcidForAuthorsHint": "Astuce : si vous ajoutez des ORCID aux auteurs, vous pouvez sélectionner les publications associées depuis leurs profils !",
+  "relationNotSpecified": "(Relation non spécifiée)"
+}

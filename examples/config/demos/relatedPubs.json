@@ -1,0 +1,35 @@
+[
+  {
+    "field-name": "publication",
+    "term-uri-field": "publicationIDNumber",
+    "js-url": ["https://gdcc.github.io/dataverse-external-vocab-support/scripts/publications.js","https://gdcc.github.io/dataverse-external-vocab-support/scripts/cvocutils.js"],
+    "protocol": "publication",
+    "retrieval-uri": "https://pub.sandbox.orcid.org/v3.0/{0}/works",
+    "cvoc-url": "https://pub.sandbox.orcid.org/v3.0/",
+    "allow-free-text": true,
+    "prefix": "https://orcid.org/",
+    "managed-fields": {
+      "idType":"publicationIDType",
+      "citation":"publicationCitation",
+      "url":"publicationURL"
+    },
+    "languages":"en",
+    "vocabs": {
+      "rors": {
+        "uriSpace": "https://doi.org/"
+      }
+    },
+    "retrieval-filtering": {
+      "@context": {
+        "termName": "https://schema.org/name",
+        "scheme": "http://www.w3.org/2004/02/skos/core#inScheme",
+        "lang": "@language",
+        "content": "@value"
+      },
+      "@id": {
+        "pattern": "{0}",
+        "params": ["@id"]
+      }
+    }
+  }
+]
