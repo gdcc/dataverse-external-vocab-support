@@ -1,0 +1,30 @@
+[
+  {
+    "field-name": "authorName",
+    "term-uri-field": "authorIdentifier",
+    "js-url": ["/cvoc/js/external-vocabulary-core.js", "/cvoc/js/jsf-external-vocabulary-adapter.js"],
+    "ui-adapter": "shared-core-jsf",
+    "protocol": "orcid-or-ror",
+    "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
+    "allow-free-text": true,
+    "prefix": "https://orcid.org/",
+    "managed-fields": {"personName": "authorName", "idType": "authorIdentifierScheme", "affiliation": "authorAffiliation"},
+    "languages": "en",
+    "vocabs": {"orcid": {"uriSpace": "https://orcid.org/"}, "ror": {"uriSpace": "https://ror.org/"}},
+    "retrieval-filtering": {"@context": {"personName": "https://schema.org/name"}, "personName": {"pattern": "{0}", "params": ["/name/family-name/value"]}}
+  },
+  {
+    "field-name": "authorAffiliation",
+    "term-uri-field": "authorAffiliation",
+    "js-url": ["/cvoc/js/external-vocabulary-core.js", "/cvoc/js/jsf-external-vocabulary-adapter.js"],
+    "ui-adapter": "shared-core-jsf",
+    "protocol": "ror",
+    "retrieval-uri": "https://api.ror.org/v2/organizations/{0}",
+    "allow-free-text": true,
+    "prefix": "https://ror.org/",
+    "managed-fields": {},
+    "languages": "en",
+    "vocabs": {"ror": {"uriSpace": "https://ror.org/"}},
+    "retrieval-filtering": {"@context": {"termName": "https://schema.org/name"}, "termName": {"pattern": "{0}", "params": ["/names/types=ror_display/value"]}}
+  }
+]

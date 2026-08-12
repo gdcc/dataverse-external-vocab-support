@@ -5,6 +5,7 @@ const readline = require('readline');
 const { composeCvocConfig } = require('./compose-cvoc-conf');
 
 const SERVICES_DIR = path.join(__dirname, '..', 'services');
+const SHARED_CORE_DIR = path.join(__dirname, '..', 'packages', 'external-vocabulary-core');
 const DIST_ROOT = path.join(__dirname, '..', 'dist');
 const DIST_DIR = path.join(DIST_ROOT, 'js');
 const DIST_IMG_DIR = path.join(DIST_ROOT, 'img');
@@ -93,6 +94,11 @@ function linkServices() {
             });
         }
     });
+
+    createSymlink(
+        path.join(SHARED_CORE_DIR, 'external-vocabulary-core.js'),
+        path.join(DIST_DIR, 'external-vocabulary-core.js')
+    );
 }
 
 /**

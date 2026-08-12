@@ -1,0 +1,21 @@
+{
+  "name": "@iqss/dataverse-external-vocabulary-core",
+  "version": "0.1.0",
+  "description": "Framework-independent external vocabulary search and mapping for Dataverse clients",
+  "main": "./external-vocabulary-core.js",
+  "module": "./external-vocabulary-core.mjs",
+  "types": "./external-vocabulary-core.d.ts",
+  "files": [
+    "external-vocabulary-core.js",
+    "external-vocabulary-core.mjs",
+    "external-vocabulary-core.d.ts",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "import": "./external-vocabulary-core.mjs",
+      "require": "./external-vocabulary-core.js"
+    }
+  },
+  "license": "Apache-2.0"
+}

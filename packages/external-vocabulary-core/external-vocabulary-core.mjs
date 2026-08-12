@@ -1,0 +1,13 @@
+import './external-vocabulary-core.js'
+
+const externalVocabularyCore = globalThis.DataverseExternalVocabularyCore
+
+export const getVocabularyNames = externalVocabularyCore.getVocabularyNames
+export const getDefaultVocabulary = externalVocabularyCore.getDefaultVocabulary
+export const getVocabularyForUri = externalVocabularyCore.getVocabularyForUri
+export const getMappedFieldValue = externalVocabularyCore.getMappedFieldValue
+export const getManagedFieldValues = externalVocabularyCore.getManagedFieldValues
+export const getClearedManagedFieldValues = externalVocabularyCore.getClearedManagedFieldValues
+export const searchTerms = externalVocabularyCore.searchTerms
+
+export default externalVocabularyCore
