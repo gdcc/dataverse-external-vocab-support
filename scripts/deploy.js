@@ -99,6 +99,12 @@ function linkServices() {
         path.join(SHARED_CORE_DIR, 'external-vocabulary-core.js'),
         path.join(DIST_DIR, 'external-vocabulary-core.js')
     );
+
+    console.log('Building the shared React picker for JSF...');
+    execSync('node scripts/build-react-picker.js', {
+        cwd: path.join(__dirname, '..'),
+        stdio: 'inherit'
+    });
 }
 
 /**

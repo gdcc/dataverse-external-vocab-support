@@ -1,64 +1,89 @@
-# External Vocabulary Shared-Core POC Notes
+# External Vocabulary Shared React POC Notes
 
-这个 POC 为 Dataverse Modern UI 和 legacy JSF 提供共享的 ORCID/ROR 数据处理逻辑。
-当前共享的是 core，不是共享的 React UI：SPA 使用自己的 React UI，JSF 使用原生
-JavaScript adapter。
+This proof of concept provides shared ORCID/ROR behavior and a shared React picker for
+the Dataverse Modern UI and legacy JSF UI. The SPA and JSF use the same
+`ExternalVocabularyPicker` component through separate adapters that synchronize their
+host form state.
 
-## 新增文件
+## New Files
 
-| 位置 | 用途 |
+| Location | Purpose |
 | --- | --- |
-| `packages/external-vocabulary-core/external-vocabulary-core.js` | 浏览器可加载的 shared core。统一 ORCID/ROR 结果，并把选中的结果映射到 Dataverse managed fields。它也在浏览器中暴露 `DataverseExternalVocabularyCore`。 |
-| `packages/external-vocabulary-core/external-vocabulary-core.mjs` | 给 Modern UI 打包时 import 的 ESM 入口。 |
-| `packages/external-vocabulary-core/external-vocabulary-core.d.ts` | shared core 的 TypeScript 类型定义。 |
-| `packages/external-vocabulary-core/external-vocabulary-core.test.js` | shared core 的单元测试。 |
-| `packages/external-vocabulary-core/package.json` | 让 frontend 能以 `@iqss/dataverse-external-vocabulary-core` 依赖引用此 package。 |
-| `packages/external-vocabulary-core/README.md` | package 的简短说明。 |
-| `services/jsf-adapter/jsf-external-vocabulary-adapter.js` | JSF adapter。读取 Dataverse 输出的 `data-cvoc-*` 属性，显示 Person/Organization、搜索框和候选项，并把选择写回原有 JSF fields。它通过 Dataverse API 搜索，因此浏览器不会直接调用 ROR。 |
-| `services/jsf-adapter/configs/authorsOrcidAndRorSharedCore.json` | JSF POC 的 `CVocConf` 示例，配置 Author/Contact 的 ORCID 和 ROR。 |
-| `services/jsf-adapter/README.md` | JSF adapter 的使用说明。 |
+| `packages/external-vocabulary-core/external-vocabulary-core.js` | Browser-loadable shared core. It normalizes ORCID/ROR terms and maps selected terms to Dataverse managed fields. It exposes `DataverseExternalVocabularyCore` in the browser. |
+| `packages/external-vocabulary-core/external-vocabulary-core.mjs` | ESM entry point for Modern UI builds. |
+| `packages/external-vocabulary-core/external-vocabulary-core.d.ts` | TypeScript declarations for the shared core. |
+| `packages/external-vocabulary-core/external-vocabulary-core.test.js` | Shared-core unit tests. |
+| `packages/external-vocabulary-core/package.json` | Package metadata for `@iqss/dataverse-external-vocabulary-core`. |
+| `packages/external-vocabulary-core/README.md` | Shared-core package documentation. |
+| `packages/external-vocabulary-react/src/ExternalVocabularyPicker.tsx` | Reusable React picker. It renders the Person/Organization selector, search input, result list, and loading, no-results, and error states. Both SPA and JSF use this component. |
+| `packages/external-vocabulary-react/src/jsf-browser-entry.tsx` | JSF bundle entry point. It mounts the shared picker with `ReactDOM.createRoot()`. |
+| `packages/external-vocabulary-react/package.json` | Package metadata for `@iqss/dataverse-external-vocabulary-react`. |
+| `scripts/build-react-picker.js` | Uses esbuild to create the browser bundle that JSF loads. |
+| `services/jsf-adapter/jsf-external-vocabulary-adapter.js` | JSF adapter. It reads Dataverse `data-cvoc-*` attributes, mounts the React bundle, and writes selected values back to original JSF fields. It searches through the Dataverse API, so browsers do not call ROR directly. |
+| `services/jsf-adapter/configs/authorsOrcidAndRorSharedCore.json` | Example `CVocConf` for the Author ORCID/ROR JSF proof of concept. |
+| `services/jsf-adapter/README.md` | JSF adapter documentation. |
 
-## 修改的现有文件
+## Modified Existing Files
 
-| 位置 | 用途 |
+| Location | Purpose |
 | --- | --- |
-| `scripts/deploy.js` | `node scripts/deploy.js link` 时，将 shared core 链接到 `dist/js/external-vocabulary-core.js`。 |
-| `.gitignore` | 忽略生成的 `dist/` 目录，避免 symlink 输出出现在 Git diff 中。 |
+| `package.json` / `package-lock.json` | Build dependencies for React, ReactDOM, esbuild, and React TypeScript declarations. |
+| `scripts/deploy.js` | `node scripts/deploy.js link` links the shared core into `dist/js/` and builds the JSF React bundle. |
+| `.gitignore` | Ignores generated `dist/` and `node_modules/` directories. |
 
-## 未修改的既有服务
+## Existing Services Left Unchanged
 
-现有 GDCC provider scripts 没有被改动，包括：
+The POC does not modify existing GDCC provider scripts, including:
 
 - `services/ror/ror.js`
-- 现有 ORCID/person-or-org services
-- `services/skosmos/`、`services/geonames/`、`services/ontoportal/` 等
+- Existing ORCID and person-or-org services
+- `services/skosmos/`, `services/geonames/`, and `services/ontoportal/`
 
-`dist/js/ror.js` 只是指向 `services/ror/ror.js` 的生成 symlink；它不是 POC 的 source
-改动。当前 JSF POC 只加载 shared core 和 JSF adapter。
+`dist/js/ror.js` is a generated symlink to `services/ror/ror.js`; it is not a POC
+source change. The current JSF POC loads only the shared core, shared React bundle,
+and JSF adapter.
 
-## 本地运行
+## Local Use
 
-生成本地脚本链接：
+Install the build dependencies once:
+
+```sh
+npm install
+```
+
+Build and link the local assets:
 
 ```sh
 node scripts/deploy.js link
 ```
 
-随后本地 nginx 将 `dist/` 暴露在 `/cvoc/`。JSF 的 `CVocConf` 依次加载：
+Local nginx exposes `dist/` at `/cvoc/`. JSF `CVocConf` must load these files in the
+following order:
 
 ```text
 /cvoc/js/external-vocabulary-core.js
+/cvoc/js/external-vocabulary-react.js
 /cvoc/js/jsf-external-vocabulary-adapter.js
 ```
 
-顺序不能改变，因为 JSF adapter 依赖 shared core。
+The order matters: the JSF adapter depends on both the shared core and the generated
+React bundle.
 
-## 下一步
+## Adapter Boundaries
 
-目标是将 picker UI 提取为一个可复用的 React component，并通过两个 adapter 使用：
+- The SPA adapter connects the shared picker to React Hook Form, the Modern UI
+  repository, and Dataverse managed fields.
+- The JSF adapter mounts the same component with `ReactDOM.createRoot()` and
+  synchronizes values with original JSF fields.
 
-- SPA adapter：连接 React Hook Form 和 Modern UI repository。
-- JSF adapter：用 `ReactDOM.createRoot()` 挂载相同 component，并同步 JSF fields。
+Provider search, field configuration, and host-form synchronization remain adapter
+responsibilities. The picker only owns reusable input, selection, results, and state
+UI.
 
-完成前，请将当前实现描述为 **shared core with separate adapters**，不要描述为
-shared React component。
+## Remaining Work
+
+Before production adoption, add integration coverage for repeatable Author rows, JSF
+partial updates, editing existing values, validation, free-text fallback, keyboard
+navigation, and screen-reader behavior. Publish versioned packages and the browser
+bundle through an agreed release process instead of relying on local `file:`
+dependencies.

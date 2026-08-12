@@ -2,8 +2,8 @@
   {
     "field-name": "authorName",
     "term-uri-field": "authorIdentifier",
-    "js-url": ["/cvoc/js/external-vocabulary-core.js", "/cvoc/js/jsf-external-vocabulary-adapter.js"],
-    "ui-adapter": "shared-core-jsf",
+    "js-url": ["/cvoc/js/external-vocabulary-core.js", "/cvoc/js/external-vocabulary-react.js", "/cvoc/js/jsf-external-vocabulary-adapter.js"],
+    "ui-adapter": "shared-react-jsf",
     "protocol": "orcid-or-ror",
     "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
     "allow-free-text": true,
@@ -16,8 +16,8 @@
   {
     "field-name": "authorAffiliation",
     "term-uri-field": "authorAffiliation",
-    "js-url": ["/cvoc/js/external-vocabulary-core.js", "/cvoc/js/jsf-external-vocabulary-adapter.js"],
-    "ui-adapter": "shared-core-jsf",
+    "js-url": ["/cvoc/js/external-vocabulary-core.js", "/cvoc/js/external-vocabulary-react.js", "/cvoc/js/jsf-external-vocabulary-adapter.js"],
+    "ui-adapter": "shared-react-jsf",
     "protocol": "ror",
     "retrieval-uri": "https://api.ror.org/v2/organizations/{0}",
     "allow-free-text": true,
