@@ -168,6 +168,42 @@ function getElementValue(element) {
     return (element.text() || '').trim();
 }
 
+function getPidText(identifierType, identifier) {
+    if (!identifier) {
+        return '';
+    }
+
+    if (!identifierType) {
+        return '[PID]';
+    }
+
+    var trimmedIdentifierType = identifierType.trim();
+    var displayNames = {
+        ark: 'ARK',
+        arxiv: 'arXiv',
+        bibcode: 'Bibcode',
+        cstr: 'CSTR',
+        doi: 'DOI',
+        ean13: 'EAN-13',
+        eissn: 'eISSN',
+        handle: 'Handle',
+        isbn: 'ISBN',
+        issn: 'ISSN',
+        istc: 'ISTC',
+        lissn: 'LISSN',
+        lsid: 'LSID',
+        pmid: 'PMID',
+        purl: 'PURL',
+        upc: 'UPC',
+        url: 'URL',
+        urn: 'URN',
+        'dash-nrs': 'DASH-NRS'
+    };
+    var displayName = displayNames[trimmedIdentifierType.toLowerCase()] || trimmedIdentifierType;
+
+    return '[' + displayName + ']';
+}
+
 function expandPublications() {
     $(window.publications.config.publicationSelector).each(function() {
         var publicationIdentifierElement = this;
@@ -190,10 +226,10 @@ function expandPublications() {
             if (!relationType) {
                 // Try to find it in the text nodes before the first span of this entry
                 var startNode = (relationTypeElement.length > 0) ? relationTypeElement[0] :
-                                (citationElement.length > 0) ? citationElement[0] :
-                                (identifierTypeElement.length > 0) ? identifierTypeElement[0] :
-                                publicationIdentifierElement;
-                
+                    (citationElement.length > 0) ? citationElement[0] :
+                        (identifierTypeElement.length > 0) ? identifierTypeElement[0] :
+                            publicationIdentifierElement;
+
                 var prevNode = startNode.previousSibling;
                 var prefixText = '';
                 while (prevNode) {
@@ -217,7 +253,7 @@ function expandPublications() {
             var identifierType = getElementValue(identifierTypeElement);
             var urlValue = getElementValue(urlElement);
             var pidUrl = getPidUrl(identifierType, identifier, '');
-            var pidText = (identifierType && identifier) ? '[PID]' : '';
+            var pidText = getPidText(identifierType, identifier);
 
             if (!citationText) {
                 citationText = identifier;
@@ -248,10 +284,10 @@ function expandPublications() {
                     }
 
                     var startNodeForClearing = (relationTypeElement.length > 0) ? relationTypeElement[0].previousSibling :
-                                              (citationElement.length > 0) ? citationElement[0].previousSibling :
-                                              (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
-                                              publicationIdentifierElement.previousSibling;
-                    
+                        (citationElement.length > 0) ? citationElement[0].previousSibling :
+                            (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
+                                publicationIdentifierElement.previousSibling;
+
                     if (startNodeForClearing) {
                         clearTextNodesUntilBr(startNodeForClearing, 'previous');
                     }
@@ -288,10 +324,9 @@ function formatFirstPublicationRow() {
     var cell = row.find('td').first();
     var rawHtml = cell.html() || '';
 
-    // Extract URLs and PID text from the raw HTML first
+    // Extract URLs from the raw HTML first
     var temp = $('<div/>').html(rawHtml);
     var pidUrl = '';
-    var pidText = '';
     var otherUrl = '';
     var pidTypeNames = ['doi', 'issn', 'eissn', 'isbn', 'uri', 'url', 'pmid', 'handle', 'ark', 'arxiv', 'bibcode', 'cstr', 'ean13', 'lissn', 'lsid', 'purl', 'upc', 'urn'];
 
@@ -307,7 +342,6 @@ function formatFirstPublicationRow() {
 
         if (isPidUrl && !pidUrl) {
             pidUrl = href.replace(/[.,;]+$/, '');
-            pidText = '[PID]';
         } else if (!isPidUrl && !otherUrl) {
             otherUrl = href.replace(/[.,;]+$/, '');
         }
@@ -315,10 +349,12 @@ function formatFirstPublicationRow() {
 
     // Remove links from the citation HTML to separate citation text from identifiers
     var cleanHtml = rawHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '')
-                              .replace(/<a\b[^>]*>.*?<\/a>/ig, '');
+        .replace(/<a\b[^>]*>.*?<\/a>/ig, '');
 
     var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="0"]');
+    var identifierTypeElement = $('[data-cvoc-metadata-name="publicationIDType"][data-cvoc-index="0"]');
     var relationType = getElementValue(relationTypeElement);
+    var identifierType = getElementValue(identifierTypeElement);
     if (!relationType) {
         relationType = window.publications.state.i18n.relationNotSpecified;
     }
@@ -338,8 +374,8 @@ function formatFirstPublicationRow() {
 
     if (citationText || pidUrl || otherUrl) {
         var displayElement = $('<div/>');
-        
-        var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, pidText);
+
+        var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, getPidText(identifierType, pidUrl));
 
         if (relationType) {
             displayElement.append(
