@@ -1034,6 +1034,15 @@ function getRorDisplayContext(element) {
     let useParens = true;
     let truncate = false;
     let prev = $(element)[0].previousSibling;
+    let index = $(element).attr('data-cvoc-index');
+
+    // The first field in a repeated row is the primary value, even when
+    // whitespace, labels, or hidden managed fields precede it in the DOM.
+    if (index !== undefined && $(element).siblings("[data-cvoc-index='" + index + "']").filter(function () {
+        return $(this).index() < $(element).index();
+    }).length === 0) {
+        return {useParens: false, truncate: true};
+    }
 
     if (prev != null && prev.tagName != 'BR') {
         let val = prev.nodeValue;
