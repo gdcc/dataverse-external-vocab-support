@@ -4,7 +4,10 @@ window.publications.config = window.publications.config || {
     publicationSelector: "span[data-cvoc-protocol='publication']",
     publicationInputSelector: "input[data-cvoc-protocol='publication']",
     selectedFormat: 'chicago-author-date',
-    citationJsUrl: 'https://cdn.jsdelivr.net/npm/citation-js'
+    // The 0.9 package is modular and its browser entry point does not expose
+    // the plugins required by this script. Use the legacy browser bundle,
+    // which includes both the CSL and DOI plugins.
+    citationJsUrl: 'https://cdn.jsdelivr.net/npm/citation-js@0.7.18/build/citation.min.js'
 };
 
 window.publications.state = window.publications.state || {
@@ -27,19 +30,42 @@ window.publications.state = window.publications.state || {
     citationJsPromise: null
 };
 
-function getCslConfig() {
-    if (!globalThis.Cite ||
-        !globalThis.Cite.plugins ||
-        !globalThis.Cite.plugins.config) {
+function getCslConfig(citationJs) {
+    if (!citationJs || !citationJs.plugins || !citationJs.plugins.config) {
         return null;
     }
 
-    return globalThis.Cite.plugins.config.get('@csl');
+    return citationJs.plugins.config.get('@csl');
+}
+
+function hasCslSupport(citationJs) {
+    var cslConfig = getCslConfig(citationJs);
+    return !!(cslConfig && cslConfig.templates);
+}
+
+function getCitationJs() {
+    if (hasCslSupport(globalThis.Cite)) {
+        return globalThis.Cite;
+    }
+
+    if (typeof globalThis.require === 'function') {
+        try {
+            var citationJs = globalThis.require('citation-js');
+            citationJs = citationJs.Cite || citationJs;
+            if (hasCslSupport(citationJs)) {
+                globalThis.Cite = citationJs;
+                return citationJs;
+            }
+        } catch (error) {
+            // The host page may expose a different require implementation.
+        }
+    }
+
+    return null;
 }
 
 function isCitationJsReady() {
-    var cslConfig = getCslConfig();
-    return !!(globalThis.Cite && cslConfig && cslConfig.templates);
+    return !!getCitationJs();
 }
 
 function loadCitationJs() {
@@ -54,12 +80,13 @@ function loadCitationJs() {
     window.publications.state.citationJsPromise = new Promise(function(resolve, reject) {
         $.getScript(window.publications.config.citationJsUrl)
             .done(function() {
+                var citationJs = getCitationJs();
                 if (!isCitationJsReady()) {
                     reject(new Error("Citation.js loaded, but the CSL template registry is unavailable."));
                     return;
                 }
 
-                resolve(globalThis.Cite);
+                resolve(citationJs);
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
                 reject(new Error("Failed to load Citation.js: " + textStatus + ": " + errorThrown));
@@ -87,7 +114,7 @@ function loadCslStyle() {
                     return response.text();
                 })
                 .then(function(styleXml) {
-                    var cslConfig = getCslConfig();
+                    var cslConfig = getCslConfig(getCitationJs());
 
                     if (!cslConfig || !cslConfig.templates) {
                         throw new Error("Citation.js CSL templates registry is unavailable.");
