@@ -4,7 +4,10 @@ window.publications.config = window.publications.config || {
     publicationSelector: "span[data-cvoc-protocol='publication']",
     publicationInputSelector: "input[data-cvoc-protocol='publication']",
     selectedFormat: 'chicago-author-date',
-    citationJsUrl: 'https://cdn.jsdelivr.net/npm/citation-js'
+    // The 0.9 package is modular and its browser entry point does not expose
+    // the plugins required by this script. Use the legacy browser bundle,
+    // which includes both the CSL and DOI plugins.
+    citationJsUrl: 'https://cdn.jsdelivr.net/npm/citation-js@0.7.18/build/citation.min.js'
 };
 
 window.publications.state = window.publications.state || {
@@ -27,19 +30,42 @@ window.publications.state = window.publications.state || {
     citationJsPromise: null
 };
 
-function getCslConfig() {
-    if (!globalThis.Cite ||
-        !globalThis.Cite.plugins ||
-        !globalThis.Cite.plugins.config) {
+function getCslConfig(citationJs) {
+    if (!citationJs || !citationJs.plugins || !citationJs.plugins.config) {
         return null;
     }
 
-    return globalThis.Cite.plugins.config.get('@csl');
+    return citationJs.plugins.config.get('@csl');
+}
+
+function hasCslSupport(citationJs) {
+    var cslConfig = getCslConfig(citationJs);
+    return !!(cslConfig && cslConfig.templates);
+}
+
+function getCitationJs() {
+    if (hasCslSupport(globalThis.Cite)) {
+        return globalThis.Cite;
+    }
+
+    if (typeof globalThis.require === 'function') {
+        try {
+            var citationJs = globalThis.require('citation-js');
+            citationJs = citationJs.Cite || citationJs;
+            if (hasCslSupport(citationJs)) {
+                globalThis.Cite = citationJs;
+                return citationJs;
+            }
+        } catch (error) {
+            // The host page may expose a different require implementation.
+        }
+    }
+
+    return null;
 }
 
 function isCitationJsReady() {
-    var cslConfig = getCslConfig();
-    return !!(globalThis.Cite && cslConfig && cslConfig.templates);
+    return !!getCitationJs();
 }
 
 function loadCitationJs() {
@@ -54,12 +80,13 @@ function loadCitationJs() {
     window.publications.state.citationJsPromise = new Promise(function(resolve, reject) {
         $.getScript(window.publications.config.citationJsUrl)
             .done(function() {
+                var citationJs = getCitationJs();
                 if (!isCitationJsReady()) {
                     reject(new Error("Citation.js loaded, but the CSL template registry is unavailable."));
                     return;
                 }
 
-                resolve(globalThis.Cite);
+                resolve(citationJs);
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
                 reject(new Error("Failed to load Citation.js: " + textStatus + ": " + errorThrown));
@@ -87,7 +114,7 @@ function loadCslStyle() {
                     return response.text();
                 })
                 .then(function(styleXml) {
-                    var cslConfig = getCslConfig();
+                    var cslConfig = getCslConfig(getCitationJs());
 
                     if (!cslConfig || !cslConfig.templates) {
                         throw new Error("Citation.js CSL templates registry is unavailable.");
@@ -168,6 +195,42 @@ function getElementValue(element) {
     return (element.text() || '').trim();
 }
 
+function getPidText(identifierType, identifier) {
+    if (!identifier) {
+        return '';
+    }
+
+    if (!identifierType) {
+        return '[PID]';
+    }
+
+    var trimmedIdentifierType = identifierType.trim();
+    var displayNames = {
+        ark: 'ARK',
+        arxiv: 'arXiv',
+        bibcode: 'Bibcode',
+        cstr: 'CSTR',
+        doi: 'DOI',
+        ean13: 'EAN-13',
+        eissn: 'eISSN',
+        handle: 'Handle',
+        isbn: 'ISBN',
+        issn: 'ISSN',
+        istc: 'ISTC',
+        lissn: 'LISSN',
+        lsid: 'LSID',
+        pmid: 'PMID',
+        purl: 'PURL',
+        upc: 'UPC',
+        url: 'URL',
+        urn: 'URN',
+        'dash-nrs': 'DASH-NRS'
+    };
+    var displayName = displayNames[trimmedIdentifierType.toLowerCase()] || trimmedIdentifierType;
+
+    return '[' + displayName + ']';
+}
+
 function expandPublications() {
     $(window.publications.config.publicationSelector).each(function() {
         var publicationIdentifierElement = this;
@@ -190,10 +253,10 @@ function expandPublications() {
             if (!relationType) {
                 // Try to find it in the text nodes before the first span of this entry
                 var startNode = (relationTypeElement.length > 0) ? relationTypeElement[0] :
-                                (citationElement.length > 0) ? citationElement[0] :
-                                (identifierTypeElement.length > 0) ? identifierTypeElement[0] :
-                                publicationIdentifierElement;
-                
+                    (citationElement.length > 0) ? citationElement[0] :
+                        (identifierTypeElement.length > 0) ? identifierTypeElement[0] :
+                            publicationIdentifierElement;
+
                 var prevNode = startNode.previousSibling;
                 var prefixText = '';
                 while (prevNode) {
@@ -217,7 +280,7 @@ function expandPublications() {
             var identifierType = getElementValue(identifierTypeElement);
             var urlValue = getElementValue(urlElement);
             var pidUrl = getPidUrl(identifierType, identifier, '');
-            var pidText = (identifierType && identifier) ? '[PID]' : '';
+            var pidText = getPidText(identifierType, identifier);
 
             if (!citationText) {
                 citationText = identifier;
@@ -248,10 +311,10 @@ function expandPublications() {
                     }
 
                     var startNodeForClearing = (relationTypeElement.length > 0) ? relationTypeElement[0].previousSibling :
-                                              (citationElement.length > 0) ? citationElement[0].previousSibling :
-                                              (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
-                                              publicationIdentifierElement.previousSibling;
-                    
+                        (citationElement.length > 0) ? citationElement[0].previousSibling :
+                            (identifierTypeElement.length > 0) ? identifierTypeElement[0].previousSibling :
+                                publicationIdentifierElement.previousSibling;
+
                     if (startNodeForClearing) {
                         clearTextNodesUntilBr(startNodeForClearing, 'previous');
                     }
@@ -288,10 +351,9 @@ function formatFirstPublicationRow() {
     var cell = row.find('td').first();
     var rawHtml = cell.html() || '';
 
-    // Extract URLs and PID text from the raw HTML first
+    // Extract URLs from the raw HTML first
     var temp = $('<div/>').html(rawHtml);
     var pidUrl = '';
-    var pidText = '';
     var otherUrl = '';
     var pidTypeNames = ['doi', 'issn', 'eissn', 'isbn', 'uri', 'url', 'pmid', 'handle', 'ark', 'arxiv', 'bibcode', 'cstr', 'ean13', 'lissn', 'lsid', 'purl', 'upc', 'urn'];
 
@@ -307,7 +369,6 @@ function formatFirstPublicationRow() {
 
         if (isPidUrl && !pidUrl) {
             pidUrl = href.replace(/[.,;]+$/, '');
-            pidText = '[PID]';
         } else if (!isPidUrl && !otherUrl) {
             otherUrl = href.replace(/[.,;]+$/, '');
         }
@@ -315,10 +376,12 @@ function formatFirstPublicationRow() {
 
     // Remove links from the citation HTML to separate citation text from identifiers
     var cleanHtml = rawHtml.replace(/<span>\s*<a\b[^>]*>.*?<\/a>\s*<\/span>/ig, '')
-                              .replace(/<a\b[^>]*>.*?<\/a>/ig, '');
+        .replace(/<a\b[^>]*>.*?<\/a>/ig, '');
 
     var relationTypeElement = $('[data-cvoc-metadata-name="publicationRelationType"][data-cvoc-index="0"]');
+    var identifierTypeElement = $('[data-cvoc-metadata-name="publicationIDType"][data-cvoc-index="0"]');
     var relationType = getElementValue(relationTypeElement);
+    var identifierType = getElementValue(identifierTypeElement);
     if (!relationType) {
         relationType = window.publications.state.i18n.relationNotSpecified;
     }
@@ -338,8 +401,8 @@ function formatFirstPublicationRow() {
 
     if (citationText || pidUrl || otherUrl) {
         var displayElement = $('<div/>');
-        
-        var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, pidText);
+
+        var citationBlock = buildPublicationCitationBlock(citationText, pidUrl, otherUrl, getPidText(identifierType, pidUrl));
 
         if (relationType) {
             displayElement.append(
