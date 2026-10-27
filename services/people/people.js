@@ -26,10 +26,11 @@ function expandPeople() {
             if (id.match(/^\d{4}-\d{4}-\d{4}-(\d{4}|\d{3}X)$/) !== null) {
                 //Try it as an ORCID (could validate that it has the right form and even that it validates as an ORCID, or can just let the GET fail
                 var orcidRertrievalUrl = orcidBaseUrl.replace("https://","https://pub.") + "v3.0/" + id + "/person";
-                $.ajax({
-                    type: "GET",
+                //IQSS/dataverse#12392: route through the shared throttled queue so a
+                //dataset with many authors does not fire a simultaneous burst of
+                //requests at ORCID (which rate limits them, degrading the display).
+                cvocThrottledAjax({
                     url: orcidRertrievalUrl,
-                    dataType: 'json',
                     headers: {
                         'Accept': 'application/json'
                     },
