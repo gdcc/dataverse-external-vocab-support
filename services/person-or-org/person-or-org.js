@@ -899,8 +899,8 @@ function checkOrcidWorkMatch(orcidId, orcidBaseUrl) {
     if (!datasetPid) {
         return Promise.resolve(false);
     }
-    // Normalize datasetPid for comparison (remove doi: prefix if present)
-    var normalizedDatasetPid = datasetPid.replace(/^doi:/i, '').toLowerCase();
+    // Normalize datasetPid for comparison (remove doi: or hdl: prefix if present)
+    var normalizedDatasetPid = datasetPid.replace(/^(doi|hdl):/i, '').toLowerCase();
 
     var orcidWorksUrl = (orcidBaseUrl.includes("sandbox.orcid.org") ? "https://pub.sandbox.orcid.org/" : "https://pub.orcid.org/") + "v3.0/" + orcidId + "/works";
 
