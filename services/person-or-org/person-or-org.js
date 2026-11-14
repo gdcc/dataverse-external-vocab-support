@@ -1074,7 +1074,7 @@ function getRorDisplayHtml(name, url, altNames, city, country, truncate = true, 
         name = name.substring(0, rorMaxLength) + "…";
     }
     if (url != null) {
-        name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="' + i18n.rorLogoAlt + '" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror" title="' + i18n.rorProfileTooltip + '"/></a>';
+        name = name + '<a href="' + url + '" target="_blank" rel="nofollow" >' + '<img alt="' + i18n.rorLogoAlt + '" src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" height="20" class="ror" style="margin-left: 0.25em;" title="' + i18n.rorProfileTooltip + '"/></a>';
     }
     if (addParens) {
         name = '<span>(' + name + ')</span>';
