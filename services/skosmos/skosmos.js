@@ -351,7 +351,7 @@ function updateSkosmosInputs() {
                 // For terms, the id and text are different, but we just store the
                 // data.id in either case (controlled uri or plain text)
                 // if(data.id != data.text) {
-                $("input[data-skosmos='" + num + "']").val(data.id);
+                $("input[data-skosmos='" + num + "']").val(data.id).attr('value', data.id);
                 //If we have more than one vocab, hide the vocab selector since we have a termURI selected
                 if (Object.keys(vocabs).length > 1) {
                     $(anchorSib).parent().find('.cvoc-vocab').hide();
